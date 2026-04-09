@@ -33,7 +33,12 @@ export default function Sidebar() {
 
   useEffect(() => {
     if (currentUser?.role === 'system_admin') {
-      api.get('/branches').then(setBranches).catch(console.error);
+      api.get('/branches')
+        .then(data => {
+          const sorted = data.sort((a, b) => a.name.localeCompare(b.name));
+          setBranches(sorted);
+        })
+        .catch(console.error);
     }
   }, [currentUser]);
 
