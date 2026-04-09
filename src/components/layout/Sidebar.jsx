@@ -91,7 +91,9 @@ export default function Sidebar() {
               )}
               <div className="sidebar-brand-text">
                 <span className="sidebar-brand-name">{settings.storeName}</span>
-                <span className="sidebar-brand-sub">Point of Sale</span>
+                <span className="sidebar-brand-sub">
+                  {currentUser?.role === 'system_admin' ? 'Point of Sale' : (currentUser?.branchName || 'Point of Sale')}
+                </span>
               </div>
             </div>
             <button 

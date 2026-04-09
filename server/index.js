@@ -115,18 +115,36 @@ app.get('/api/users', async (req, res) => {
 });
 app.post('/api/users', async (req, res) => {
   const { id, name, role, pin, branchId, image } = req.body;
-  await db.run("INSERT INTO users (id, name, role, pin, branchId, image) VALUES (?, ?, ?, ?, ?, ?)", [id, name, role, pin, branchId, image]);
-  res.json({ id });
+  try {
+    await db.run(
+      "INSERT INTO users (id, name, role, pin, branchId, image) VALUES (?, ?, ?, ?, ?, ?)", 
+      [id, name, role, pin, branchId || null, image]
+    );
+    res.json({ id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 app.put('/api/users/:id', async (req, res) => {
   const { name, role, branchId, image } = req.body;
-  await db.run("UPDATE users SET name = ?, role = ?, branchId = ?, image = ? WHERE id = ?", [name, role, branchId, image, req.params.id]);
-  res.json({ success: true });
+  try {
+    await db.run(
+      "UPDATE users SET name = ?, role = ?, branchId = ?, image = ? WHERE id = ?", 
+      [name, role, branchId || null, image, req.params.id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 app.put('/api/users/:id/pin', async (req, res) => {
   const { pin } = req.body;
-  await db.run("UPDATE users SET pin = ? WHERE id = ?", [pin, req.params.id]);
-  res.json({ success: true });
+  try {
+    await db.run("UPDATE users SET pin = ? WHERE id = ?", [pin, req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 app.delete('/api/users/:id', async (req, res) => {
   await db.run("DELETE FROM users WHERE id = ?", [req.params.id]);

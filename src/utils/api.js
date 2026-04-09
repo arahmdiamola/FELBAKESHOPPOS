@@ -26,36 +26,30 @@ function getHeaders() {
   return headers;
 }
 
-export const api = {
-  get: async (path) => {
-    const res = await fetch(`${API_URL}${path}`, { headers: getHeaders() });
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
-  },
-  post: async (path, body) => {
-    const res = await fetch(`${API_URL}${path}`, {
-      method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify(body)
-    });
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
-  },
-  put: async (path, body) => {
-    const res = await fetch(`${API_URL}${path}`, {
-      method: 'PUT',
-      headers: getHeaders(),
-      body: JSON.stringify(body)
-    });
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
-  },
-  del: async (path) => {
-    const res = await fetch(`${API_URL}${path}`, {
-      method: 'DELETE',
-      headers: getHeaders()
-    });
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
+const apiCall = async (path, options = {}) => {
+  const res = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers: { ...getHeaders(), ...options.headers }
+  });
+  
+  const text = await res.text();
+  let data;
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    data = text;
   }
+
+  if (!res.ok) {
+    const errorMsg = data?.error || data?.message || (typeof data === 'string' ? data : 'An unexpected error occurred');
+    throw new Error(errorMsg);
+  }
+  return data;
+};
+
+export const api = {
+  get: (path) => apiCall(path),
+  post: (path, body) => apiCall(path, { method: 'POST', body: JSON.stringify(body) }),
+  put: (path, body) => apiCall(path, { method: 'PUT', body: JSON.stringify(body) }),
+  del: (path) => apiCall(path, { method: 'DELETE' })
 };

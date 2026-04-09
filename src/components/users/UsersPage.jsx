@@ -70,28 +70,32 @@ export default function UsersPage() {
       return;
     }
 
-    if (editing) {
-      updateUser(editing, { name: form.name, role: form.role, branchId: form.branchId, image: form.image });
-      addToast(`${form.name} updated`, 'success');
-    } else {
-      // New user — PIN required
-      if (!form.pin.trim()) {
-        addToast('Password cannot be empty', 'error');
-        return;
+    try {
+      if (editing) {
+        await updateUser(editing, { name: form.name, role: form.role, branchId: form.branchId, image: form.image });
+        addToast(`${form.name} updated`, 'success');
+      } else {
+        // New user — PIN required
+        if (!form.pin.trim()) {
+          addToast('Password cannot be empty', 'error');
+          return;
+        }
+        if (currentUser?.role === 'system_admin' && !form.branchId && form.role !== 'system_admin') {
+          addToast('Please assign a branch', 'error');
+          return;
+        }
+        const id = uuidv4();
+        await addUser({ id, name: form.name, role: form.role, pin: form.pin, branchId: form.branchId || null, image: form.image });
+        addToast(`${form.name} added!`, 'success');
       }
-      if (currentUser?.role === 'system_admin' && !form.branchId && form.role !== 'system_admin') {
-        addToast('Please assign a branch', 'error');
-        return;
-      }
-      const id = uuidv4();
-      addUser({ id, name: form.name, role: form.role, pin: form.pin, branchId: form.branchId || null, image: form.image });
-      addToast(`${form.name} added!`, 'success');
+      setShowForm(false);
+    } catch (err) {
+      addToast(err.message, 'error');
     }
-    setShowForm(false);
   };
 
   // ── Delete User ──
-  const handleDelete = (user) => {
+  const handleDelete = async (user) => {
     if (user.id === currentUser?.id) {
       addToast("You can't delete yourself!", 'error');
       return;
@@ -101,8 +105,12 @@ export default function UsersPage() {
       return;
     }
     if (confirm(`Delete user "${user.name}"? This cannot be undone.`)) {
-      deleteUser(user.id);
-      addToast(`${user.name} deleted`, 'success');
+      try {
+        await deleteUser(user.id);
+        addToast(`${user.name} deleted`, 'success');
+      } catch (err) {
+        addToast(err.message, 'error');
+      }
     }
   };
 
@@ -114,7 +122,7 @@ export default function UsersPage() {
     setShowPinModal(true);
   };
 
-  const savePin = () => {
+  const savePin = async () => {
     if (!newPin.trim()) {
       addToast('Password cannot be empty', 'error');
       return;
@@ -123,9 +131,13 @@ export default function UsersPage() {
       addToast('Passwords do not match', 'error');
       return;
     }
-    changePin(pinUserId, newPin);
-    setShowPinModal(false);
-    addToast('Password changed successfully', 'success');
+    try {
+      await changePin(pinUserId, newPin);
+      setShowPinModal(false);
+      addToast('Password changed successfully', 'success');
+    } catch (err) {
+      addToast(err.message, 'error');
+    }
   };
 
   return (
