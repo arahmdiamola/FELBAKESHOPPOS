@@ -1,0 +1,245 @@
+import { useMemo } from 'react';
+import { useOrders } from '../../contexts/OrderContext';
+import { useProducts } from '../../contexts/ProductContext';
+import { useExpenses } from '../../contexts/ExpenseContext';
+import { formatCurrency, formatNumber } from '../../utils/formatters';
+import { DollarSign, ShoppingBag, TrendingUp, AlertTriangle, Package, Wallet } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
+import Header from '../layout/Header';
+
+export default function DashboardPage() {
+  const { transactions, getTodayStats } = useOrders();
+  const { products, categories, getLowStockProducts } = useProducts();
+  const { getTotalExpenses } = useExpenses();
+
+  const todayStats = getTodayStats();
+  const lowStock = getLowStockProducts();
+  const monthlyExpenses = getTotalExpenses(30);
+
+  // Weekly revenue
+  const weeklyData = useMemo(() => {
+    const data = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+      const next = new Date(date);
+      next.setDate(next.getDate() + 1);
+
+      const dayTxns = transactions.filter(t => {
+        const d = new Date(t.date);
+        return d >= date && d < next;
+      });
+
+      data.push({
+        day: date.toLocaleDateString('en-US', { weekday: 'short' }),
+        revenue: dayTxns.reduce((sum, t) => sum + t.total, 0),
+        orders: dayTxns.length,
+      });
+    }
+    return data;
+  }, [transactions]);
+
+  // Best sellers
+  const bestSellers = useMemo(() => {
+    const map = {};
+    transactions.slice(0, 200).forEach(t => {
+      t.items.forEach(item => {
+        map[item.name] = (map[item.name] || 0) + item.quantity;
+      });
+    });
+    return Object.entries(map)
+      .map(([name, qty]) => ({ name: name.length > 12 ? name.slice(0, 12) + '…' : name, qty }))
+      .sort((a, b) => b.qty - a.qty)
+      .slice(0, 6);
+  }, [transactions]);
+
+  // Sales by category
+  const categoryData = useMemo(() => {
+    const map = {};
+    transactions.slice(0, 200).forEach(t => {
+      t.items.forEach(item => {
+        const product = products.find(p => p.id === item.productId);
+        if (product) {
+          const cat = product.categoryId;
+          map[cat] = (map[cat] || 0) + (item.price * item.quantity);
+        }
+      });
+    });
+    return Object.entries(map)
+      .map(([id, value]) => {
+        const cat = categories.find(c => c.id === id);
+        return { name: cat?.name || 'Other', value: Math.round(value) };
+      })
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 6);
+  }, [transactions, products, categories]);
+
+  // Monthly revenue
+  const monthlyRevenue = useMemo(() => {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+    return transactions.filter(t => new Date(t.date) >= cutoff).reduce((sum, t) => sum + t.total, 0);
+  }, [transactions]);
+
+  const inventoryValue = useMemo(() => {
+    return products.reduce((sum, p) => sum + (p.costPrice * p.stock), 0);
+  }, [products]);
+
+  const COLORS = ['#D4763C', '#5B9BD5', '#4CAF50', '#F5A623', '#9C27B0', '#E74C3C'];
+
+  const tooltipStyle = {
+    backgroundColor: '#FFFCF9',
+    border: '1px solid #E8D5C4',
+    borderRadius: '8px',
+    color: '#2C1810',
+    fontSize: '13px',
+  };
+
+  return (
+    <>
+      <Header title="Dashboard" subtitle="Today's bakeshop performance at a glance" />
+      <div className="page-content animate-fade-in">
+        <div className="stats-grid">
+          <div className="stat-card">
+            <div className="stat-card-icon amber"><DollarSign size={24} /></div>
+            <div className="stat-card-content">
+              <h3>Today's Revenue</h3>
+              <div className="stat-value">{formatCurrency(todayStats.revenue)}</div>
+              <div className="stat-change positive">{todayStats.count} orders • {todayStats.items} items</div>
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-card-icon green"><TrendingUp size={24} /></div>
+            <div className="stat-card-content">
+              <h3>Monthly Revenue</h3>
+              <div className="stat-value">{formatCurrency(monthlyRevenue)}</div>
+              <div className="stat-change positive">Last 30 days</div>
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-card-icon blue"><Package size={24} /></div>
+            <div className="stat-card-content">
+              <h3>Inventory Value</h3>
+              <div className="stat-value">{formatCurrency(inventoryValue)}</div>
+              <div className="stat-change">{formatNumber(products.length)} products</div>
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-card-icon orange"><Wallet size={24} /></div>
+            <div className="stat-card-content">
+              <h3>Monthly Expenses</h3>
+              <div className="stat-value">{formatCurrency(monthlyExpenses)}</div>
+              <div className="stat-change negative">Est. Profit: {formatCurrency(monthlyRevenue - monthlyExpenses)}</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="charts-grid">
+          <div className="chart-card">
+            <div className="chart-card-header"><h3>Weekly Revenue</h3></div>
+            <ResponsiveContainer width="100%" height={280}>
+              <AreaChart data={weeklyData}>
+                <defs>
+                  <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#D4763C" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#D4763C" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E8D5C4" />
+                <XAxis dataKey="day" stroke="#A38B7E" fontSize={12} />
+                <YAxis stroke="#A38B7E" fontSize={12} tickFormatter={v => `₱${v}`} />
+                <Tooltip contentStyle={tooltipStyle} formatter={(value) => [`₱${value.toFixed(2)}`, 'Revenue']} />
+                <Area type="monotone" dataKey="revenue" stroke="#D4763C" strokeWidth={2} fill="url(#colorRev)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="chart-card">
+            <div className="chart-card-header"><h3>Best Sellers</h3></div>
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={bestSellers} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="#E8D5C4" />
+                <XAxis type="number" stroke="#A38B7E" fontSize={12} />
+                <YAxis dataKey="name" type="category" stroke="#A38B7E" fontSize={11} width={100} />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Bar dataKey="qty" fill="#D4763C" radius={[0, 4, 4, 0]} name="Sold" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="charts-grid">
+          <div className="chart-card">
+            <div className="chart-card-header"><h3>Sales by Category</h3></div>
+            <ResponsiveContainer width="100%" height={280}>
+              <PieChart>
+                <Pie data={categoryData} cx="50%" cy="50%" innerRadius={70} outerRadius={100} paddingAngle={5} dataKey="value">
+                  {categoryData.map((_, i) => (
+                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={tooltipStyle} formatter={(value) => [formatCurrency(value), 'Sales']} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="flex gap-3 justify-center" style={{ flexWrap: 'wrap', padding: '0 16px' }}>
+              {categoryData.map((entry, i) => (
+                <div key={i} className="flex items-center gap-1 text-sm">
+                  <span style={{ width: 10, height: 10, borderRadius: '50%', background: COLORS[i], display: 'inline-block' }} />
+                  {entry.name}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="card-header">
+              <h3 className="card-title">Low Stock Alerts</h3>
+              <span className="badge badge-red">{lowStock.length} items</span>
+            </div>
+            <div className="table-container" style={{ border: 'none' }}>
+              <table className="table">
+                <thead><tr><th>Product</th><th>Stock</th><th>Reorder At</th></tr></thead>
+                <tbody>
+                  {lowStock.slice(0, 8).map(p => (
+                    <tr key={p.id}>
+                      <td className="primary">{p.emoji} {p.name}</td>
+                      <td><span className="badge badge-red">{p.stock} {p.unit}</span></td>
+                      <td>{p.reorderPoint} {p.unit}</td>
+                    </tr>
+                  ))}
+                  {lowStock.length === 0 && (
+                    <tr><td colSpan={3} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>All stocked up! 🎉</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* Recent Transactions */}
+        <div className="card">
+          <div className="card-header">
+            <h3 className="card-title">Recent Transactions</h3>
+          </div>
+          <div className="table-container" style={{ border: 'none' }}>
+            <table className="table">
+              <thead><tr><th>Receipt</th><th>Customer</th><th>Items</th><th>Amount</th><th>Payment</th></tr></thead>
+              <tbody>
+                {transactions.slice(0, 10).map(t => (
+                  <tr key={t.id}>
+                    <td className="primary">{t.receiptNumber}</td>
+                    <td>{t.customerName}</td>
+                    <td>{t.items.reduce((s, i) => s + i.quantity, 0)} pcs</td>
+                    <td className="primary">{formatCurrency(t.total)}</td>
+                    <td><span className={`badge badge-${t.paymentMethod === 'cash' ? 'green' : t.paymentMethod === 'gcash' ? 'blue' : 'amber'}`}>{t.paymentMethod}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
