@@ -26,6 +26,11 @@ export function ProductProvider({ children }) {
     await fetchData();
   }, [fetchData]);
 
+  const addProductsBatch = useCallback(async (productsBatch) => {
+    await api.post('/products/batch', { products: productsBatch });
+    await fetchData();
+  }, [fetchData]);
+
   const updateProduct = useCallback(async (id, updates) => {
     await api.put(`/products/${id}`, updates);
     await fetchData();
@@ -67,7 +72,7 @@ export function ProductProvider({ children }) {
   return (
     <ProductContext.Provider value={{
       products, categories,
-      addProduct, updateProduct, deleteProduct,
+      addProduct, addProductsBatch, updateProduct, deleteProduct,
       adjustStock, deductStock, restoreStock,
       addCategory, deleteCategory, getLowStockProducts,
     }}>

@@ -6,15 +6,17 @@ import { Search, Plus, Edit3, Trash2, Package } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import Header from '../layout/Header';
 import Modal from '../shared/Modal';
+import BatchUploadModal from './BatchUploadModal';
 
 const emptyProduct = { name: '', categoryId: '', price: '', costPrice: '', stock: '', unit: 'pc', reorderPoint: '', emoji: '🍞', image: '' };
 
 export default function ProductsPage() {
-  const { products, categories, addProduct, updateProduct, deleteProduct, addCategory, deleteCategory } = useProducts();
+  const { products, categories, addProduct, addProductsBatch, updateProduct, deleteProduct, addCategory, deleteCategory } = useProducts();
   const { addToast } = useToast();
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [showBatchModal, setShowBatchModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(emptyProduct);
   const [showCatForm, setShowCatForm] = useState(false);
@@ -90,6 +92,7 @@ export default function ProductsPage() {
         subtitle={`${products.length} products in catalog`}
         actions={
           <div className="flex gap-2">
+            <button className="btn btn-secondary btn-sm" onClick={() => setShowBatchModal(true)}>Upload CSV</button>
             <button className="btn btn-secondary btn-sm" onClick={() => setShowCatForm(true)}>+ Category</button>
             <button className="btn btn-primary" onClick={openAdd}><Plus size={16} /> Add Product</button>
           </div>
@@ -236,6 +239,20 @@ export default function ProductsPage() {
           </div>
         </div>
       </Modal>
+
+      <BatchUploadModal 
+        isOpen={showBatchModal}
+        onClose={() => setShowBatchModal(false)}
+        categories={categories}
+        onUpload={async (batch) => {
+          if (localStorage.getItem('fel_active_branch') === 'all') {
+            addToast('Please select a specific branch from the sidebar to inject batch products', 'warning');
+            throw new Error('No branch selected');
+          }
+          await addProductsBatch(batch);
+          addToast(`Successfully injected ${batch.length} products!`, 'success');
+        }}
+      />
     </>
   );
 }

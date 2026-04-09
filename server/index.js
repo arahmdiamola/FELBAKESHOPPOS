@@ -157,6 +157,26 @@ app.post('/api/products', async (req, res) => {
   );
   res.json({ success: true });
 });
+app.post('/api/products/batch', async (req, res) => {
+  const { products } = req.body;
+  const branchId = req.headers['x-branch-id'];
+  
+  if (!products || !Array.isArray(products)) {
+    return res.status(400).json({ error: 'Invalid batch format' });
+  }
+
+  try {
+    for (const p of products) {
+      await db.run(
+        "INSERT INTO products (id, branchId, name, categoryId, price, costPrice, stock, unit, reorderPoint, emoji, image) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [p.id, branchId, p.name, p.categoryId, p.price, p.costPrice, p.stock, p.unit, p.reorderPoint, p.emoji, p.image || null]
+      );
+    }
+    res.json({ success: true, count: products.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 app.put('/api/products/:id', async (req, res) => {
   const p = req.body;
   await db.run(
