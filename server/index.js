@@ -1,6 +1,11 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { initDb } from './db.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(cors());
@@ -270,7 +275,18 @@ app.post('/api/reset', async (req, res) => {
 
 initDb().then(database => {
   db = database;
-  app.listen(3001, '0.0.0.0', () => {
-    console.log('API Server running on http://0.0.0.0:3001');
+
+  // Static Vite Frontend Serving for Production
+  const distPath = path.join(__dirname, '../dist');
+  app.use(express.static(distPath));
+
+  // Catch-all to support React Router natively
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+
+  const PORT = process.env.PORT || 3001;
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`API Server running on port ${PORT}`);
   });
 }).catch(console.error);
