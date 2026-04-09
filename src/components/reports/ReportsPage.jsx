@@ -7,23 +7,43 @@ import Header from '../layout/Header';
 import { DownloadCloud, Receipt, TrendingUp, PieChart, FileText } from 'lucide-react';
 
 export default function ReportsPage() {
-  const { transactions } = useOrders();
+  const { transactions, preOrders } = useOrders();
   const { products, categories } = useProducts();
   const { expenses } = useExpenses();
   const [activeTab, setActiveTab] = useState('transactions');
+
+  // Unified Sales (Transactions + Picked Up Pre-orders)
+  const allSales = useMemo(() => {
+    const closedPreOrders = preOrders
+      .filter(o => o.status === 'picked_up')
+      .map(o => ({
+        id: o.id,
+        date: o.dueDate, // The pickup date
+        receiptNumber: `PRE-${o.id.slice(0, 4)}`,
+        customerName: o.customerName,
+        cashierName: 'Pre-order System',
+        paymentMethod: 'prepaid',
+        total: o.totalPrice,
+        items: Array.isArray(o.items) ? o.items : [{ name: o.items, price: o.totalPrice, quantity: 1, productId: 'custom' }],
+        isPreorder: true
+      }));
+
+    return [...transactions, ...closedPreOrders].sort((a, b) => new Date(b.date) - new Date(a.date));
+  }, [transactions, preOrders]);
 
   // --- Transactions Ledger ---
   const handleExportTransactions = () => {
     const cols = [
       { header: 'Date', accessor: t => formatDateTime(t.date) },
       { header: 'Receipt No', accessor: t => t.receiptNumber },
+      { header: 'Type', accessor: t => t.isPreorder ? 'Pre-order' : 'POS' },
       { header: 'Customer', accessor: t => t.customerName || 'Walk-in' },
       { header: 'Cashier', accessor: t => t.cashierName },
       { header: 'Payment Method', accessor: t => t.paymentMethod },
       { header: 'Total (PHP)', accessor: t => t.total.toFixed(2) },
       { header: 'Items Sold', accessor: t => t.items?.reduce((s, i) => s + i.quantity, 0) || 0 }
     ];
-    exportToCSV(transactions, 'Transaction_Ledger', cols);
+    exportToCSV(allSales, 'Unified_Sales_Ledger', cols);
   };
 
   // --- Product Performance ---
@@ -33,17 +53,19 @@ export default function ReportsPage() {
       map[p.id] = { ...p, sold: 0, revenue: 0 };
     });
     
-    transactions.forEach(t => {
+    // Virtual category for custom items
+    map['custom'] = { id: 'custom', name: 'Custom Pre-orders', emoji: '🎂', categoryId: 'custom', sold: 0, revenue: 0, stock: '-', reorderPoint: 0 };
+
+    allSales.forEach(t => {
       t.items?.forEach(i => {
-        if (map[i.productId]) {
-          map[i.productId].sold += i.quantity;
-          map[i.productId].revenue += (i.price * i.quantity);
-        }
+        const key = map[i.productId] ? i.productId : 'custom';
+        map[key].sold += i.quantity;
+        map[key].revenue += (i.price * i.quantity);
       });
     });
     
-    return Object.values(map).sort((a, b) => b.sold - a.sold);
-  }, [transactions, products]);
+    return Object.values(map).filter(p => p.sold > 0 || p.id !== 'custom').sort((a, b) => b.sold - a.sold);
+  }, [allSales, products]);
 
   const handleExportProducts = () => {
     const cols = [
@@ -113,11 +135,12 @@ export default function ReportsPage() {
           <div className="card">
             <div className="table-container" style={{ border: 'none' }}>
               <table className="table">
-                <thead><tr><th>Date</th><th>Receipt</th><th>Customer</th><th>Cashier</th><th>Method</th><th>Items</th><th>Total</th></tr></thead>
+                <thead><tr><th>Date</th><th>Type</th><th>Receipt</th><th>Customer</th><th>Cashier</th><th>Method</th><th>Items</th><th>Total</th></tr></thead>
                 <tbody>
-                  {transactions.slice(0, 100).map(t => (
+                  {allSales.slice(0, 100).map(t => (
                     <tr key={t.id}>
                       <td>{formatDateTime(t.date)}</td>
+                      <td className="text-muted text-xs uppercase">{t.isPreorder ? 'Pre-order' : 'POS'}</td>
                       <td className="primary">{t.receiptNumber}</td>
                       <td>{t.customerName || 'Walk-in'}</td>
                       <td>{t.cashierName}</td>
@@ -126,14 +149,14 @@ export default function ReportsPage() {
                       <td className="font-bold text-right" style={{ color: 'var(--text-primary)' }}>{formatCurrency(t.total)}</td>
                     </tr>
                   ))}
-                  {transactions.length === 0 && (
-                    <tr><td colSpan={7} className="text-center text-muted py-4">No transactions recorded yet</td></tr>
+                  {allSales.length === 0 && (
+                    <tr><td colSpan={8} className="text-center text-muted py-4">No transactions recorded yet</td></tr>
                   )}
                 </tbody>
               </table>
-              {transactions.length > 100 && (
+              {allSales.length > 100 && (
                 <div className="text-center text-muted" style={{ padding: 12, fontSize: 'var(--font-xs)' }}>
-                  Showing top 100 recent rows. Export CSV to view all {transactions.length} records.
+                  Showing top 100 recent rows. Export CSV to view all {allSales.length} records.
                 </div>
               )}
             </div>

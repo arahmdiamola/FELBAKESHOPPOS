@@ -8,7 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import Header from '../layout/Header';
 
 export default function DashboardPage() {
-  const { transactions, getTodayStats } = useOrders();
+  const { allSales, getTodayStats } = useOrders();
   const { products, categories, getLowStockProducts } = useProducts();
   const { getTotalExpenses } = useExpenses();
 
@@ -26,61 +26,59 @@ export default function DashboardPage() {
       const next = new Date(date);
       next.setDate(next.getDate() + 1);
 
-      const dayTxns = transactions.filter(t => {
+      const daySales = allSales.filter(t => {
         const d = new Date(t.date);
         return d >= date && d < next;
       });
 
       data.push({
         day: date.toLocaleDateString('en-US', { weekday: 'short' }),
-        revenue: dayTxns.reduce((sum, t) => sum + t.total, 0),
-        orders: dayTxns.length,
+        revenue: daySales.reduce((sum, t) => sum + t.total, 0),
+        orders: daySales.length,
       });
     }
     return data;
-  }, [transactions]);
+  }, [allSales]);
 
   // Best sellers
   const bestSellers = useMemo(() => {
     const map = {};
-    transactions.slice(0, 200).forEach(t => {
-      t.items.forEach(item => {
-        map[item.name] = (map[item.name] || 0) + item.quantity;
+    allSales.slice(0, 500).forEach(t => {
+      (t.items || []).forEach(item => {
+        map[item.name] = (map[item.name] || 0) + (item.quantity || 1);
       });
     });
     return Object.entries(map)
       .map(([name, qty]) => ({ name: name.length > 12 ? name.slice(0, 12) + '…' : name, qty }))
       .sort((a, b) => b.qty - a.qty)
       .slice(0, 6);
-  }, [transactions]);
+  }, [allSales]);
 
   // Sales by category
   const categoryData = useMemo(() => {
     const map = {};
-    transactions.slice(0, 200).forEach(t => {
-      t.items.forEach(item => {
+    allSales.slice(0, 500).forEach(t => {
+      (t.items || []).forEach(item => {
         const product = products.find(p => p.id === item.productId);
-        if (product) {
-          const cat = product.categoryId;
-          map[cat] = (map[cat] || 0) + (item.price * item.quantity);
-        }
+        const catId = product?.categoryId || 'custom';
+        map[catId] = (map[catId] || 0) + (item.price * item.quantity);
       });
     });
     return Object.entries(map)
       .map(([id, value]) => {
         const cat = categories.find(c => c.id === id);
-        return { name: cat?.name || 'Other', value: Math.round(value) };
+        return { name: id === 'custom' ? 'Pre-orders' : (cat?.name || 'Other'), value: Math.round(value) };
       })
       .sort((a, b) => b.value - a.value)
       .slice(0, 6);
-  }, [transactions, products, categories]);
+  }, [allSales, products, categories]);
 
   // Monthly revenue
   const monthlyRevenue = useMemo(() => {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - 30);
-    return transactions.filter(t => new Date(t.date) >= cutoff).reduce((sum, t) => sum + t.total, 0);
-  }, [transactions]);
+    return allSales.filter(t => new Date(t.date) >= cutoff).reduce((sum, t) => sum + t.total, 0);
+  }, [allSales]);
 
   const inventoryValue = useMemo(() => {
     return products.reduce((sum, p) => sum + (p.costPrice * p.stock), 0);
@@ -220,18 +218,19 @@ export default function DashboardPage() {
         {/* Recent Transactions */}
         <div className="card">
           <div className="card-header">
-            <h3 className="card-title">Recent Transactions</h3>
+            <h3 className="card-title">Recent Sales Ledger</h3>
           </div>
           <div className="table-container" style={{ border: 'none' }}>
             <table className="table">
-              <thead><tr><th>Receipt</th><th>Customer</th><th>Items</th><th>Amount</th><th>Payment</th></tr></thead>
+              <thead><tr><th>Type</th><th>Receipt</th><th>Customer</th><th>Items</th><th>Amount</th><th>Method</th></tr></thead>
               <tbody>
-                {transactions.slice(0, 10).map(t => (
+                {allSales.slice(0, 10).map(t => (
                   <tr key={t.id}>
+                    <td><span className={`badge ${t.isPreorder ? 'badge-blue' : 'badge-gray'}`}>{t.isPreorder ? 'Pre-order' : 'POS'}</span></td>
                     <td className="primary">{t.receiptNumber}</td>
-                    <td>{t.customerName}</td>
-                    <td>{t.items.reduce((s, i) => s + i.quantity, 0)} pcs</td>
-                    <td className="primary">{formatCurrency(t.total)}</td>
+                    <td>{t.customerName || 'Walk-in'}</td>
+                    <td>{t.items?.reduce((s, i) => s + i.quantity, 0) || 0} pcs</td>
+                    <td className="font-bold">{formatCurrency(t.total)}</td>
                     <td><span className={`badge badge-${t.paymentMethod === 'cash' ? 'green' : t.paymentMethod === 'gcash' ? 'blue' : 'amber'}`}>{t.paymentMethod}</span></td>
                   </tr>
                 ))}
