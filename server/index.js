@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { v4 as uuidv4 } from 'uuid';
 import { initDb } from './db.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -52,9 +53,55 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 // --- BRANCHES ---
+const requireSystemAdmin = (req, res, next) => {
+  if (req.headers['x-user-role'] !== 'system_admin') {
+    return res.status(403).json({ error: 'Only System Admins can perform this action' });
+  }
+  next();
+};
+
 app.get('/api/branches', async (req, res) => {
-  const branches = await db.all("SELECT * FROM branches");
-  res.json(branches);
+  try {
+    const branches = await db.all("SELECT * FROM branches");
+    res.json(branches);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/branches', requireSystemAdmin, async (req, res) => {
+  const { name, address } = req.body;
+  const id = uuidv4();
+  try {
+    await db.run("INSERT INTO branches (id, name, address) VALUES ($1, $2, $3)", [id, name, address]);
+    res.json({ id, name, address });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/branches/:id', requireSystemAdmin, async (req, res) => {
+  const { name, address } = req.body;
+  try {
+    await db.run("UPDATE branches SET name = $1, address = $2 WHERE id = $3", [name, address, req.params.id]);
+    res.json({ id: req.params.id, name, address });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/branches/:id', requireSystemAdmin, async (req, res) => {
+  try {
+    await db.run("DELETE FROM branches WHERE id = $1", [req.params.id]);
+    res.json({ success: true });
+  } catch (error) {
+    // Postgres Foreign Key Constraint Violation is standard code '23503' length or sqlite constraint
+    if (error.message.includes('constraint') || error.code === '23503') {
+      res.status(409).json({ error: 'Cannot delete branch because it currently has users, customers, or products strictly assigned to it. You must reassign or clear them first.' });
+    } else {
+      res.status(500).json({ error: error.message });
+    }
+  }
 });
 
 // --- USERS ---

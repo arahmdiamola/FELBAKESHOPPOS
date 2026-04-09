@@ -1,14 +1,65 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useToast } from '../../contexts/ToastContext';
+import { useAuth } from '../../contexts/AuthContext';
+import api from '../../utils/api';
 import Header from '../layout/Header';
-import { Save, RotateCcw, Store, Receipt, Percent, Database } from 'lucide-react';
+import { Save, RotateCcw, Store, Receipt, Percent, Database, MapPin, Edit2, Trash2, Plus } from 'lucide-react';
+import BranchForm from './BranchForm';
 
 export default function SettingsPage() {
+  const { user } = useAuth();
   const { settings, updateSettings, resetData } = useSettings();
   const { addToast } = useToast();
   const [form, setForm] = useState({ ...settings });
   const [activeTab, setActiveTab] = useState('store');
+
+  const [branches, setBranches] = useState([]);
+  const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
+  const [editingBranch, setEditingBranch] = useState(null);
+
+  const fetchBranches = async () => {
+    try {
+      const data = await api.get('/api/branches');
+      setBranches(data);
+    } catch (e) {
+      console.error(e);
+      addToast('Failed to load branches', 'error');
+    }
+  };
+
+  useEffect(() => {
+    if (user?.role === 'system_admin' && activeTab === 'branches') {
+      fetchBranches();
+    }
+  }, [user, activeTab]);
+
+  const handleSaveBranch = async (branchData) => {
+    try {
+      if (editingBranch) {
+        await api.put(`/api/branches/${editingBranch.id}`, branchData);
+        addToast('Branch updated successfully', 'success');
+      } else {
+        await api.post('/api/branches', branchData);
+        addToast('Branch created successfully', 'success');
+      }
+      fetchBranches();
+    } catch (e) {
+      addToast(e.message, 'error');
+      throw e; // keep modal open if error
+    }
+  };
+
+  const handleDeleteBranch = async (id, name) => {
+    if (!confirm(`Are you sure you want to permanently delete the ${name} branch?`)) return;
+    try {
+      await api.del(`/api/branches/${id}`);
+      addToast('Branch deleted successfully', 'success');
+      fetchBranches();
+    } catch (e) {
+      addToast(e.message, 'error');
+    }
+  };
 
   const handleLogoUpload = (e) => {
     const file = e.target.files[0];
@@ -58,8 +109,15 @@ export default function SettingsPage() {
       <div className="page-content animate-fade-in">
         <div className="tabs">
           <button className={`tab ${activeTab === 'store' ? 'active' : ''}`} onClick={() => setActiveTab('store')}>
-            <Store size={14} style={{ marginRight: 6 }} />Store Info
+            <Store size={18} /> Store Info
           </button>
+          
+          {user?.role === 'system_admin' && (
+            <button className={`tab ${activeTab === 'branches' ? 'active' : ''}`} onClick={() => setActiveTab('branches')}>
+              <MapPin size={18} /> Branches
+            </button>
+          )}
+
           <button className={`tab ${activeTab === 'receipt' ? 'active' : ''}`} onClick={() => setActiveTab('receipt')}>
             <Receipt size={14} style={{ marginRight: 6 }} />Receipt
           </button>
@@ -133,6 +191,57 @@ export default function SettingsPage() {
           </div>
         )}
 
+        {user?.role === 'system_admin' && activeTab === 'branches' && (
+          <div className="card">
+            <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 className="card-title">Manage Branches</h2>
+              <button className="btn btn-primary" onClick={() => {
+                setEditingBranch(null);
+                setIsBranchModalOpen(true);
+              }}>
+                <Plus size={16} /> Add Branch
+              </button>
+            </div>
+            <div className="card-body">
+              <div className="table-responsive">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Branch Name</th>
+                      <th>Address</th>
+                      <th style={{ width: 100, textAlign: 'right' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {branches.map(b => (
+                      <tr key={b.id}>
+                        <td className="font-bold">{b.name}</td>
+                        <td className="text-muted">{b.address || '—'}</td>
+                        <td style={{ textAlign: 'right' }}>
+                          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                            <button className="btn btn-icon" onClick={() => {
+                              setEditingBranch(b);
+                              setIsBranchModalOpen(true);
+                            }}>
+                              <Edit2 size={16} />
+                            </button>
+                            <button className="btn btn-icon btn-danger" onClick={() => handleDeleteBranch(b.id, b.name)}>
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {branches.length === 0 && (
+                  <div className="empty-state">No branches configured yet</div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'tax' && (
           <div className="card">
             <div className="card-body">
@@ -175,6 +284,13 @@ export default function SettingsPage() {
           </div>
         )}
       </div>
+
+      <BranchForm 
+        isOpen={isBranchModalOpen}
+        onClose={() => setIsBranchModalOpen(false)}
+        onSave={handleSaveBranch}
+        branch={editingBranch}
+      />
     </>
   );
 }
