@@ -20,7 +20,7 @@ export default function SettingsPage() {
 
   const fetchBranches = async () => {
     try {
-      const data = await api.get('/api/branches');
+      const data = await api.get('/branches');
       setBranches(data);
     } catch (e) {
       console.error(e);
@@ -37,10 +37,10 @@ export default function SettingsPage() {
   const handleSaveBranch = async (branchData) => {
     try {
       if (editingBranch) {
-        await api.put(`/api/branches/${editingBranch.id}`, branchData);
+        await api.put(`/branches/${editingBranch.id}`, branchData);
         addToast('Branch updated successfully', 'success');
       } else {
-        await api.post('/api/branches', branchData);
+        await api.post('/branches', branchData);
         addToast('Branch created successfully', 'success');
       }
       fetchBranches();
@@ -53,7 +53,7 @@ export default function SettingsPage() {
   const handleDeleteBranch = async (id, name) => {
     if (!confirm(`Are you sure you want to permanently delete the ${name} branch?`)) return;
     try {
-      await api.del(`/api/branches/${id}`);
+      await api.del(`/branches/${id}`);
       addToast('Branch deleted successfully', 'success');
       fetchBranches();
     } catch (e) {
