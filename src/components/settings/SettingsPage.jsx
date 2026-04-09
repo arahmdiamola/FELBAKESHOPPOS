@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
-import api from '../../utils/api';
+import { api } from '../../utils/api';
 import Header from '../layout/Header';
 import { Save, RotateCcw, Store, Receipt, Percent, Database, MapPin, Edit2, Trash2, Plus } from 'lucide-react';
 import BranchForm from './BranchForm';
