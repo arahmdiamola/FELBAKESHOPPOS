@@ -58,7 +58,7 @@ export default function ProductsPage() {
     }
   };
 
-  const saveProduct = () => {
+  const saveProduct = async () => {
     if (localStorage.getItem('fel_active_branch') === 'all') {
       addToast('Please select a specific branch from the sidebar to add products', 'warning');
       return;
@@ -68,14 +68,19 @@ export default function ProductsPage() {
       return;
     }
     const data = { ...form, price: parseFloat(form.price), costPrice: parseFloat(form.costPrice) || 0, stock: parseInt(form.stock) || 0, reorderPoint: parseInt(form.reorderPoint) || 0 };
-    if (editing) {
-      updateProduct(editing, data);
-      addToast('Product updated', 'success');
-    } else {
-      addProduct({ ...data, id: uuidv4() });
-      addToast('Product added', 'success');
+    
+    try {
+      if (editing) {
+        await updateProduct(editing, data);
+        addToast('Product updated', 'success');
+      } else {
+        await addProduct({ ...data, id: uuidv4() });
+        addToast('Product added', 'success');
+      }
+      setShowForm(false);
+    } catch (e) {
+      addToast(e.message, 'error');
     }
-    setShowForm(false);
   };
 
   const handleDelete = (id) => {

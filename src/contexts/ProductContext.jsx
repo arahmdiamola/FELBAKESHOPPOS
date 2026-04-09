@@ -10,8 +10,10 @@ export function ProductProvider({ children }) {
   const fetchData = useCallback(async () => {
     try {
       const [p, c] = await Promise.all([api.get('/products'), api.get('/categories')]);
-      setProducts(p || []);
-      setCategories(c || []);
+      const sortedProducts = (p || []).sort((a, b) => a.name.localeCompare(b.name));
+      const sortedCategories = (c || []).sort((a, b) => a.name.localeCompare(b.name));
+      setProducts(sortedProducts);
+      setCategories(sortedCategories);
     } catch (e) {
       console.error(e);
     }
