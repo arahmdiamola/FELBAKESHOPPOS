@@ -72,8 +72,8 @@ export default function SettingsPage() {
     }
   };
 
-  const save = () => {
-    updateSettings(form);
+  const save = async () => {
+    await updateSettings(form);
     addToast('Settings saved!', 'success');
   };
 

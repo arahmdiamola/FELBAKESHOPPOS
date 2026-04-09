@@ -199,6 +199,21 @@ export async function initDb() {
       }
     }
 
+    // Seed Default Settings
+    const settingsCheck = await db.get("SELECT COUNT(*) as count FROM settings");
+    if (settingsCheck.count == 0) {
+      const defaultSettings = [
+        ['storeName', 'FEL Bakeshop'],
+        ['storeLogo', '/logo.png'],
+        ['storeAddress', 'Brgy. San Jose, Quezon City'],
+        ['storePhone', '0917-123-4567'],
+        ['receiptFooter', 'Thank you for choosing FEL Bakeshop! 🧁']
+      ];
+      for (const [key, value] of defaultSettings) {
+        await db.run("INSERT INTO settings (key, value) VALUES (?, ?)", [key, value]);
+      }
+    }
+
     console.log(`✅ Fully Seeded Postgres! Successfully injected 5 Branches, 7 Users, and ${pCount} Products.`);
   }
 
