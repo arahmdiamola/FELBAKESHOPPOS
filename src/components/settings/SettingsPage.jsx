@@ -8,7 +8,7 @@ import { Save, RotateCcw, Store, Receipt, Percent, Database, MapPin, Edit2, Tras
 import BranchForm from './BranchForm';
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
   const { settings, updateSettings, resetData } = useSettings();
   const { addToast } = useToast();
   const [form, setForm] = useState({ ...settings });
@@ -29,10 +29,10 @@ export default function SettingsPage() {
   };
 
   useEffect(() => {
-    if (user?.role === 'system_admin' && activeTab === 'branches') {
+    if (currentUser?.role === 'system_admin' && activeTab === 'branches') {
       fetchBranches();
     }
-  }, [user, activeTab]);
+  }, [currentUser, activeTab]);
 
   const handleSaveBranch = async (branchData) => {
     try {
@@ -112,7 +112,7 @@ export default function SettingsPage() {
             <Store size={18} /> Store Info
           </button>
           
-          {user?.role === 'system_admin' && (
+          {currentUser?.role === 'system_admin' && (
             <button className={`tab ${activeTab === 'branches' ? 'active' : ''}`} onClick={() => setActiveTab('branches')}>
               <MapPin size={18} /> Branches
             </button>
@@ -191,7 +191,7 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {user?.role === 'system_admin' && activeTab === 'branches' && (
+        {currentUser?.role === 'system_admin' && activeTab === 'branches' && (
           <div className="card">
             <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 className="card-title">Manage Branches</h2>
