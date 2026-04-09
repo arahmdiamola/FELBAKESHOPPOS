@@ -17,6 +17,7 @@ export async function initDb() {
       role TEXT NOT NULL,
       pin TEXT NOT NULL,
       branchId TEXT,
+      image TEXT,
       FOREIGN KEY (branchId) REFERENCES branches(id)
     );
 
