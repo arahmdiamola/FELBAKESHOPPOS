@@ -273,20 +273,26 @@ app.post('/api/reset', async (req, res) => {
   res.json({ success: true });
 });
 
-initDb().then(database => {
-  db = database;
+const PORT = process.env.PORT || 3001;
 
-  // Static Vite Frontend Serving for Production
-  const distPath = path.join(__dirname, '../dist');
-  app.use(express.static(distPath));
+// Static Vite Frontend Serving for Production
+const distPath = path.join(__dirname, '../dist');
+app.use(express.static(distPath));
 
-  // Catch-all to support React Router natively
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(distPath, 'index.html'));
+// Catch-all to support React Router natively
+app.get('*', (req, res) => {
+  res.sendFile(path.join(distPath, 'index.html'));
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`API Server running on port ${PORT}`);
+  
+  // Initialize Database asynchronously after port bind
+  initDb().then(database => {
+    db = database;
+    console.log("Database perfectly connected and synced!");
+  }).catch(err => {
+    console.error("CRITICAL DATABASE FAILURE:", err);
+    process.exit(1); // Force process shutdown so Render logs the error immediately
   });
-
-  const PORT = process.env.PORT || 3001;
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`API Server running on port ${PORT}`);
-  });
-}).catch(console.error);
+});
