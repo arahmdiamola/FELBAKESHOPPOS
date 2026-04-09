@@ -64,7 +64,7 @@ export default function UsersPage() {
     }
   };
 
-  const saveUser = () => {
+  const saveUser = async () => {
     if (!form.name.trim()) {
       addToast('Name is required', 'error');
       return;
