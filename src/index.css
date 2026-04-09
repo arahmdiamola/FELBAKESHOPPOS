@@ -1775,3 +1775,114 @@ td.primary {
     box-shadow: none;
   }
 }
+
+/* ---------- Mobile Responsive Overhaul ---------- */
+@media (max-width: 768px) {
+  .app-layout {
+    flex-direction: row; /* Keep sidebar on the left but minimized */
+  }
+
+  .sidebar {
+    width: var(--sidebar-collapsed-width) !important; /* Force collapse on mobile */
+  }
+  
+  .sidebar-brand-text, 
+  .sidebar-section-label,
+  .sidebar-link span,
+  .sidebar-user-info,
+  .sidebar-brand-sub {
+    display: none !important;
+  }
+
+  .sidebar-brand {
+    padding: 20px 0 !important;
+    justify-content: center !important;
+  }
+  .sidebar-brand-icon {
+    margin: 0 auto;
+  }
+
+  .page-content {
+    padding: 12px;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+  .header-actions .btn {
+    flex: 1;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    border: none; /* Let the swipe be seamless */
+    box-shadow: none;
+  }
+  .table {
+    min-width: 600px; /* Force minimum width to trigger swipe */
+  }
+
+  /* POS Register Mobile Split */
+  .pos-layout {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .pos-products {
+    flex: none;
+    overflow: visible;
+  }
+
+  .pos-products-header {
+    padding: 12px;
+  }
+
+  .pos-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .pos-product-card {
+    min-height: 140px;
+  }
+
+  .pos-cart {
+    width: 100%;
+    min-height: 80vh; /* Make Cart a tall chunk at the bottom */
+    border-left: none;
+    border-top: 4px solid var(--accent);
+    margin-top: 20px;
+  }
+
+  .modal {
+    width: 95%;
+    max-height: 90vh;
+    padding: 0;
+  }
+  .modal-body {
+    padding: 16px;
+  }
+
+  .filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filter-bar .search-bar, .filter-bar .select {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+}
