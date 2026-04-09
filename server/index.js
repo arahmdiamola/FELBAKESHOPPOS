@@ -23,7 +23,10 @@ let db;
 const branchFilter = (req) => {
   const branchId = req.headers['x-branch-id'];
   const role = req.headers['x-user-role'];
-  
+
+  // Debug log to monitor visibility
+  console.log(`[ACL] Role: ${role}, BranchHeader: ${branchId}`);
+
   if (role === 'system_admin' && (!branchId || branchId === 'all')) {
     return "1=1"; // Global access only for system admins
   }
@@ -117,7 +120,7 @@ app.post('/api/users', async (req, res) => {
   const { id, name, role, pin, branchId, image } = req.body;
   try {
     await db.run(
-      "INSERT INTO users (id, name, role, pin, branchId, image) VALUES (?, ?, ?, ?, ?, ?)", 
+      "INSERT INTO users (id, name, role, pin, branchId, image) VALUES (?, ?, ?, ?, ?, ?)",
       [id, name, role, pin, branchId || null, image]
     );
     res.json({ id });
@@ -129,7 +132,7 @@ app.put('/api/users/:id', async (req, res) => {
   const { name, role, branchId, image } = req.body;
   try {
     await db.run(
-      "UPDATE users SET name = ?, role = ?, branchId = ?, image = ? WHERE id = ?", 
+      "UPDATE users SET name = ?, role = ?, branchId = ?, image = ? WHERE id = ?",
       [name, role, branchId || null, image, req.params.id]
     );
     res.json({ success: true });
@@ -178,7 +181,7 @@ app.post('/api/products', async (req, res) => {
 app.post('/api/products/batch', async (req, res) => {
   const { products } = req.body;
   const branchId = req.headers['x-branch-id'];
-  
+
   if (!products || !Array.isArray(products)) {
     return res.status(400).json({ error: 'Invalid batch format' });
   }
@@ -371,7 +374,7 @@ app.use((req, res) => {
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`API Server running on port ${PORT}`);
-  
+
   // Initialize Database asynchronously after port bind
   initDb().then(database => {
     db = database;
