@@ -321,8 +321,8 @@ app.post('/api/preorders', async (req, res) => {
   const p = req.body;
   const branchId = req.headers['x-branch-id'] || p.branchId;
   await db.run(
-    "INSERT INTO preorders (id, branchId, customerName, customerPhone, items, totalPrice, deposit, status, dueDate, notes, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    [p.id, branchId, p.customerName, p.customerPhone, JSON.stringify(p.items), p.totalPrice, p.deposit, p.status, p.dueDate, p.notes, p.createdAt]
+    "INSERT INTO preorders (id, branchId, customerName, customerPhone, items, totalPrice, deposit, status, dueDate, notes, quantity, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    [p.id, branchId, p.customerName, p.customerPhone, JSON.stringify(p.items), p.totalPrice, p.deposit, p.status, p.dueDate, p.notes, p.quantity || 1, p.createdAt]
   );
   res.json({ success: true });
 });

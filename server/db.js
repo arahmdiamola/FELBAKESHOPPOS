@@ -112,6 +112,7 @@ export async function initDb() {
       status TEXT DEFAULT 'pending',
       dueDate TEXT NOT NULL,
       notes TEXT,
+      quantity INTEGER DEFAULT 1,
       createdAt TEXT NOT NULL,
       FOREIGN KEY (branchId) REFERENCES branches(id)
     );
@@ -128,6 +129,7 @@ export async function initDb() {
     await db.run("ALTER TABLE products ADD COLUMN IF NOT EXISTS image TEXT");
     await db.run("ALTER TABLE products ADD COLUMN IF NOT EXISTS isTopSelling INTEGER DEFAULT 0");
     await db.run("ALTER TABLE products ADD COLUMN IF NOT EXISTS costPrice REAL DEFAULT 0");
+    await db.run("ALTER TABLE preorders ADD COLUMN IF NOT EXISTS quantity INTEGER DEFAULT 1");
   } catch (err) {
     console.log("Migration info (safe to ignore if columns exist):", err.message);
   }

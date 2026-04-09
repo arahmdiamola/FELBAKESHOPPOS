@@ -40,7 +40,12 @@ const camelize = (obj) => {
       .replace('cashierid', 'cashierId')
       .replace('cashiername', 'cashierName')
       .replace('transactionid', 'transactionId')
-      .replace('productid', 'productId');
+      .replace('productid', 'productId')
+      .replace('totalprice', 'totalPrice')
+      .replace('duedate', 'dueDate')
+      .replace('customername', 'customerName')
+      .replace('customerphone', 'customerPhone')
+      .replace('createdat', 'createdAt');
     newObj[camelKey] = obj[key];
   }
   return newObj;
