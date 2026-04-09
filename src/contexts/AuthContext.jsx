@@ -31,6 +31,11 @@ export function AuthProvider({ children }) {
       if (user) {
         setCurrentUser(user);
         localStorage.setItem('fel_currentUser', JSON.stringify(user));
+        if (user.branchId) {
+          localStorage.setItem('fel_active_branch', user.branchId);
+        } else if (!localStorage.getItem('fel_active_branch')) {
+          localStorage.setItem('fel_active_branch', 'all');
+        }
         return true;
       }
     } catch (e) {
