@@ -112,7 +112,7 @@ export default function Sidebar() {
           >
             <option value="all" style={{ color: '#000' }}>🌐 All Branches</option>
             {branches.map(b => (
-              <option key={b.id} value={b.id} style={{ color: '#000' }}>🏢 {b.name}</option>
+              <option key={b.id} value={b.id} style={{ color: '#000' }}>🏢 {b.name} {b.address ? `- ${b.address}` : ''}</option>
             ))}
           </select>
         </div>
