@@ -85,6 +85,7 @@ export default function BatchUploadModal({ isOpen, onClose, onUpload, categories
             unit: row.unit || 'pc',
             reorderPoint: parseInt(row.reorderpoint || row.reorder_point) || 0,
             emoji: row.emoji || '📦',
+            isTopSelling: parseInt(row.istopselling || row.is_top_selling) || 0,
             _rawCategoryString: row.category || 'N/A' // For preview only
           };
         }).filter(Boolean);

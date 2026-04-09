@@ -149,11 +149,11 @@ app.get('/api/products', async (req, res) => {
   res.json(products);
 });
 app.post('/api/products', async (req, res) => {
-  const { id, name, categoryId, price, costPrice, stock, unit, reorderPoint, emoji, image } = req.body;
+  const { id, name, categoryId, price, costPrice, stock, unit, reorderPoint, emoji, image, isTopSelling } = req.body;
   const branchId = req.headers['x-branch-id'] || req.body.branchId;
   await db.run(
-    "INSERT INTO products (id, branchId, name, categoryId, price, costPrice, stock, unit, reorderPoint, emoji, image) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    [id, branchId, name, categoryId, price, costPrice, stock, unit, reorderPoint, emoji, image]
+    "INSERT INTO products (id, branchId, name, categoryId, price, costPrice, stock, unit, reorderPoint, emoji, image, isTopSelling) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    [id, branchId, name, categoryId, price, costPrice, stock, unit, reorderPoint, emoji, image, isTopSelling || 0]
   );
   res.json({ success: true });
 });
@@ -168,8 +168,8 @@ app.post('/api/products/batch', async (req, res) => {
   try {
     for (const p of products) {
       await db.run(
-        "INSERT INTO products (id, branchId, name, categoryId, price, costPrice, stock, unit, reorderPoint, emoji, image) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        [p.id, branchId, p.name, p.categoryId, p.price, p.costPrice, p.stock, p.unit, p.reorderPoint, p.emoji, p.image || null]
+        "INSERT INTO products (id, branchId, name, categoryId, price, costPrice, stock, unit, reorderPoint, emoji, image, isTopSelling) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [p.id, branchId, p.name, p.categoryId, p.price, p.costPrice, p.stock, p.unit, p.reorderPoint, p.emoji, p.image || null, p.isTopSelling || 0]
       );
     }
     res.json({ success: true, count: products.length });
@@ -180,8 +180,8 @@ app.post('/api/products/batch', async (req, res) => {
 app.put('/api/products/:id', async (req, res) => {
   const p = req.body;
   await db.run(
-    "UPDATE products SET name=?, categoryId=?, price=?, costPrice=?, stock=?, unit=?, reorderPoint=?, emoji=?, image=? WHERE id=?",
-    [p.name, p.categoryId, p.price, p.costPrice, p.stock, p.unit, p.reorderPoint, p.emoji, p.image, req.params.id]
+    "UPDATE products SET name=?, categoryId=?, price=?, costPrice=?, stock=?, unit=?, reorderPoint=?, emoji=?, image=?, isTopSelling=? WHERE id=?",
+    [p.name, p.categoryId, p.price, p.costPrice, p.stock, p.unit, p.reorderPoint, p.emoji, p.image, p.isTopSelling || 0, req.params.id]
   );
   res.json({ success: true });
 });

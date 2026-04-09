@@ -38,6 +38,7 @@ export async function initDb() {
       reorderPoint INTEGER DEFAULT 0,
       emoji TEXT,
       image TEXT,
+      isTopSelling INTEGER DEFAULT 0,
       FOREIGN KEY (branchId) REFERENCES branches(id)
     );
 
@@ -187,9 +188,11 @@ export async function initDb() {
     let pCount = 0;
     for (const b of branches) {
       for (const p of productData) {
+        // Randomly assign top selling status (1=Best Seller, 2=Hot Item, 3=Popular, 0=Normal)
+        const isTopSelling = Math.random() > 0.8 ? Math.floor(Math.random() * 3) + 1 : 0;
         await db.run(
-          "INSERT INTO products (id, branchId, name, categoryId, price, costPrice, stock, reorderPoint, emoji) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-          [uuidv4(), b.id, p.name, p.cat, p.p, p.c, 50, 10, p.e]
+          "INSERT INTO products (id, branchId, name, categoryId, price, costPrice, stock, reorderPoint, emoji, isTopSelling) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          [uuidv4(), b.id, p.name, p.cat, p.p, p.c, 50, 10, p.e, isTopSelling]
         );
         pCount++;
       }

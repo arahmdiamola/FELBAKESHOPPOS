@@ -8,7 +8,7 @@ import Header from '../layout/Header';
 import Modal from '../shared/Modal';
 import BatchUploadModal from './BatchUploadModal';
 
-const emptyProduct = { name: '', categoryId: '', price: '', costPrice: '', stock: '', unit: 'pc', reorderPoint: '', emoji: '🍞', image: '' };
+const emptyProduct = { name: '', categoryId: '', price: '', costPrice: '', stock: '', unit: 'pc', reorderPoint: '', emoji: '🍞', image: '', isTopSelling: 0 };
 
 export default function ProductsPage() {
   const { products, categories, addProduct, addProductsBatch, updateProduct, deleteProduct, addCategory, deleteCategory } = useProducts();
@@ -42,6 +42,7 @@ export default function ProductsPage() {
       costPrice: p.costPrice != null ? String(p.costPrice) : '', 
       stock: p.stock != null ? String(p.stock) : '', 
       reorderPoint: p.reorderPoint != null ? String(p.reorderPoint) : '', 
+      isTopSelling: p.isTopSelling != null ? Number(p.isTopSelling) : 0,
       image: p.image || '' 
     }); 
     setShowForm(true); 
@@ -67,7 +68,14 @@ export default function ProductsPage() {
       addToast('Please fill required fields', 'error');
       return;
     }
-    const data = { ...form, price: parseFloat(form.price), costPrice: parseFloat(form.costPrice) || 0, stock: parseInt(form.stock) || 0, reorderPoint: parseInt(form.reorderPoint) || 0 };
+    const data = { 
+      ...form, 
+      price: parseFloat(form.price), 
+      costPrice: parseFloat(form.costPrice) || 0, 
+      stock: parseInt(form.stock) || 0, 
+      reorderPoint: parseInt(form.reorderPoint) || 0,
+      isTopSelling: Number(form.isTopSelling) || 0
+    };
     
     try {
       if (editing) {
@@ -220,6 +228,15 @@ export default function ProductsPage() {
           <div className="input-group">
             <label>Emoji (Icon)</label>
             <input className="input" value={form.emoji} onChange={e => setForm(prev => ({ ...prev, emoji: e.target.value }))} style={{ fontSize: '1.5rem', textAlign: 'center' }} />
+          </div>
+          <div className="input-group">
+            <label>Popularity Badge</label>
+            <select className="select" value={form.isTopSelling} onChange={e => setForm(prev => ({ ...prev, isTopSelling: Number(e.target.value) }))}>
+              <option value="0">None</option>
+              <option value="1">👑 #1 Best Seller</option>
+              <option value="2">🔥 Hot Item</option>
+              <option value="3">⭐ Popular</option>
+            </select>
           </div>
           <div className="input-group" style={{ gridColumn: '1 / -1' }}>
             <label>Product Image (Optional)</label>
