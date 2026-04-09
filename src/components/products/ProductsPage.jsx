@@ -34,7 +34,18 @@ export default function ProductsPage() {
   }, [products, filterCat, search]);
 
   const openAdd = () => { setEditing(null); setForm(emptyProduct); setShowForm(true); };
-  const openEdit = (p) => { setEditing(p.id); setForm({ ...p, price: String(p.price), costPrice: String(p.costPrice), stock: String(p.stock), reorderPoint: String(p.reorderPoint), image: p.image || '' }); setShowForm(true); };
+  const openEdit = (p) => { 
+    setEditing(p.id); 
+    setForm({ 
+      ...p, 
+      price: p.price != null ? String(p.price) : '', 
+      costPrice: p.costPrice != null ? String(p.costPrice) : '', 
+      stock: p.stock != null ? String(p.stock) : '', 
+      reorderPoint: p.reorderPoint != null ? String(p.reorderPoint) : '', 
+      image: p.image || '' 
+    }); 
+    setShowForm(true); 
+  };
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
