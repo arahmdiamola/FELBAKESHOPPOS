@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { api } from '../utils/api';
 import { useAuth } from './AuthContext';
+import { idb } from '../utils/idb';
 
 const ProductContext = createContext();
 
@@ -15,10 +16,30 @@ export function ProductProvider({ children }) {
       setCategories([]);
       return;
     }
+
+    // 1. IMPROVED: Instant Load from Cache
+    try {
+      const [cachedP, cachedC] = await Promise.all([
+        idb.getAll('cache_products'),
+        idb.getAll('cache_categories')
+      ]);
+
+      if (cachedP?.length || cachedC?.length) {
+        console.log(`[Performance] Instant UI from Cache (${cachedP.length} products)`);
+        setProducts(cachedP.sort((a, b) => a.name.localeCompare(b.name)));
+        setCategories(cachedC.sort((a, b) => a.name.localeCompare(b.name)));
+      }
+    } catch (e) {
+      console.warn('[Performance] Cache pre-load failed', e);
+    }
+
+    // 2. Background Revalidation (Network)
     try {
       const [p, c] = await Promise.all([api.get('/products'), api.get('/categories')]);
       const sortedProducts = (p || []).sort((a, b) => a.name.localeCompare(b.name));
       const sortedCategories = (c || []).sort((a, b) => a.name.localeCompare(b.name));
+      
+      // Update state without flashing if data changed
       setProducts(sortedProducts);
       setCategories(sortedCategories);
     } catch (e) {

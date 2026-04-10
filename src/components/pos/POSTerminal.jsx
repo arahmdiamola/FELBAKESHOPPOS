@@ -243,7 +243,7 @@ export default function POSTerminal() {
               {product.isTopSelling === 3 && <div className="top-badge">⭐ Popular</div>}
               
               {product.image ? (
-                <img src={product.image} alt={product.name} style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 'var(--radius-sm)', marginBottom: 4 }} />
+                <img src={product.image} alt={product.name} loading="lazy" style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 'var(--radius-sm)', marginBottom: 4 }} />
               ) : (
                 <div className="product-emoji">{product.emoji}</div>
               )}

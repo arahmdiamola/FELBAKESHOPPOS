@@ -74,14 +74,45 @@ export default function ProductsPage() {
     setShowForm(true); 
   };
 
-  const handleImageUpload = (e) => {
+  const compressImage = (file, maxWidth = 400) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.8)); // 80% quality JPEG
+        };
+      };
+    });
+  };
+
+  const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setForm(p => ({ ...p, image: reader.result }));
-      };
-      reader.readAsDataURL(file);
+      setIsProcessing(true);
+      try {
+        const compressed = await compressImage(file);
+        setForm(p => ({ ...p, image: compressed }));
+      } catch (err) {
+        addToast('Failed to process image', 'error');
+      } finally {
+        setIsProcessing(false);
+      }
     }
   };
 
@@ -191,7 +222,7 @@ export default function ProductsPage() {
                 <tr key={p.id}>
                   <td style={{ fontSize: '1.3rem', width: 40, textAlign: 'center' }}>
                     {p.image ? (
-                      <img src={p.image} alt={p.name} style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: 'var(--radius-sm)' }} />
+                      <img src={p.image} alt={p.name} loading="lazy" style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: 'var(--radius-sm)' }} />
                     ) : p.emoji}
                   </td>
                   <td className="primary">{p.name}</td>
