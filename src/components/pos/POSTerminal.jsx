@@ -228,37 +228,51 @@ export default function POSTerminal() {
               autoFocus
             />
           </div>
-          <div className="pos-categories">
-            <button className={`pos-category-btn ${!selectedCategory ? 'active' : ''}`} onClick={() => setSelectedCategory(null)}>All</button>
+          <div className="pos-categories" style={{ padding: '4px 0 16px', overflowX: 'auto', gap: 10 }}>
+            <button 
+                className={`category-pill ${!selectedCategory ? 'active' : ''}`} 
+                onClick={() => setSelectedCategory(null)}
+            >
+                All
+            </button>
             {categories.map(cat => (
               <button
                 key={cat.id}
-                className={`pos-category-btn ${selectedCategory === cat.id ? 'active' : ''}`}
+                className={`category-pill ${selectedCategory === cat.id ? 'active' : ''}`}
                 onClick={() => setSelectedCategory(cat.id)}
               >
-                <span>{cat.emoji}</span>
+                <span style={{ marginRight: 6 }}>{cat.emoji}</span>
                 {cat.name}
               </button>
             ))}
           </div>
         </div>
 
-        <div className="pos-grid">
+        <div className="pos-grid" style={{ padding: '4px' }}>
           {filteredProducts.map(product => (
-            <div key={product.id} className={`pos-product-card ${product.isTopSelling ? 'top-seller' : ''}`} onClick={() => addToCart(product)} id={`product-${product.id}`}>
-              {product.isTopSelling === 1 && <div className="top-badge">👑 #1 Best Seller</div>}
-              {product.isTopSelling === 2 && <div className="top-badge">🔥 Hot Item</div>}
-              {product.isTopSelling === 3 && <div className="top-badge">⭐ Popular</div>}
+            <div 
+                key={product.id} 
+                className={`product-card-ios ${product.isTopSelling ? 'top-seller-ios' : ''}`} 
+                onClick={() => addToCart(product)} 
+                id={`product-${product.id}`}
+                style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '20px 12px' }}
+            >
+              {product.isTopSelling === 1 && <div className="badge badge-accent" style={{ position: 'absolute', top: 12, right: 12 }}>🏆 #1</div>}
               
-              {product.image ? (
-                <img src={product.image} alt={product.name} loading="lazy" style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 'var(--radius-sm)', marginBottom: 4 }} />
-              ) : (
-                <div className="product-emoji">{product.emoji}</div>
-              )}
-              <div className="product-name">{product.name}</div>
-              <div className="product-price">{formatCurrency(product.price)}</div>
-              <div className={`product-stock ${product.stock <= product.reorderPoint ? 'low' : ''}`}>
-                {product.stock} {product.unit}
+              <div style={{ position: 'relative', marginBottom: 12 }}>
+                {product.image ? (
+                  <img src={product.image} alt={product.name} loading="lazy" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: '22%', boxShadow: '0 8px 16px rgba(0,0,0,0.1)' }} />
+                ) : (
+                  <div className="product-emoji" style={{ fontSize: '3rem', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.1))' }}>{product.emoji}</div>
+                )}
+              </div>
+              
+              <div className="product-name" style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)', marginBottom: 2 }}>{product.name}</div>
+              <div className="product-price" style={{ fontWeight: 800, color: 'var(--accent)', fontSize: '1rem' }}>{formatCurrency(product.price)}</div>
+              <div style={{ marginTop: 6 }}>
+                <span className={`badge ${product.stock <= product.reorderPoint ? 'badge-red' : 'badge-gray'}`} style={{ fontSize: '0.7rem' }}>
+                    {product.stock} {product.unit}
+                </span>
               </div>
             </div>
           ))}

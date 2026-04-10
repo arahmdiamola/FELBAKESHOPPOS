@@ -103,14 +103,18 @@ export default function DashboardPage() {
     return products.reduce((sum, p) => sum + (p.costPrice * p.stock), 0);
   }, [products]);
 
-  const COLORS = ['#D4763C', '#5B9BD5', '#4CAF50', '#F5A623', '#9C27B0', '#E74C3C'];
+  const COLORS = ['#007AFF', '#34C759', '#FF9500', '#FF3B30', '#5856D6', '#AF52DE'];
 
   const tooltipStyle = {
-    backgroundColor: '#FFFCF9',
-    border: '1px solid #E8D5C4',
-    borderRadius: '8px',
-    color: '#2C1810',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    backdropFilter: 'blur(10px)',
+    WebkitBackdropFilter: 'blur(10px)',
+    border: '1px solid rgba(0, 0, 0, 0.05)',
+    borderRadius: '14px',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+    color: '#1C1C1E',
     fontSize: '13px',
+    fontWeight: '600',
   };
 
   return (
