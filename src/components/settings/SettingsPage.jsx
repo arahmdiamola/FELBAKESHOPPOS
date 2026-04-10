@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../utils/api';
 import Header from '../layout/Header';
 import Modal from '../shared/Modal';
-import { Save, RotateCcw, Store, Receipt, Percent, Database, MapPin, Edit2, Trash2, Plus, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Save, RotateCcw, Store, Receipt, Percent, Database, MapPin, Edit2, Trash2, Plus, AlertTriangle, CheckCircle, Smartphone } from 'lucide-react';
 import BranchForm from './BranchForm';
 
 export default function SettingsPage() {
@@ -270,6 +270,26 @@ export default function SettingsPage() {
           <div className="card">
             <div className="card-body">
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div className="flex items-center justify-between" style={{ padding: 16, background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+                  <div style={{ flex: 1 }}>
+                    <div className="font-bold flex items-center gap-2">
+                       <Smartphone size={18} className="text-accent" />
+                       Native Mobile App Experience
+                    </div>
+                    <div className="text-sm text-muted mt-1">Hide the browser address bar and run FEL POS in full-screen.</div>
+                    <div className="grid grid-cols-2 gap-4 mt-3">
+                       <div className="p-2 border rounded bg-white text-xs">
+                          <div className="font-bold mb-1">iPhone / iPad</div>
+                          Tap the <span className="font-bold">Share</span> icon (square with arrow) and select <span className="font-bold">"Add to Home Screen"</span>.
+                       </div>
+                       <div className="p-2 border rounded bg-white text-xs">
+                          <div className="font-bold mb-1">Android / Tablet</div>
+                          Tap the <span className="font-bold">3-dots</span> menu or <span className="font-bold">"Install App"</span> prompt in your browser.
+                       </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="flex items-center justify-between" style={{ padding: 16, background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
                   <div>
                     <div className="font-bold">System Backup</div>
