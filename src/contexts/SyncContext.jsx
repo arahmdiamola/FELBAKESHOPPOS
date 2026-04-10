@@ -76,8 +76,18 @@ export function SyncProvider({ children }) {
         await idb.delete('sync_queue', item.id);
       } catch (e) {
         console.error(`[Sync] Failed to sync item ${item.id}:`, e);
-        // If it's a 4xx error, it might be invalid data, we might skip it or keep it
-        // For now, we keep it in queue to retry
+        
+        // --- SAFETY BYPASS: Don't let broken data block the whole pipe ---
+        const errorMsg = e.message || '';
+        const isFatalDataError = errorMsg.includes('400') || errorMsg.includes('404') || errorMsg.includes('403');
+        
+        if (isFatalDataError) {
+          console.warn(`[Sync] Fatal data error detected for ${item.id}. Skipping to unblock queue...`, e);
+          await idb.delete('sync_queue', item.id); // Remove "bad" item to unblock the rest
+          continue; // Move to next item
+        }
+
+        // Connectivity/Server issues: stop and retry later
         break; 
       }
     }

@@ -346,6 +346,16 @@ app.get('/api/preorders', async (req, res) => {
   }
   res.json(preorders);
 });
+app.get('/api/preorders/:id', async (req, res) => {
+  try {
+    const preorder = await db.get("SELECT * FROM preorders WHERE id = ?", [req.params.id]);
+    if (!preorder) return res.status(404).json({ error: 'Preorder not found' });
+    preorder.items = JSON.parse(preorder.items);
+    res.json(preorder);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 app.post('/api/preorders', async (req, res) => {
   try {
     const p = req.body;
