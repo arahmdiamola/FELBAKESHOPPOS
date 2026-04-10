@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { api } from '../utils/api';
+import { idb } from '../utils/idb';
 
 const SettingsContext = createContext();
 
@@ -32,18 +33,37 @@ export function SettingsProvider({ children }) {
     setSettings(prev => ({ ...prev, ...updates }));
   };
 
-  const resetData = async () => {
-    if (confirm('Are you sure you want to completely clear the entire database?')) {
-        // Aggressive reset: Both Cloud and Local Device
-        await api.post('/reset', {});
-        await idb.clearAllData();
-        
-        // Clear login and settings but keep basic keys if needed
-        Object.keys(localStorage).forEach(key => {
-            if (key.startsWith('fel_')) localStorage.removeItem(key);
-        });
+  const resetData = async (targets) => {
+    if (!targets || targets.length === 0) return;
 
-        window.location.href = '/login';
+    try {
+        // 1. Wipe Cloud
+        await api.post('/reset', { targets });
+        
+        // 2. Wipe Local Cache for selected items
+        const storeMap = {
+          'transactions': ['cache_transactions'],
+          'products': ['cache_products', 'cache_categories'],
+          'customers': ['cache_customers'],
+          'expenses': [],
+          'preorders': ['cache_preorders']
+        };
+
+        for (const t of targets) {
+          const stores = storeMap[t] || [];
+          for (const s of stores) {
+            await idb.clear(s);
+          }
+        }
+        
+        // Success - clear local storage keys that might hold stale cached counts
+        // but DO NOT clear fel_currentUser to stay logged in
+        localStorage.removeItem('fel_active_branch'); // Force re-selection/refresh
+        
+        window.location.reload(); // Refresh to clear context states
+    } catch (err) {
+        console.error("Reset Failed:", err);
+        throw err;
     }
   };
 

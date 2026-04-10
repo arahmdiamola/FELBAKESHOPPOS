@@ -4,7 +4,8 @@ import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../utils/api';
 import Header from '../layout/Header';
-import { Save, RotateCcw, Store, Receipt, Percent, Database, MapPin, Edit2, Trash2, Plus } from 'lucide-react';
+import Modal from '../shared/Modal';
+import { Save, RotateCcw, Store, Receipt, Percent, Database, MapPin, Edit2, Trash2, Plus, AlertTriangle, CheckCircle } from 'lucide-react';
 import BranchForm from './BranchForm';
 
 export default function SettingsPage() {
@@ -17,6 +18,17 @@ export default function SettingsPage() {
   const [branches, setBranches] = useState([]);
   const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
   const [editingBranch, setEditingBranch] = useState(null);
+
+  // Selective Reset State
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [resetTargets, setResetTargets] = useState({
+    transactions: true,
+    products: false,
+    customers: false,
+    expenses: true,
+    preorders: false
+  });
+  const [isResetting, setIsResetting] = useState(false);
 
   const fetchBranches = async () => {
     try {
@@ -77,28 +89,25 @@ export default function SettingsPage() {
     addToast('Settings saved!', 'success');
   };
 
-  const handleReset = () => {
-    if (confirm('⚠️ This will clear ALL data and reset the app. Are you sure?')) {
-      resetData();
+  const handlePerformReset = async () => {
+    const targets = Object.keys(resetTargets).filter(k => resetTargets[k]);
+    if (targets.length === 0) {
+      addToast('Please select at least one category to reset', 'error');
+      return;
     }
-  };
 
-  const handleExport = () => {
-    const data = {};
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key?.startsWith('fel_')) {
-        data[key] = JSON.parse(localStorage.getItem(key));
-      }
+    if (!confirm(`CAUTION: You are about to permanently delete ${targets.join(', ')}. This cannot be undone. Proceed?`)) return;
+
+    setIsResetting(true);
+    try {
+      await resetData(targets);
+      addToast('System reset successfully', 'success');
+      setIsResetModalOpen(false);
+    } catch (e) {
+      addToast(e.message || 'Reset failed', 'error');
+    } finally {
+      setIsResetting(false);
     }
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `fel-bakeshop-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    addToast('Data exported successfully', 'success');
   };
 
   return (
@@ -273,16 +282,16 @@ export default function SettingsPage() {
 
                 <div className="flex items-center justify-between" style={{ padding: 16, background: 'rgba(231, 76, 60, 0.05)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(231, 76, 60, 0.1)' }}>
                   <div>
-                    <div className="font-bold" style={{ color: 'var(--danger)' }}>Aggressive System Reset</div>
-                    <div className="text-sm text-muted">Wipe EVERYTHING (Cloud + Local Device). Required for fresh branch setup.</div>
+                    <div className="font-bold" style={{ color: 'var(--danger)' }}>Selective System Reset</div>
+                    <div className="text-sm text-muted">Cautiously wipe specific categories. Your user accounts are safe.</div>
                   </div>
-                  <button className="btn btn-danger" onClick={handleReset}>
-                    <RotateCcw size={16} /> Wipe All Data
+                  <button className="btn btn-danger" onClick={() => setIsResetModalOpen(true)}>
+                    <RotateCcw size={16} /> Open Reset Tool
                   </button>
                 </div>
 
                 <div style={{ marginTop: 20, padding: 16, borderLeft: '4px solid #F1C40F', background: 'rgba(241, 196, 15, 0.05)', fontSize: '14px' }}>
-                  <strong>Note:</strong> Resetting data is permanent. We recommend performing a **System Backup** first. After resetting, you will be automatically logged out.
+                  <strong>Note:</strong> Wiping data is permanent. User accounts (logins) and branch setups are protected from this tool for your safety.
                 </div>
               </div>
             </div>
@@ -296,6 +305,77 @@ export default function SettingsPage() {
         onSave={handleSaveBranch}
         branch={editingBranch}
       />
+
+      <Modal 
+        isOpen={isResetModalOpen} 
+        onClose={() => !isResetting && setIsResetModalOpen(false)} 
+        title="System Reset Control Panel"
+        footer={
+          <div className="flex gap-2 justify-end w-full">
+            <button className="btn btn-secondary" onClick={() => setIsResetModalOpen(false)} disabled={isResetting}>Cancel</button>
+            <button className="btn btn-danger" onClick={handlePerformReset} disabled={isResetting}>
+              {isResetting ? 'Resetting...' : 'Permanently Delete Selected'}
+            </button>
+          </div>
+        }
+      >
+        <div style={{ padding: '4px 0' }}>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', background: 'rgba(231, 76, 60, 0.08)', padding: 12, borderRadius: 8, marginBottom: 20, border: '1px solid rgba(231, 76, 60, 0.2)' }}>
+            <AlertTriangle className="text-red-500" style={{ flexShrink: 0, marginTop: 2 }} />
+            <div style={{ fontSize: 13, lineHeight: 1.4 }}>
+              <span className="font-bold" style={{ color: 'var(--danger)' }}>CRITICAL ACTION:</span> Selecting these categories based on your needs. This will wipe all data from both the Cloud and this Device.
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <label className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors" style={{ margin: 0 }}>
+              <input type="checkbox" className="checkbox" checked={resetTargets.transactions} onChange={e => setResetTargets(p => ({ ...p, transactions: e.target.checked }))} />
+              <div>
+                <div className="font-bold text-sm">Sales & Transactions</div>
+                <div className="text-xs text-muted">Wipes all ledger entries, receipts, and revenue data.</div>
+              </div>
+            </label>
+
+            <label className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors" style={{ margin: 0 }}>
+              <input type="checkbox" className="checkbox" checked={resetTargets.products} onChange={e => setResetTargets(p => ({ ...p, products: e.target.checked }))} />
+              <div>
+                <div className="font-bold text-sm">Inventory & Products</div>
+                <div className="text-xs text-muted">Wipes all cakes, breads, and categories.</div>
+              </div>
+            </label>
+
+            <label className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors" style={{ margin: 0 }}>
+              <input type="checkbox" className="checkbox" checked={resetTargets.customers} onChange={e => setResetTargets(p => ({ ...p, customers: e.target.checked }))} />
+              <div>
+                <div className="font-bold text-sm">Customer Profiles</div>
+                <div className="text-xs text-muted">Wipes customer names, balances, and history.</div>
+              </div>
+            </label>
+
+            <label className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors" style={{ margin: 0 }}>
+              <input type="checkbox" className="checkbox" checked={resetTargets.expenses} onChange={e => setResetTargets(p => ({ ...p, expenses: e.target.checked }))} />
+              <div>
+                <div className="font-bold text-sm">Expenses</div>
+                <div className="text-xs text-muted">Wipes all expenditure records.</div>
+              </div>
+            </label>
+
+            <label className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors" style={{ margin: 0 }}>
+              <input type="checkbox" className="checkbox" checked={resetTargets.preorders} onChange={e => setResetTargets(p => ({ ...p, preorders: e.target.checked }))} />
+              <div>
+                <div className="font-bold text-sm">Pre-orders</div>
+                <div className="text-xs text-muted">Wipes all active and pending advance orders.</div>
+              </div>
+            </label>
+          </div>
+
+          <div style={{ marginTop: 20, textAlign: 'center' }}>
+            <div className="text-xs font-bold flex items-center justify-center gap-2" style={{ color: 'var(--success)' }}>
+              <CheckCircle size={14} /> User Accounts & Branches are protected and will NOT be deleted.
+            </div>
+          </div>
+        </div>
+      </Modal>
     </>
   );
 }

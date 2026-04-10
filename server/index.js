@@ -359,14 +359,50 @@ app.post('/api/settings', async (req, res) => {
   res.json({ success: true });
 });
 
-app.post('/api/reset', async (req, res) => {
-  await db.run("DELETE FROM transactions");
-  await db.run("DELETE FROM transaction_items");
-  await db.run("DELETE FROM products");
-  await db.run("DELETE FROM customers");
-  await db.run("DELETE FROM expenses");
-  await db.run("DELETE FROM preorders");
-  res.json({ success: true });
+app.post('/api/reset', requireSystemAdmin, async (req, res) => {
+  const { targets } = req.body;
+  
+  try {
+    if (!targets || !Array.isArray(targets) || targets.length === 0) {
+      return res.status(400).json({ error: 'No reset categories selected' });
+    }
+
+    if (targets.includes('transactions')) {
+      await db.run("DELETE FROM transactions");
+      await db.run("DELETE FROM transaction_items");
+      console.log("[Reset] Wiped Transactions");
+    }
+    
+    if (targets.includes('products')) {
+      await db.run("DELETE FROM products");
+      await db.run("DELETE FROM categories");
+      console.log("[Reset] Wiped Inventory & Categories");
+    }
+    
+    if (targets.includes('customers')) {
+      await db.run("DELETE FROM customers");
+      console.log("[Reset] Wiped Customers");
+    }
+    
+    if (targets.includes('expenses')) {
+      await db.run("DELETE FROM expenses");
+      console.log("[Reset] Wiped Expenses");
+    }
+    
+    if (targets.includes('preorders')) {
+      await db.run("DELETE FROM preorders");
+      console.log("[Reset] Wiped Pre-orders");
+    }
+
+    // Special: Clear system sync state if everything is wiped
+    if (targets.length >= 5) {
+       await db.run("DELETE FROM settings WHERE key LIKE 'sync_%'");
+    }
+
+    res.json({ success: true, message: `Successfully wiped: ${targets.join(', ')}` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.get('/api/backup-full', async (req, res) => {
