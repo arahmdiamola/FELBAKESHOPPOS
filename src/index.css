@@ -1,4 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+/* ========================================
+   FEL Bakeshop POS — Design System
+   Warm, elegant, fresh bakery theme
+   ======================================== */
 @import './styles/connectivity.css';
 
 /* ---------- CSS Reset ---------- */
@@ -6,23 +9,20 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 html {
-  font-size: 16px;
+  font-size: 15px;
   -webkit-text-size-adjust: 100%;
 }
 
 body {
-  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--bg-primary);
   color: var(--text-primary);
-  line-height: 1.5;
+  line-height: 1.6;
   overflow: hidden;
   height: 100vh;
-  letter-spacing: -0.01em;
 }
 
 #root {
@@ -30,82 +30,76 @@ body {
   overflow: hidden;
 }
 
-/* ---------- Apple-ify Design Tokens ---------- */
+/* ---------- Design Tokens ---------- */
 :root {
-  /* Dynamic Backgrounds */
-  --bg-primary: #F2F2F7;
-  --bg-secondary: #FFFFFF;
-  --bg-card: rgba(255, 255, 255, 0.85);
-  --bg-hover: rgba(0, 122, 255, 0.05);
+  /* Warm cream backgrounds */
+  --bg-primary: #FDF6EE;
+  --bg-secondary: #F7EDE2;
+  --bg-card: #FFFCF9;
+  --bg-hover: #FFF0E3;
   --bg-input: #FFFFFF;
-  --bg-sidebar: rgba(28, 28, 30, 0.95);
-  --bg-sidebar-hover: rgba(255, 255, 255, 0.1);
-  --bg-sidebar-active: #007AFF;
-  --bg-modal-overlay: rgba(0, 0, 0, 0.4);
+  --bg-sidebar: #2C1810;
+  --bg-sidebar-hover: #3D261C;
+  --bg-sidebar-active: #4A3228;
+  --bg-modal-overlay: rgba(44, 24, 16, 0.6);
 
-  /* iOS System Colors */
-  --accent: #007AFF; /* Apple Blue */
-  --accent-hover: #0062CC;
-  --accent-light: #E5F1FF;
-  --accent-soft: rgba(0, 122, 255, 0.1);
-  --accent-gradient: linear-gradient(135deg, #007AFF 0%, #00C7FF 100%);
-  
-  --brand: #D4763C; /* Keep the bakery warm amber as a brand accent */
-  --brand-light: #FFF0E6;
+  /* Warm amber/caramel accent */
+  --accent: #D4763C;
+  --accent-hover: #C06830;
+  --accent-light: #FFF0E6;
+  --accent-soft: #FDEBD4;
+  --accent-gradient: linear-gradient(135deg, #D4763C 0%, #E8944E 100%);
 
-  /* Status colors (Apple standard) */
-  --success: #34C759;
-  --success-light: #E8F9EE;
-  --warning: #FF9500;
-  --warning-light: #FFF5E6;
-  --danger: #FF3B30;
-  --danger-light: #FFF0F0;
-  --info: #5856D6; /* Apple Indigo */
-  --info-light: #F0F0FF;
+  /* Status colors */
+  --success: #4CAF50;
+  --success-light: #E8F5E9;
+  --warning: #F5A623;
+  --warning-light: #FFF8E1;
+  --danger: #E74C3C;
+  --danger-light: #FDEDEB;
+  --info: #5B9BD5;
+  --info-light: #E3F2FD;
 
-  /* Refined Text */
-  --text-primary: #1C1C1E;
-  --text-secondary: #3A3A3C;
-  --text-tertiary: #8E8E93;
-  --text-muted: #AEAEB2;
+  /* Text */
+  --text-primary: #2C1810;
+  --text-secondary: #7A5C4F;
+  --text-tertiary: #A38B7E;
+  --text-muted: #BDA99E;
   --text-on-accent: #FFFFFF;
-  --text-sidebar: #E5E5EA;
+  --text-sidebar: #D4C0B5;
   --text-sidebar-active: #FFFFFF;
 
-  /* Glassmorphism & Borders */
-  --border: rgba(0, 0, 0, 0.08);
-  --border-light: rgba(0, 0, 0, 0.04);
-  --glass-blur: blur(25px);
-  --glass-border: rgba(255, 255, 255, 0.3);
-  
-  /* Shadows (Softer, better diffusion) */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.08);
-  --shadow-xl: 0 24px 60px rgba(0, 0, 0, 0.12);
+  /* Borders & Shadows */
+  --border: #E8D5C4;
+  --border-light: #F0E4D8;
+  --border-input: #D9C4B4;
+  --shadow-sm: 0 1px 3px rgba(44, 24, 16, 0.06);
+  --shadow-md: 0 4px 12px rgba(44, 24, 16, 0.08);
+  --shadow-lg: 0 8px 30px rgba(44, 24, 16, 0.12);
+  --shadow-xl: 0 16px 48px rgba(44, 24, 16, 0.15);
 
-  /* Spacing & Radii (iOS 17 style) */
-  --radius-sm: 10px;
-  --radius-md: 14px;
-  --radius-lg: 18px;
-  --radius-xl: 24px;
+  /* Spacing */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
   --radius-full: 9999px;
-  --sidebar-width: 260px;
-  --sidebar-collapsed-width: 88px;
+  --sidebar-width: 240px;
+  --sidebar-collapsed-width: 80px;
 
   /* Font sizes */
   --font-xs: 0.75rem;
-  --font-sm: 0.875rem;
+  --font-sm: 0.85rem;
   --font-base: 1rem;
-  --font-md: 1.125rem;
+  --font-md: 1.1rem;
   --font-lg: 1.25rem;
   --font-xl: 1.5rem;
-  --font-2xl: 2.25rem;
+  --font-2xl: 2rem;
 
-  /* Transitions (Apple Cubic Bezier) */
-  --transition-fast: 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-base: 350ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-base: 250ms ease;
+  --transition-slow: 400ms ease;
 }
 
 /* ---------- Scrollbar ---------- */
@@ -1299,184 +1293,206 @@ td.primary {
   flex: 1;
 }
 
-/* ---------- iOS Login Redesign (Apple Aesthetics) ---------- */
-
+/* ---------- Login Screen ---------- */
 .login-screen {
-  position: fixed;
-  inset: 0;
-  width: 100vw;
   height: 100vh;
-  background: radial-gradient(circle at top right, #3D2317, #1A0F0A);
   display: flex;
   align-items: center;
   justify-content: center;
+  background: linear-gradient(135deg, #FDF6EE 0%, #F0D9C6 50%, #E8C4A8 100%);
+  position: relative;
   overflow: hidden;
-  z-index: 1000;
 }
 
-.glass-panel {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 40px;
-  width: 95%;
-  max-width: 480px;
-  padding: 40px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-  animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.login-brand {
-    text-align: center;
-    margin-bottom: 24px;
-}
-
-.login-logo-xl {
-    font-size: 4.5rem;
-    margin-bottom: 12px;
-    filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5));
-}
-
-.store-title {
-    font-size: 2rem;
-    font-weight: 800;
-    color: #fff;
-    letter-spacing: -0.5px;
-    margin: 0;
-}
-
-/* iOS Horizontal User Carousel */
-.user-carousel {
-  display: flex;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  width: 100%;
-  gap: 24px;
-  padding: 30px 0;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.user-carousel::-webkit-scrollbar {
-  display: none;
-}
-
-.user-snap-item {
-  scroll-snap-align: center;
-  flex: 0 0 auto;
-  width: 110px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  transition: transform 0.3s ease;
-}
-
-.user-avatar-large {
-  width: 96px;
-  height: 96px;
+.login-screen::before {
+  content: '';
+  position: absolute;
+  width: 600px;
+  height: 600px;
   border-radius: 50%;
-  background: var(--accent);
+  background: radial-gradient(circle, rgba(212,118,60,0.12) 0%, transparent 70%);
+  top: -200px;
+  right: -200px;
+}
+
+.login-screen::after {
+  content: '';
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(212,118,60,0.08) 0%, transparent 70%);
+  bottom: -150px;
+  left: -150px;
+}
+
+.login-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  padding: 40px;
+  width: 360px;
+  box-shadow: var(--shadow-xl);
+  text-align: center;
+  position: relative;
+  z-index: 1;
+  border: 1px solid var(--border-light);
+}
+
+.login-logo {
+  width: 72px;
+  height: 72px;
+  background: var(--accent-gradient);
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
+  margin: 0 auto 16px;
   font-size: 2.2rem;
-  color: #fff;
-  border: 4px solid transparent;
-  transition: all 0.3s ease;
+  box-shadow: 0 8px 24px rgba(212, 118, 60, 0.3);
+}
+
+.login-card h1 {
+  font-size: var(--font-xl);
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.login-card p {
+  color: var(--text-secondary);
+  font-size: var(--font-sm);
+  margin-bottom: 24px;
+}
+
+.login-users {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.login-user-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  background: transparent;
   cursor: pointer;
-  box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-  object-fit: cover;
+  transition: all var(--transition-fast);
+  min-width: 76px;
 }
 
-.user-snap-item.active .user-avatar-large {
-  border-color: #fff;
-  transform: scale(1.15);
-  box-shadow: 0 0 0 6px rgba(255,255,255,0.15);
+.login-user-btn:hover,
+.login-user-btn.selected {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  transform: translateY(-2px);
 }
 
-.user-snap-item .user-name {
-  margin-top: 14px;
-  color: #fff;
-  font-weight: 500;
-  opacity: 0.5;
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
+.login-user-btn .avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--accent-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 800;
+  font-size: var(--font-base);
 }
 
-.user-snap-item.active .user-name {
-  opacity: 1;
+.login-user-btn .name {
+  font-size: 0.70rem;
   font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 60px;
 }
 
-/* Keypad Grid */
-.pin-pad-grid {
+.login-user-btn .switch-text {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+.pin-dots {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.pin-dot {
+  width: 44px;
+  height: 44px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-lg);
+  font-weight: 800;
+  transition: all var(--transition-fast);
+}
+
+.pin-dot.filled {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+
+.pin-dot.filled::after {
+  content: '●';
+  color: var(--accent);
+}
+
+.pin-pad {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-  width: 100%;
+  gap: 10px;
   max-width: 280px;
-  margin-top: 20px;
+  margin: 0 auto;
 }
 
-.pin-btn {
-  aspect-ratio: 1;
-  border-radius: 50%;
-  border: none;
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-  font-size: 1.6rem;
-  font-weight: 500;
+.pin-key {
+  height: 56px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: var(--font-lg);
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-fast);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.pin-btn:active {
-  background: rgba(255, 255, 255, 0.25);
-  transform: scale(0.9);
+.pin-key:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent);
 }
 
-.pin-btn.btn-action {
-    background: transparent;
-    font-size: 1.1rem;
-    font-weight: 600;
-    opacity: 0.8;
+.pin-key:active {
+  transform: scale(0.95);
+  background: var(--accent-light);
 }
 
-/* PIN Indicator */
-.pin-indicator {
-  display: flex;
-  gap: 18px;
-  margin: 15px 0 25px;
-}
-
-.dot {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  border: 1.5px solid rgba(255,255,255,0.5);
-  background: transparent;
-  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.dot.active {
-  background: #fff;
-  border-color: #fff;
-  transform: scale(1.3);
-}
-
-.login-error-msg {
-  color: #FF6B6B;
-  font-size: 0.9rem;
+.login-error {
+  color: var(--danger);
+  font-size: var(--font-sm);
   font-weight: 600;
-  margin-top: 15px;
-  text-align: center;
+  margin-top: 12px;
   animation: shake 0.4s ease;
 }
 
@@ -1751,194 +1767,91 @@ td.primary {
   color: var(--text-secondary);
 }
 
-/* ---------- Apple-ify Component Overrides ---------- */
+/* ---------- Utility classes ---------- */
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.justify-center { justify-content: center; }
+.gap-1 { gap: 4px; }
+.gap-2 { gap: 8px; }
+.gap-3 { gap: 12px; }
+.gap-4 { gap: 16px; }
+.mb-2 { margin-bottom: 8px; }
+.mb-3 { margin-bottom: 12px; }
+.mb-4 { margin-bottom: 16px; }
+.mt-2 { margin-top: 8px; }
+.mt-4 { margin-top: 16px; }
+.text-sm { font-size: var(--font-sm); }
+.text-xs { font-size: var(--font-xs); }
+.text-muted { color: var(--text-muted); }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.w-full { width: 100%; }
 
-.page-content {
-  padding: 30px;
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 24px;
-  margin-bottom: 32px;
-}
-
-.stat-card {
-  background: var(--bg-card);
-  padding: 24px;
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--border-light);
+/* ---------- Filter Bar ---------- */
+.filter-bar {
   display: flex;
   align-items: center;
-  gap: 20px;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.stat-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
-}
-
-.stat-card-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.stat-card-icon.amber { background: var(--warning-light); color: var(--warning); }
-.stat-card-icon.blue { background: var(--info-light); color: var(--info); }
-.stat-card-icon.green { background: var(--success-light); color: var(--success); }
-.stat-card-icon.red { background: var(--danger-light); color: var(--danger); }
-.stat-card-icon.orange { background: var(--brand-light); color: var(--brand); }
-
-.stat-card-content h3 {
-  font-size: 0.8rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--text-tertiary);
-  margin-bottom: 4px;
-}
-
-.stat-value {
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: var(--text-primary);
-  letter-spacing: -0.5px;
-}
-
-.stat-change {
-  font-size: 0.75rem;
-  font-weight: 600;
-  margin-top: 4px;
-}
-
-.stat-change.positive { color: var(--success); }
-.stat-change.negative { color: var(--danger); }
-
-/* Unified Apple Card */
-.card, .chart-card {
-  background: var(--bg-secondary);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--border-light);
-  padding: 24px;
-  margin-bottom: 24px;
-}
-
-.card-header, .chart-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
-.card-title, .chart-card-header h3 {
-  font-size: 1.15rem;
-  font-weight: 800;
-  letter-spacing: -0.3px;
-  color: var(--text-primary);
-}
-
-/* Table Refresh */
-.table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-}
-
-.table th {
-  text-align: left;
-  padding: 12px 16px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--text-muted);
-  border-bottom: 1px solid var(--border-light);
-}
-
-.table td {
-  padding: 16px;
-  font-size: 0.9rem;
-  border-bottom: 1px solid var(--border-light);
-}
-
-.table tr:last-child td { border-bottom: none; }
-
-.table tr:hover td { background: var(--bg-hover); }
-
-/* Buttons */
-.btn {
-  font-family: inherit;
-  font-weight: 700;
-  padding: 10px 20px;
-  border-radius: 12px;
+/* ---------- Held Orders ---------- */
+.held-order-card {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all var(--transition-fast);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border: none;
-  font-size: var(--font-sm);
+  background: var(--bg-card);
 }
 
-.btn-primary {
-  background: var(--accent-gradient);
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.25);
+.held-order-card:hover {
+  border-color: var(--accent);
+  background: var(--accent-light);
 }
 
-.btn-primary:active { transform: scale(0.96); opacity: 0.9; }
-
-.btn-secondary {
-  background: var(--bg-hover);
-  color: var(--accent);
+/* ---------- Animations ---------- */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-.btn-secondary:hover { background: var(--accent-soft); }
-
-/* POS Redesign Snippets */
-.category-pill {
-    padding: 10px 18px;
-    border-radius: 100px;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    font-weight: 700;
-    transition: all 0.2s;
-    cursor: pointer;
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
-.category-pill.active {
-    background: var(--accent);
-    color: #fff;
-    border-color: var(--accent);
-    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.25);
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
-.product-card-ios {
-    background: var(--bg-secondary);
-    border-radius: 20px;
-    overflow: hidden;
-    border: 1px solid var(--border-light);
-    box-shadow: var(--shadow-sm);
-    transition: all var(--transition-fast);
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-5px); }
 }
 
-.product-card-ios:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-md);
+.animate-fade-in {
+  animation: fadeIn var(--transition-base);
 }
-
 
 /* ---------- Print ---------- */
 @media print {
@@ -2065,171 +1978,4 @@ td.primary {
     max-width: 100% !important;
     width: 100% !important;
   }
-}
-
-/* ---------- Apple-ify Class Extensions ---------- */
-
-.glass-sidebar {
-  background: var(--bg-sidebar);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
-  color: #fff;
-}
-
-.sidebar-link-ios {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  color: rgba(255, 255, 255, 0.6);
-  text-decoration: none;
-  transition: all var(--transition-fast);
-}
-
-.sidebar-link-ios:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #fff;
-}
-
-.sidebar-link-ios.active {
-  background: var(--accent);
-  color: #fff;
-  box-shadow: 0 4px 15px rgba(0, 122, 255, 0.3);
-}
-
-.sidebar-toggle-btn, .sidebar-collapse-toggle {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: #fff;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px;
-  border-radius: 8px;
-  transition: all 0.2s;
-}
-
-.sidebar-toggle-btn:hover, .sidebar-collapse-toggle:hover {
-  background: rgba(255,255,255,0.15);
-}
-
-.select-ios {
-  width: 100%;
-  padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  color: #fff;
-  outline: none;
-  font-family: inherit;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.glass-user-pill {
-  padding: 10px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.glass-user-pill:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-/* Apple Sheets (Modals) */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: var(--bg-modal-overlay);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  display: flex;
-  align-items: flex-end; /* Bottom sheet on mobile */
-  justify-content: center;
-  z-index: 2000;
-  padding: 0;
-  animation: fadeIn 0.3s ease;
-}
-
-@media (min-width: 768px) {
-  .modal-overlay {
-    align-items: center;
-    padding: 20px;
-  }
-}
-
-.modal {
-  background: var(--bg-secondary);
-  width: 100%;
-  max-height: 92vh;
-  border-radius: 30px 30px 0 0;
-  display: flex;
-  flex-direction: column;
-  box-shadow: var(--shadow-xl);
-  animation: sheetUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-  position: relative;
-  overflow: hidden;
-}
-
-.modal::after {
-    content: '';
-    position: absolute;
-    top: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 40px;
-    height: 5px;
-    background: rgba(0,0,0,0.1);
-    border-radius: 10px;
-}
-
-@media (min-width: 768px) {
-  .modal {
-    width: 90%;
-    max-width: 600px;
-    border-radius: 32px;
-    max-height: 85vh;
-  }
-}
-
-.modal-lg { max-width: 900px; }
-
-.modal-header {
-  padding: 24px 28px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.modal-header h2 {
-  font-size: 1.4rem;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-}
-
-.modal-close {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: rgba(0,0,0,0.05);
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.modal-close:hover {
-  background: rgba(0,0,0,0.1);
-  transform: scale(1.1);
-}
-
-@keyframes sheetUp {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
 }
