@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useExpenses } from '../../contexts/ExpenseContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { EXPENSE_CATEGORIES } from '../../utils/seedData';
 import { formatCurrency, formatDate } from '../../utils/formatters';
