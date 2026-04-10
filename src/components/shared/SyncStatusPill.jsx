@@ -1,14 +1,10 @@
 import { useSync } from '../../contexts/SyncContext';
-import { Wifi, WifiOff, RefreshCw, Layers, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Wifi, WifiOff, RefreshCw, Layers, CheckCircle } from 'lucide-react';
 import { useToast } from '../../contexts/ToastContext';
 
 /**
  * SyncStatusPill - Global Floating Connectivity Indicator
- * Features:
- * - Glassmorphism design
- * - Fixed position (Top Right)
- * - Pulse glow animations for status
- * - Interactive manual sync
+ * Final Premium Polish: Improved visibility, integrated spacing, and smoother animations.
  */
 export default function SyncStatusPill({ floating = true }) {
   const { isOnline, syncStatus, processSyncQueue } = useSync();
@@ -28,93 +24,134 @@ export default function SyncStatusPill({ floating = true }) {
 
   return (
     <div 
-      className={`glass-pill ${isOnline ? 'online animate-glow-pulse-safe' : 'offline animate-glow-pulse-warn'} ${floating ? 'floating' : ''}`}
+      className={`glass-status-pill ${isOnline ? 'online animate-glow-pulse-safe' : 'offline animate-glow-pulse-warn'} ${floating ? 'floating' : ''}`}
       onClick={handleManualSync}
-      title={isOnline ? 'System Online (Click to Refresh Sync)' : 'Offline Mode (Data Saved Locally)'}
+      title={isOnline ? 'System Online • Click to Refresh Sync' : 'Offline Mode • Data Saved Locally'}
     >
-      <div className={`status-dot ${isOnline ? 'online' : 'offline'}`} />
+      <div className={`status-orb ${isOnline ? 'online' : 'offline'}`} />
       
-      <div className="pill-content">
+      <div className="pill-body">
         {syncStatus.isSyncing ? (
-          <RefreshCw size={14} className="spinning" />
+          <RefreshCw size={12} className="spinning" />
         ) : isOnline ? (
-          <Wifi size={14} />
+          <Wifi size={12} />
         ) : (
-          <WifiOff size={14} />
+          <WifiOff size={12} />
         )}
         
-        <span className="pill-label">
+        <span className="pill-text">
           {syncStatus.isSyncing ? 'Syncing...' : isOnline ? 'Online' : 'Offline'}
         </span>
       </div>
 
       {syncStatus.pending > 0 && (
-        <div className="pending-badge">
-          <Layers size={10} />
-          <span>{syncStatus.pending}</span>
+        <div className="sync-count">
+          <Layers size={9} />
+          {syncStatus.pending}
         </div>
       )}
 
       {syncStatus.lastSync && isOnline && !syncStatus.isSyncing && syncStatus.pending === 0 && (
-          <div className="status-tip">
-             <CheckCircle size={10} color="#86efac" />
+          <div className="status-ok">
+             <CheckCircle size={10} />
           </div>
       )}
 
       <style jsx>{`
-        .glass-pill.floating {
-          position: fixed;
-          top: 20px;
-          right: 24px;
-          z-index: 9999;
-          transform: translateZ(0);
+        .glass-status-pill {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 5px 12px;
+          background: rgba(44, 24, 16, 0.85); /* Darker for better contrast on light theme */
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border: 1.5px solid rgba(255, 255, 255, 0.15);
+          border-radius: 99px;
+          color: white;
+          cursor: pointer;
+          transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+          user-select: none;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+          animation: slide-in-top 0.6s cubic-bezier(0.23, 1, 0.32, 1);
         }
 
-        .pill-content {
+        .glass-status-pill.floating {
+          position: fixed;
+          top: 18px;
+          right: 20px;
+          z-index: 10000;
+        }
+
+        .glass-status-pill:hover {
+          background: rgba(44, 24, 16, 1);
+          transform: translateY(-2px) scale(1.02);
+          border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .pill-body {
           display: flex;
           align-items: center;
           gap: 6px;
         }
 
-        .pill-label {
-          font-size: 11px;
-          text-transform: uppercase;
-          letter-spacing: 0.8px;
+        .pill-text {
+          font-size: 10px;
           font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 1px;
         }
 
-        .pending-badge {
+        .status-orb {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          position: relative;
+        }
+
+        .status-orb.online { background: #4CAF50; box-shadow: 0 0 10px #4CAF50; }
+        .status-orb.offline { background: #F5A623; box-shadow: 0 0 10px #F5A623; }
+
+        .sync-count {
           background: #D4763C;
           color: white;
-          padding: 2px 8px;
+          font-size: 9px;
+          font-weight: 900;
+          padding: 1px 6px;
           border-radius: 99px;
           display: flex;
           align-items: center;
-          gap: 4px;
-          font-size: 10px;
-          font-weight: 900;
-          box-shadow: 0 4px 10px rgba(212, 118, 60, 0.4);
-          animation: badge-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+          gap: 3px;
+          box-shadow: 0 2px 8px rgba(212, 118, 60, 0.4);
         }
 
-        .status-tip {
-            display: flex;
-            align-items: center;
-            opacity: 0.8;
+        .status-ok {
+          color: #4CAF50;
+          display: flex;
+          align-items: center;
+          opacity: 0.8;
         }
 
-        @keyframes badge-pop {
-          0% { transform: scale(0); }
-          100% { transform: scale(1); }
+        @keyframes slide-in-top {
+          from { transform: translateY(-30px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes spinning {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+
+        .spinning {
+          animation: spinning 1s linear infinite;
         }
 
         @media (max-width: 768px) {
-          .glass-pill.floating {
-            top: 10px;
-            right: 10px;
-            padding: 4px 10px;
+          .glass-status-pill.floating {
+             top: 8px;
+             right: 8px;
           }
-          .pill-label { display: none; }
+          .pill-text { display: none; }
         }
       `}</style>
     </div>
