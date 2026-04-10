@@ -28,6 +28,7 @@ const ENDPOINT_MAP = {
   '/preorders': 'cache_preorders',
   '/users': 'cache_users',
   '/transactions': 'cache_transactions',
+  '/expenses': 'cache_expenses',
 };
 
 const apiCall = async (path, options = {}) => {
@@ -44,7 +45,7 @@ const apiCall = async (path, options = {}) => {
         let cached = await idb.getAll(storeName);
         
         // Apply branch-specific filtering if applicable
-        if (['/products', '/users', '/preorders', '/transactions'].includes(path.split('?')[0])) {
+        if (['/products', '/users', '/preorders', '/transactions', '/expenses'].includes(path.split('?')[0])) {
           try {
             const user = JSON.parse(localStorage.getItem('fel_currentUser'));
             const activeBranch = localStorage.getItem('fel_active_branch');

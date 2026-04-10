@@ -39,22 +39,26 @@ export default function ExpensesPage() {
     return map;
   }, [expenses]);
 
+  const { currentUser } = useAuth();
   const save = () => {
-    if (localStorage.getItem('fel_active_branch') === 'all') {
-      addToast('Please select a specific branch from the sidebar to add expenses', 'warning');
+    const activeBranch = localStorage.getItem('fel_active_branch');
+    if (activeBranch === 'all') {
+      addToast('Please select a specific branch from the top-left menu to assign this expense.', 'warning');
       return;
     }
     if (!category || !description || !amount) {
       addToast('Please fill all fields', 'error');
       return;
     }
+    
     addExpense({
       id: uuidv4(),
+      branchId: activeBranch,
       category,
       description,
       amount: parseFloat(amount),
       date: new Date().toISOString(),
-      addedBy: 'Admin',
+      addedBy: currentUser?.name || 'Admin',
     });
     setShowForm(false);
     setCategory('');
