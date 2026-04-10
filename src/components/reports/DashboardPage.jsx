@@ -99,18 +99,37 @@ export default function DashboardPage() {
     return allSales.filter(t => new Date(t.date) >= cutoff).reduce((sum, t) => sum + t.total, 0);
   }, [allSales]);
 
-  const inventoryValue = useMemo(() => {
-    return products.reduce((sum, p) => sum + (p.costPrice * p.stock), 0);
-  }, [products]);
+  // Today's Sales Pulse (Hourly)
+  const todayPulseData = useMemo(() => {
+    const data = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Typical bakeshop hours: 6 AM to 9 PM
+    for (let h = 6; h <= 21; h++) {
+      const hSales = allSales.filter(t => {
+        const d = new Date(t.date);
+        return d >= today && d.getHours() === h;
+      });
+      
+      data.push({
+        hour: h > 12 ? `${h - 12} PM` : h === 12 ? '12 PM' : `${h} AM`,
+        revenue: hSales.reduce((sum, t) => sum + t.total, 0),
+        count: hSales.length
+      });
+    }
+    return data;
+  }, [allSales]);
 
   const COLORS = ['#D4763C', '#5B9BD5', '#4CAF50', '#F5A623', '#9C27B0', '#E74C3C'];
 
   const tooltipStyle = {
     backgroundColor: '#FFFCF9',
     border: '1px solid #E8D5C4',
-    borderRadius: '8px',
+    borderRadius: '12px',
     color: '#2C1810',
     fontSize: '13px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
   };
 
   return (
@@ -166,6 +185,35 @@ export default function DashboardPage() {
               <div className="stat-change">{formatNumber(products.length)} products</div>
             </div>
           </div>
+        </div>
+
+        {/* Live Pulse Section */}
+        <div className="chart-card" style={{ marginBottom: 24, padding: '24px' }}>
+          <div className="chart-card-header" style={{ marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <TrendingUp size={20} style={{ color: 'var(--success)' }} />
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>Today's Sales Pulse</h3>
+            </div>
+            <span className="badge badge-green">LIVE TRACKING</span>
+          </div>
+          <ResponsiveContainer width="100%" height={200}>
+            <AreaChart data={todayPulseData}>
+              <defs>
+                <linearGradient id="colorPulse" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#4CAF50" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="#4CAF50" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#E8D5C4" vertical={false} opacity={0.5} />
+              <XAxis dataKey="hour" stroke="#A38B7E" fontSize={11} tickLine={false} axisLine={false} interval={2} />
+              <YAxis hide />
+              <Tooltip 
+                contentStyle={{ ...tooltipStyle, borderRadius: '12px' }} 
+                formatter={(v) => [formatCurrency(v), 'Revenue']} 
+              />
+              <Area type="monotone" dataKey="revenue" stroke="#4CAF50" strokeWidth={3} fill="url(#colorPulse)" dot={false} activeDot={{ r: 6, stroke: '#fff', strokeWidth: 2 }} />
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
 
         <div className="charts-grid">

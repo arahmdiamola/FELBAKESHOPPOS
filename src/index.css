@@ -1979,3 +1979,58 @@ td.primary {
     width: 100% !important;
   }
 }
+/* ---------- New Animations & Effects ---------- */
+@keyframes glow-amber {
+  0% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.2); border-color: var(--border-light); }
+  50% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.4); border-color: #f59e0b; }
+  100% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.2); border-color: var(--border-light); }
+}
+
+.glow-low-stock {
+  animation: glow-amber 2s infinite ease-in-out;
+  border-width: 1.5px !important;
+}
+
+.vip-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  color: #2C1810;
+  padding: 2px 8px;
+  border-radius: 100px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(255, 215, 0, 0.3);
+}
+
+.success-check-anim {
+  width: 80px;
+  height: 80px;
+  background: var(--success);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  animation: scaleBounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes scaleBounce {
+  0% { transform: scale(0); }
+  70% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.flash-sale-active {
+  color: var(--danger);
+  font-weight: 800;
+  animation: pulse-soft 2s infinite;
+}
+
+@keyframes pulse-soft {
+  0% { opacity: 0.8; }
+  50% { opacity: 1; }
+  100% { opacity: 0.8; }
+}

@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Search, ShoppingCart, X, Trash2, Pause, Play, Receipt, User, Percent, StickyNote } from 'lucide-react';
+import { Search, ShoppingCart, X, Trash2, Pause, Play, Receipt, User, Percent, StickyNote, CheckCircle, Star } from 'lucide-react';
 import { useProducts } from '../../contexts/ProductContext';
 import { useCustomers } from '../../contexts/CustomerContext';
 import { useOrders } from '../../contexts/OrderContext';
@@ -37,6 +37,14 @@ export default function POSTerminal() {
   const [showDiscount, setShowDiscount] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
   const [customerSearch, setCustomerSearch] = useState('');
+  const [isFlashSale, setIsFlashSale] = useState(false);
+  const [showSuccessCheckout, setShowSuccessCheckout] = useState(false);
+  const [successTransaction, setSuccessTransaction] = useState(null);
+
+  const customerOrderCount = useMemo(() => {
+    if (!selectedCustomer) return 0;
+    return transactions.filter(t => t.customerId === selectedCustomer.id).length;
+  }, [selectedCustomer, transactions]);
 
   const filteredProducts = useMemo(() => {
     const freqMap = {};
@@ -85,7 +93,8 @@ export default function POSTerminal() {
 
   const subtotal = calcSubtotal(cart);
   const discount = calcCartDiscount(subtotal, cartDiscount.type, cartDiscount.value);
-  const taxableAmount = subtotal - discount;
+  const flashSaleDiscount = isFlashSale ? (subtotal * 0.1) : 0;
+  const taxableAmount = subtotal - discount - flashSaleDiscount;
   const tax = calcTax(taxableAmount, settings.taxRate);
   const total = taxableAmount + tax;
 
@@ -199,13 +208,17 @@ export default function POSTerminal() {
       await Promise.all(tasks);
 
       // 3. Instant UI feedback
+      setSuccessTransaction(transaction);
+      setShowSuccessCheckout(true);
+      
+      setCart([]);
+      setCartDiscount({ type: 'percentage', value: 0 });
+      setSelectedCustomer(null);
+      setNotes('');
       setLastTransaction(transaction);
-      setShowPayment(false);
-      setShowReceipt(true);
-      clearCart();
-      addToast('Sale completed! 🎉', 'success');
-    } catch (e) {
-      console.error('Checkout failed:', e);
+      setIsFlashSale(false); 
+    } catch (error) {
+      console.error('Checkout failed:', error);
       addToast('Failed to complete sale', 'error');
     } finally {
       setIsProcessing(false);
@@ -245,8 +258,13 @@ export default function POSTerminal() {
 
         <div className="pos-grid">
           {filteredProducts.map(product => (
-            <div key={product.id} className={`pos-product-card ${product.isTopSelling ? 'top-seller' : ''}`} onClick={() => addToCart(product)} id={`product-${product.id}`}>
-              {product.isTopSelling === 1 && <div className="top-badge">👑 #1 Best Seller</div>}
+            <div 
+              key={product.id} 
+              className={`pos-product-card ${product.isTopSelling ? 'top-seller' : ''} ${product.stock <= product.reorderPoint ? 'glow-low-stock' : ''}`}
+              onClick={() => addToCart(product)}
+            >
+              {product.stock <= product.reorderPoint && <div className="top-badge" style={{ background: 'var(--danger)', right: 'auto', left: 8 }}>LOW</div>}
+              {product.isTopSelling === 1 && <div className="top-badge">🏆 #1 Seller</div>}
               {product.isTopSelling === 2 && <div className="top-badge">🔥 Hot Item</div>}
               {product.isTopSelling === 3 && <div className="top-badge">⭐ Popular</div>}
               
@@ -304,10 +322,20 @@ export default function POSTerminal() {
           {selectedCustomer ? (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <User size={16} style={{ color: 'var(--accent)' }} />
+                <div style={{ position: 'relative' }}>
+                  <User size={18} style={{ color: 'var(--accent)' }} />
+                  {customerOrderCount > 3 && (
+                    <div style={{ position: 'absolute', top: -5, right: -5, background: '#FFD700', borderRadius: '50%', padding: 1, border: '1px solid #fff' }}>
+                      <Star size={8} fill="#2C1810" />
+                    </div>
+                  )}
+                </div>
                 <div>
-                  <div className="text-sm font-bold">{selectedCustomer.name}</div>
-                  <div className="text-xs text-muted">{selectedCustomer.phone}</div>
+                  <div className="text-sm font-bold flex items-center gap-2">
+                    {selectedCustomer.name}
+                    {customerOrderCount > 3 && <span className="vip-badge"><Star size={8} fill="currentColor" /> REGULAR</span>}
+                  </div>
+                  <div className="text-xs text-muted">{customerOrderCount} Lifetime Orders</div>
                 </div>
               </div>
               <button className="btn btn-ghost btn-icon btn-sm" onClick={() => setSelectedCustomer(null)}>
@@ -351,7 +379,29 @@ export default function POSTerminal() {
 
         {cart.length > 0 && (
           <div className="pos-cart-summary">
+            {/* Flash Sale Toggle */}
+            <div className="flex items-center justify-between mb-4 p-2 bg-red-50 rounded-lg border border-red-100" style={{ background: isFlashSale ? 'var(--danger-light)' : 'rgba(0,0,0,0.02)', borderColor: isFlashSale ? 'var(--danger)' : 'transparent', borderRadius: 12 }}>
+              <div className="flex items-center gap-2">
+                <Percent size={14} className={isFlashSale ? 'flash-sale-active' : ''} />
+                <span className={`text-xs font-bold ${isFlashSale ? 'flash-sale-active' : ''}`}>
+                  Flash Sale (10% OFF)
+                </span>
+              </div>
+              <button 
+                className={`switch ${isFlashSale ? 'active' : ''}`}
+                onClick={() => setIsFlashSale(!isFlashSale)}
+                style={{ width: 40, height: 20, background: isFlashSale ? 'var(--danger)' : 'var(--border)', borderRadius: 10, position: 'relative', cursor: 'pointer', border: 'none' }}
+              >
+                <div style={{ position: 'absolute', left: isFlashSale ? 22 : 2, top: 2, width: 16, height: 16, background: '#fff', borderRadius: '50%', transition: 'all 0.2s' }} />
+              </button>
+            </div>
+
             <div className="cart-summary-row"><span>Subtotal</span><span>{formatCurrency(subtotal)}</span></div>
+            {flashSaleDiscount > 0 && (
+              <div className="cart-summary-row" style={{ color: 'var(--danger)' }}>
+                <span>Flash Sale Discount</span><span>-{formatCurrency(flashSaleDiscount)}</span>
+              </div>
+            )}
             {discount > 0 && (
               <div className="cart-summary-row" style={{ color: 'var(--success)' }}>
                 <span>Discount</span><span>-{formatCurrency(discount)}</span>
@@ -388,7 +438,49 @@ export default function POSTerminal() {
       {/* Modals */}
       <ProcessingOverlay isProcessing={isProcessing} message="Finalizing Transaction..." />
       {showPayment && <PaymentModal total={total} customer={selectedCustomer} onComplete={completePayment} isProcessing={isProcessing} onClose={() => setShowPayment(false)} />}
-      {showReceipt && lastTransaction && <ReceiptPreview transaction={lastTransaction} settings={settings} onClose={() => setShowReceipt(false)} />}
+      {showReceipt && selectedTransaction && (
+        <ReceiptPreview 
+          transaction={selectedTransaction} 
+          settings={settings} 
+          onClose={() => setShowReceipt(false)} 
+        />
+      )}
+
+      {/* Success Celebration Modal */}
+      {showSuccessCheckout && successTransaction && (
+        <Modal 
+          onClose={() => { setShowSuccessCheckout(false); setSuccessTransaction(null); }}
+          title="Payment Success"
+          maxWidth="500px"
+        >
+          <div style={{ textAlign: 'center', padding: '20px 0' }}>
+            <div className="success-check-anim">
+              <CheckCircle size={48} />
+            </div>
+            <h2 style={{ fontSize: '1.8rem', fontWeight: 900, marginBottom: 8 }}>Sale Completed!</h2>
+            <div style={{ fontSize: '1.1rem', color: 'var(--text-secondary)', marginBottom: 24 }}>
+              Total Received: <span style={{ fontWeight: 800, color: 'var(--success)' }}>{formatCurrency(successTransaction.total)}</span>
+            </div>
+            
+            <div style={{ border: '1px solid var(--border-light)', borderRadius: 16, overflow: 'hidden', marginBottom: 24, maxHeight: 300, overflowY: 'auto', background: '#fff' }}>
+              <ReceiptPreview 
+                transaction={successTransaction} 
+                settings={settings} 
+                onClose={() => {}} 
+                isEmbed 
+              />
+            </div>
+            
+            <button 
+              className="btn btn-primary btn-block" 
+              style={{ padding: 16, fontSize: '1.1rem', fontWeight: 800 }}
+              onClick={() => { setShowSuccessCheckout(false); setSuccessTransaction(null); }}
+            >
+              START NEW SALE
+            </button>
+          </div>
+        </Modal>
+      )}
 
       <Modal isOpen={showCustomerPicker} onClose={() => setShowCustomerPicker(false)} title="Select Customer">
         <div className="search-bar mb-4">
