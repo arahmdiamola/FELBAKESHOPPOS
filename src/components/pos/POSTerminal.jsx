@@ -261,10 +261,14 @@ export default function POSTerminal() {
           {filteredProducts.map(product => (
             <div 
               key={product.id} 
-              className={`pos-product-card ${product.isTopSelling ? 'top-seller' : ''} ${product.stock <= product.reorderPoint ? 'glow-low-stock' : ''}`}
+              className={`pos-product-card ${product.isTopSelling ? 'top-seller' : ''} ${product.stock <= 0 ? 'out-of-stock' : product.stock <= product.reorderPoint ? 'glow-low-stock' : ''}`}
               onClick={() => addToCart(product)}
             >
-              {product.stock <= product.reorderPoint && <div className="top-badge" style={{ background: 'var(--danger)', right: 'auto', left: 8, transform: 'translateX(-4px)' }}>LOW</div>}
+              {product.stock <= 0 ? (
+                <div className="top-badge" style={{ background: '#454545', right: 'auto', left: 8, transform: 'translateX(-4px)' }}>EMPTY</div>
+              ) : product.stock <= product.reorderPoint ? (
+                <div className="top-badge" style={{ background: 'var(--danger)', right: 'auto', left: 8, transform: 'translateX(-4px)' }}>LOW</div>
+              ) : null}
               {product.isTopSelling === 1 && <div className="top-badge">🏆 #1 Seller</div>}
               {product.isTopSelling === 2 && <div className="top-badge">🔥 Hot Item</div>}
               {product.isTopSelling === 3 && <div className="top-badge">⭐ Popular</div>}

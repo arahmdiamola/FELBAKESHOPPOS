@@ -1980,6 +1980,19 @@ td.primary {
   }
 }
 /* ---------- New Animations & Effects ---------- */
+.pos-product-card.out-of-stock {
+  opacity: 0.55;
+  filter: grayscale(0.8);
+  cursor: not-allowed;
+  transform: scale(0.98);
+  border-style: dashed !important;
+  background: var(--bg-secondary) !important;
+}
+
+.pos-product-card.out-of-stock:active {
+  transform: scale(0.98); /* No click animation */
+}
+
 @keyframes glow-amber {
   0% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.2); border-color: var(--border-light); }
   50% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.4); border-color: #f59e0b; }
