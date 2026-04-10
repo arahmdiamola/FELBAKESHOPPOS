@@ -145,6 +145,14 @@ export async function initDb() {
     await db.run("ALTER TABLE products ADD COLUMN IF NOT EXISTS costPrice REAL DEFAULT 0");
     await db.run("ALTER TABLE preorders ADD COLUMN IF NOT EXISTS quantity INTEGER DEFAULT 1");
 
+    // Ensure System Developer exists in active databases
+    const devExists = await db.get("SELECT id FROM users WHERE id = 'dev-001'");
+    if (!devExists) {
+      console.log("[Migration] Injecting System Developer account...");
+      await db.run(
+        "INSERT INTO users (id, name, role, pin, branchId) VALUES (?, ?, ?, ?, ?)",
+        ["dev-001", "System Developer", "system_admin", "9999", null]
+      );
     }
 
     // Ensure System Logs table exists for existing databases
