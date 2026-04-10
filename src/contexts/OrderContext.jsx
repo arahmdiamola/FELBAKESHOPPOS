@@ -64,40 +64,50 @@ export function OrderProvider({ children }) {
   const updatePreOrder = useCallback(async (id, updates) => {
     // Detect if we are marking a preorder as picked_up to deduct stock
     if (updates.status === 'picked_up') {
-      const order = preOrders.find(o => o.id === id);
+      const order = (preOrders || []).find(o => o.id === id);
       if (order && order.status !== 'picked_up') {
-        // 1. Deduct Stock
-        if (Array.isArray(order.items)) {
-          await deductStock(order.items.map(i => ({ 
-            productId: i.productId, 
-            quantity: i.quantity || 1 
-          })));
+        try {
+          // 1. Deduct Stock
+          if (Array.isArray(order.items) && order.items.length > 0) {
+            await deductStock(order.items.map(i => ({ 
+              productId: i.productId, 
+              quantity: i.quantity || 1 
+            }))).catch(err => console.error('Stock deduction failed but proceeding', err));
+          }
+
+          // 2. Create permanent transaction record
+          const transaction = {
+            id: uuidv4(),
+            receiptNumber: `PRE-${(order.id || '').slice(0, 8).toUpperCase()}`,
+            date: new Date().toISOString(),
+            customerName: order.customerName || 'Walk-in Customer',
+            customerId: order.customerId || null,
+            items: Array.isArray(order.items) ? order.items : [],
+            total: order.totalPrice || 0,
+            subtotal: order.totalPrice || 0,
+            discount: 0,
+            tax: 0,
+            amountPaid: order.totalPrice || 0,
+            change: 0,
+            paymentMethod: 'prepaid/balance',
+            cashierId: currentUser?.id || 'system',
+            cashierName: currentUser?.name || 'System',
+            isPreorder: true,
+            status: 'completed'
+          };
+
+          // Save transaction first
+          await api.post('/transactions', transaction);
+          setTransactions(prev => [transaction, ...prev]);
+          
+          // Then update preorder status
+          await api.put(`/preorders/${id}`, updates);
+          await fetchData();
+          return transaction;
+        } catch (e) {
+          console.error('[Pre-order Pickup Error]', e);
+          throw e; // Pass to component for toast
         }
-
-        // 2. Create permanent transaction record
-        const transaction = {
-          id: `TX-${uuidv4()}`,
-          receiptNumber: `PRE-${order.id.slice(0, 8).toUpperCase()}`,
-          date: new Date().toISOString(),
-          customerName: order.customerName,
-          customerId: order.customerId || null,
-          items: Array.isArray(order.items) ? order.items : [],
-          total: order.totalPrice,
-          subtotal: order.totalPrice, // Simplified for pre-orders
-          discount: 0,
-          tax: 0,
-          paymentMethod: 'prepaid/balance',
-          cashierName: 'System (Pre-order)',
-          isPreorder: true,
-          status: 'completed'
-        };
-
-        await api.post('/transactions', transaction);
-        setTransactions(prev => [transaction, ...prev]);
-        
-        await api.put(`/preorders/${id}`, updates);
-        await fetchData();
-        return transaction; // RETURN FOR UI
       }
     }
 
