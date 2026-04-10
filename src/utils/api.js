@@ -22,6 +22,8 @@ function getHeaders() {
 // Map endpoints to IDB cache stores
 const ENDPOINT_MAP = {
   '/products': 'cache_products',
+  '/categories': 'cache_categories',
+  '/branches': 'cache_branches',
   '/customers': 'cache_customers',
   '/preorders': 'cache_preorders',
   '/users': 'cache_users',

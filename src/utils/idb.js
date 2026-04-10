@@ -1,5 +1,5 @@
 const DB_NAME = 'fel_pos_db';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 /**
  * Lightweight IndexedDB wrapper for Offline-First Bakery POS
@@ -19,6 +19,12 @@ export const initDB = () => {
       // Mirrors for Master Data: Local copies of server data
       if (!db.objectStoreNames.contains('cache_products')) {
         db.createObjectStore('cache_products', { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains('cache_categories')) {
+        db.createObjectStore('cache_categories', { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains('cache_branches')) {
+        db.createObjectStore('cache_branches', { keyPath: 'id' });
       }
       if (!db.objectStoreNames.contains('cache_customers')) {
         db.createObjectStore('cache_customers', { keyPath: 'id' });
