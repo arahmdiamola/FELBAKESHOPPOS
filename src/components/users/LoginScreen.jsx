@@ -102,7 +102,7 @@ export default function LoginScreen() {
           )}
         </div>
 
-        {!showUserSwitch && activeUser && (
+        {(selectedUser || !showUserSwitch) && activeUser && (
           <div className="login-form-container" style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
             <input 
               type="password" 

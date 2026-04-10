@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSettings } from '../../contexts/SettingsContext';
 import { api } from '../../utils/api';
+import SyncStatus from '../shared/SyncStatus';
 import {
   ShoppingBag, LayoutDashboard, Package, ClipboardList,
   Users, Wallet, Settings, LogOut, CalendarClock, Boxes, Menu, ChevronsLeft
@@ -143,6 +144,9 @@ export default function Sidebar() {
       </nav>
 
       <div className="sidebar-footer">
+        {!isCollapsed && <SyncStatus />}
+        {isCollapsed && <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0' }}><SyncStatus mini /></div>}
+        
         <div className="sidebar-user" onClick={logout} title={isCollapsed ? "Logout" : ""}>
           <div className="sidebar-user-avatar">
             {currentUser?.name?.charAt(0) || '?'}
