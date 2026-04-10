@@ -202,7 +202,7 @@ export default function LoginScreen() {
 
         .clear-search {
           position: absolute;
-          right: 12,
+          right: 12px;
           top: 50%;
           transform: translateY(-50%);
           color: var(--text-muted);

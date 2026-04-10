@@ -48,8 +48,8 @@ export default function POSTerminal() {
 
   const filteredProducts = useMemo(() => {
     const freqMap = {};
-    transactions.forEach(t => {
-      t.items?.forEach(item => {
+    (transactions || []).forEach(t => {
+      (t.items || []).forEach(item => {
         freqMap[item.productId] = (freqMap[item.productId] || 0) + item.quantity;
       });
     });
@@ -264,7 +264,7 @@ export default function POSTerminal() {
               className={`pos-product-card ${product.isTopSelling ? 'top-seller' : ''} ${product.stock <= product.reorderPoint ? 'glow-low-stock' : ''}`}
               onClick={() => addToCart(product)}
             >
-              {product.stock <= product.reorderPoint && <div className="top-badge" style={{ background: 'var(--danger)', right: 'auto', left: 8 }}>LOW</div>}
+              {product.stock <= product.reorderPoint && <div className="top-badge" style={{ background: 'var(--danger)', right: 'auto', left: 8, transform: 'translateX(-4px)' }}>LOW</div>}
               {product.isTopSelling === 1 && <div className="top-badge">🏆 #1 Seller</div>}
               {product.isTopSelling === 2 && <div className="top-badge">🔥 Hot Item</div>}
               {product.isTopSelling === 3 && <div className="top-badge">⭐ Popular</div>}
@@ -441,9 +441,9 @@ export default function POSTerminal() {
       {/* Modals */}
       <ProcessingOverlay isProcessing={isProcessing} message="Finalizing Transaction..." />
       {showPayment && <PaymentModal total={total} customer={selectedCustomer} onComplete={completePayment} isProcessing={isProcessing} onClose={() => setShowPayment(false)} />}
-      {showReceipt && selectedTransaction && (
+      {showReceipt && lastTransaction && (
         <ReceiptPreview 
-          transaction={selectedTransaction} 
+          transaction={lastTransaction} 
           settings={settings} 
           onClose={() => setShowReceipt(false)} 
         />
