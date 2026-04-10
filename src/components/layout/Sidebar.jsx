@@ -149,7 +149,11 @@ export default function Sidebar() {
         
         <div className="sidebar-user" onClick={logout} title={isCollapsed ? "Logout" : ""}>
           <div className="sidebar-user-avatar">
-            {currentUser?.name?.charAt(0) || '?'}
+            {currentUser?.image ? (
+              <img src={currentUser.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }} />
+            ) : (
+              currentUser?.name?.charAt(0) || '?'
+            )}
           </div>
           <div className="sidebar-user-info">
             <div className="sidebar-user-name">{currentUser?.name}</div>
