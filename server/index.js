@@ -27,6 +27,29 @@ app.use('/api', (req, res, next) => {
 
 let db;
 
+// --- AUDIT LOG HELPER ---
+async function logAction(req, action, details = null) {
+  try {
+    const userId = req.headers['x-user-id'] || 'system';
+    const userNameToken = req.headers['x-user-name'] || 'System';
+    
+    // Fetch name if not in headers
+    let finalName = userNameToken;
+    if (userId !== 'system' && userNameToken === 'System') {
+      const user = await db.get("SELECT name FROM users WHERE id = ?", [userId]);
+      if (user) finalName = user.name;
+    }
+
+    const branchId = req.headers['x-branch-id'] || null;
+    await db.run(
+      "INSERT INTO system_logs (id, timestamp, userId, userName, action, details, branchId) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [uuidv4(), new Date().toISOString(), userId, finalName, action, typeof details === 'object' ? JSON.stringify(details) : details, branchId]
+    );
+  } catch (e) {
+    console.error('[Logging Failed]', e);
+  }
+}
+
 // Helper to append branch condition (strictly enforced by role)
 const branchFilter = (req) => {
   const branchId = req.headers['x-branch-id'];
@@ -210,12 +233,14 @@ app.post('/api/products/batch', async (req, res) => {
   }
 });
 app.put('/api/products/:id', async (req, res) => {
-  const p = req.body;
-  await db.run(
-    "UPDATE products SET name=?, categoryId=?, price=?, costPrice=?, stock=?, unit=?, reorderPoint=?, emoji=?, image=?, isTopSelling=? WHERE id=?",
-    [p.name, p.categoryId, p.price, p.costPrice, p.stock, p.unit, p.reorderPoint, p.emoji, p.image, p.isTopSelling || 0, req.params.id]
-  );
-  res.json({ success: true });
+    const updates = req.body;
+    await db.run(
+      "UPDATE products SET name=?, price=?, costPrice=?, stock=?, categoryId=?, unit=?, reorderPoint=?, emoji=?, image=?, isTopSelling=? WHERE id=?",
+      [updates.name, updates.price, updates.costPrice, updates.stock, updates.categoryId, updates.unit, updates.reorderPoint, updates.emoji, updates.image, updates.isTopSelling, req.params.id]
+    );
+    
+    await logAction(req, 'PRODUCT_UPDATED', { productId: req.params.id, name: updates.name, stock: updates.stock });
+    res.json({ success: true });
 });
 app.delete('/api/products/:id', async (req, res) => {
   await db.run("DELETE FROM products WHERE id = ?", [req.params.id]);
@@ -267,6 +292,8 @@ app.post('/api/transactions', async (req, res) => {
         [i.id || uuidv4(), t.id, i.productId, i.name, i.price, i.quantity, i.unit, i.discount, i.total]
       );
     }
+    
+    await logAction(req, 'SALE_COMPLETED', { receiptNumber: t.receiptNumber, total: t.total });
     res.json({ success: true });
   } catch (error) {
     console.error('[Transaction Sync Error]', error);
@@ -327,11 +354,13 @@ app.get('/api/expenses', async (req, res) => {
 app.post('/api/expenses', async (req, res) => {
   const e = req.body;
   const branchId = req.headers['x-branch-id'] || e.branchId;
-  await db.run(
-    "INSERT INTO expenses (id, branchId, category, description, amount, date, addedBy) VALUES (?, ?, ?, ?, ?, ?, ?)",
-    [e.id, branchId, e.category, e.description, e.amount, e.date, e.addedBy]
-  );
-  res.json({ success: true });
+    await db.run(
+      "INSERT INTO expenses (id, branchId, category, description, amount, date, addedBy) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [uuidv4(), branchId, e.category, e.description, e.amount, e.date, e.addedBy]
+    );
+    
+    await logAction(req, 'EXPENSE_RECORDED', { category: e.category, amount: e.amount });
+    res.json({ success: true });
 });
 app.delete('/api/expenses/:id', async (req, res) => {
   await db.run("DELETE FROM expenses WHERE id = ?", [req.params.id]);
@@ -400,10 +429,13 @@ app.get('/api/settings', async (req, res) => {
   res.json(settings);
 });
 app.post('/api/settings', async (req, res) => {
-  for (const [key, value] of Object.entries(req.body)) {
-    await db.run("INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", [key, value]);
-  }
-  res.json({ success: true });
+    const entries = Object.entries(req.body);
+    for (const [key, value] of entries) {
+      await db.run("INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", [key, value]);
+    }
+    
+    await logAction(req, 'SETTINGS_UPDATED', { updatedKeys: entries.map(e => e[0]) });
+    res.json({ success: true });
 });
 
 app.post('/api/reset', requireSystemAdmin, async (req, res) => {
@@ -447,6 +479,83 @@ app.post('/api/reset', requireSystemAdmin, async (req, res) => {
     }
 
     res.json({ success: true, message: `Successfully wiped: ${targets.join(', ')}` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/restore', async (req, res) => {
+  const backup = req.body;
+  
+  if (!backup || !backup.timestamp) {
+    return res.status(400).json({ error: 'Invalid backup format' });
+  }
+
+  try {
+    // 1. DANGER ZONE: Start Transaction
+    await db.exec("BEGIN TRANSACTION");
+
+    // 2. Wipe ALL Tables in reverse dependency order
+    const tables = ['settings', 'preorders', 'expenses', 'transaction_items', 'transactions', 'customers', 'products', 'categories', 'users', 'branches'];
+    for (const table of tables) {
+      await db.run(`DELETE FROM ${table}`);
+    }
+
+    // 3. Re-populate Tables in correct dependency order
+    const tableOrder = [
+      { name: 'branches', data: backup.branches, cols: ['id', 'name', 'address'] },
+      { name: 'users', data: backup.users, cols: ['id', 'name', 'role', 'pin', 'branchId', 'image'] },
+      { name: 'categories', data: backup.categories, cols: ['id', 'name', 'emoji'] },
+      { name: 'products', data: backup.products, cols: ['id', 'branchId', 'name', 'categoryId', 'price', 'costPrice', 'stock', 'unit', 'reorderPoint', 'emoji', 'image', 'isTopSelling'] },
+      { name: 'customers', data: backup.customers, cols: ['id', 'branchId', 'name', 'phone', 'email', 'address', 'totalSpent', 'visits', 'balance'] },
+      { name: 'transactions', data: backup.transactions, cols: ['id', 'branchId', 'receiptNumber', 'subtotal', 'discount', 'tax', 'total', 'paymentMethod', 'amountPaid', 'change', 'customerId', 'customerName', 'cashierId', 'cashierName', 'date', 'status', 'notes'] },
+      { name: 'transaction_items', data: backup.transaction_items, cols: ['id', 'transactionId', 'productId', 'name', 'price', 'quantity', 'unit', 'discount', 'total'] },
+      { name: 'expenses', data: backup.expenses, cols: ['id', 'branchId', 'category', 'description', 'amount', 'date', 'addedBy'] },
+      { name: 'preorders', data: backup.preorders, cols: ['id', 'branchId', 'customerName', 'customerPhone', 'items', 'totalPrice', 'deposit', 'status', 'dueDate', 'notes', 'quantity', 'createdAt'] },
+      { name: 'settings', data: backup.settings, cols: ['key', 'value'] }
+    ];
+
+    for (const t of tableOrder) {
+      if (!t.data || !Array.isArray(t.data)) continue;
+      for (const row of t.data) {
+        const placeholders = t.cols.map(() => '?').join(', ');
+        const values = t.cols.map(c => {
+          const val = row[c];
+          // Handle JSON fields (specifically items in preorders)
+          if (t.name === 'preorders' && c === 'items' && typeof val === 'object') {
+            return JSON.stringify(val);
+          }
+          return val;
+        });
+        await db.run(`INSERT INTO ${t.name} (${t.cols.join(', ')}) VALUES (${placeholders})`, values);
+      }
+    }
+
+    await db.exec("COMMIT");
+    
+    await logAction(req, 'SYSTEM_RESTORE', { backupTimestamp: backup.timestamp });
+    res.json({ success: true, message: 'System restored successfully' });
+  } catch (err) {
+    await db.exec("ROLLBACK");
+    console.error('[Restore Failed]', err);
+    res.status(500).json({ error: `Restore failed: ${err.message}` });
+  }
+});
+
+app.get('/api/logs', async (req, res) => {
+  try {
+    const limit = req.query.limit || 100;
+    const branchId = req.headers['x-branch-id'];
+    const userRole = req.headers['x-user-role'];
+
+    let logs;
+    if (userRole === 'system_admin') {
+      logs = await db.all("SELECT * FROM system_logs ORDER BY timestamp DESC LIMIT ?", [limit]);
+    } else {
+      // Owners/Managers see their branch logs only
+      logs = await db.all("SELECT * FROM system_logs WHERE branchId = ? ORDER BY timestamp DESC LIMIT ?", [branchId, limit]);
+    }
+    res.json(logs);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

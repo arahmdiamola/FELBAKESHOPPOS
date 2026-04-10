@@ -121,6 +121,20 @@ export async function initDb() {
       key TEXT PRIMARY KEY,
       value TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS system_logs (
+      id TEXT PRIMARY KEY,
+      timestamp TEXT NOT NULL,
+      userId TEXT,
+      userName TEXT,
+      action TEXT NOT NULL,
+      details TEXT,
+      branchId TEXT
+    );
+
+    -- Performance Indexes for High-Traffic Filtering
+    CREATE INDEX IF NOT EXISTS idx_transactions_branch_date ON transactions(branchId, date);
+    CREATE INDEX IF NOT EXISTS idx_logs_branch_time ON system_logs(branchId, timestamp);
   `);
 
   // Ensure newer columns exist for existing databases (Migrations)
@@ -131,15 +145,22 @@ export async function initDb() {
     await db.run("ALTER TABLE products ADD COLUMN IF NOT EXISTS costPrice REAL DEFAULT 0");
     await db.run("ALTER TABLE preorders ADD COLUMN IF NOT EXISTS quantity INTEGER DEFAULT 1");
 
-    // Ensure System Developer exists in active databases
-    const devExists = await db.get("SELECT id FROM users WHERE id = 'dev-001'");
-    if (!devExists) {
-      console.log("[Migration] Injecting System Developer account...");
-      await db.run(
-        "INSERT INTO users (id, name, role, pin, branchId) VALUES (?, ?, ?, ?, ?)",
-        ["dev-001", "System Developer", "system_admin", "9999", null]
-      );
     }
+
+    // Ensure System Logs table exists for existing databases
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS system_logs (
+        id TEXT PRIMARY KEY,
+        timestamp TEXT NOT NULL,
+        userId TEXT,
+        userName TEXT,
+        action TEXT NOT NULL,
+        details TEXT,
+        branchId TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_transactions_branch_date ON transactions(branchId, date);
+      CREATE INDEX IF NOT EXISTS idx_logs_branch_time ON system_logs(branchId, timestamp);
+    `);
   } catch (err) {
     console.log("Migration info (safe to ignore if columns exist):", err.message);
   }

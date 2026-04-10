@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../utils/api';
 import Header from '../layout/Header';
 import Modal from '../shared/Modal';
-import { Save, RotateCcw, Store, Receipt, Percent, Database, MapPin, Edit2, Trash2, Plus, AlertTriangle, CheckCircle, Smartphone, Star, TrendingUp } from 'lucide-react';
+import { Save, RotateCcw, Store, Receipt, Percent, Database, MapPin, Edit2, Trash2, Plus, AlertTriangle, CheckCircle, Smartphone, Star, TrendingUp, List, History, Upload } from 'lucide-react';
 import BranchForm from './BranchForm';
 
 export default function SettingsPage() {
@@ -19,17 +19,57 @@ export default function SettingsPage() {
   const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
   const [editingBranch, setEditingBranch] = useState(null);
 
-  // Selective Reset State
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [systemLogs, setSystemLogs] = useState([]);
+  const [isLoadingLogs, setIsLoadingLogs] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const [selectedBackupFile, setSelectedBackupFile] = useState(null);
+  
   const [resetTargets, setResetTargets] = useState({
-    transactions: true,
+    transactions: false,
     products: false,
     customers: false,
-    expenses: true,
+    expenses: false,
     preorders: false,
     syncQueue: false
   });
-  const [isResetting, setIsResetting] = useState(false);
+
+  const fetchLogs = async () => {
+    try {
+      setIsLoadingLogs(true);
+      const data = await api.get('/logs?limit=200');
+      setSystemLogs(data);
+    } catch (e) {
+      addToast('Failed to load logs', 'error');
+    } finally {
+      setIsLoadingLogs(false);
+    }
+  };
+
+  const handleRestoreBackup = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const backupData = JSON.parse(event.target.result);
+        if (!confirm("CRITICAL WARNING: This will DELETE all current data and replace it with this backup. This cannot be undone. Proceed?")) return;
+        
+        setIsRestoring(true);
+        await api.post('/restore', backupData);
+        addToast('System Restored Successfully! Refreshing...', 'success');
+        
+        localStorage.clear(); 
+        setTimeout(() => window.location.reload(), 2000);
+      } catch (err) {
+        addToast(`Restore failed: ${err.message}`, 'error');
+        setIsRestoring(false);
+      }
+    };
+    reader.readAsText(file);
+  };
 
   const fetchBranches = async () => {
     try {
@@ -140,6 +180,12 @@ export default function SettingsPage() {
           <button className={`tab ${activeTab === 'data' ? 'active' : ''}`} onClick={() => setActiveTab('data')}>
             <Database size={14} style={{ marginRight: 6 }} />Data
           </button>
+          
+          {currentUser?.role === 'system_admin' && (
+            <button className={`tab ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => { setActiveTab('logs'); fetchLogs(); }}>
+              <History size={14} style={{ marginRight: 6 }} />Logs
+            </button>
+          )}
         </div>
 
         {activeTab === 'store' && (
@@ -337,27 +383,90 @@ export default function SettingsPage() {
 
                 <div className="flex items-center justify-between" style={{ padding: 16, background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
                   <div>
-                    <div className="font-bold">System Backup</div>
-                    <div className="text-sm text-muted">Download a complete snapshot of all products, sales, and customers.</div>
+                    <div className="font-bold flex items-center gap-2">
+                       <Upload size={18} className="text-blue-500" />
+                       System Restore
+                    </div>
+                    <div className="text-sm text-muted mt-1">Upload a .json backup to revert the entire system state. <span className="text-red-500 font-bold">DANGER: Wipes current data.</span></div>
                   </div>
-                  <button className="btn btn-secondary" onClick={() => window.location.href = '/api/backup-full'}>
-                    <Database size={16} /> Download Backup
-                  </button>
+                  <div>
+                    <input type="file" id="restore-input" hidden accept=".json" onChange={handleRestoreBackup} />
+                    <button className="btn btn-secondary" onClick={() => document.getElementById('restore-input').click()} disabled={isRestoring}>
+                      {isRestoring ? 'Restoring...' : 'Upload & Restore'}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between" style={{ padding: 16, background: 'rgba(231, 76, 60, 0.05)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(231, 76, 60, 0.1)' }}>
                   <div>
-                    <div className="font-bold" style={{ color: 'var(--danger)' }}>Selective System Reset</div>
-                    <div className="text-sm text-muted">Cautiously wipe specific categories. Your user accounts are safe.</div>
+                    <div className="font-bold text-red-600">Selective System Reset</div>
+                    <div className="text-sm text-muted">Cautiously wipe specific categories while keeping user accounts.</div>
                   </div>
                   <button className="btn btn-danger" onClick={() => setIsResetModalOpen(true)}>
                     <RotateCcw size={16} /> Open Reset Tool
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
 
-                <div style={{ marginTop: 20, padding: 16, borderLeft: '4px solid #F1C40F', background: 'rgba(241, 196, 15, 0.05)', fontSize: '14px' }}>
-                  <strong>Note:</strong> Wiping data is permanent. User accounts (logins) and branch setups are protected from this tool for your safety.
-                </div>
+        {activeTab === 'logs' && currentUser?.role === 'system_admin' && (
+          <div className="animate-fade-in">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="text-2xl font-bold m-0 flex items-center gap-3">
+                  <History size={24} className="text-blue-500" /> System Audit Logs
+                </h2>
+                <p className="text-muted text-sm mt-1">Comprehensive trace of all important system changes.</p>
+              </div>
+              <button className="btn btn-secondary" onClick={fetchLogs} disabled={isLoadingLogs}>
+                {isLoadingLogs ? 'Refreshing...' : 'Refresh Logs'}
+              </button>
+            </div>
+
+            <div className="card" style={{ padding: 0 }}>
+              <div style={{ overflowX: 'auto' }}>
+                <table className="table" style={{ fontSize: '13px' }}>
+                  <thead>
+                    <tr style={{ background: 'var(--bg-secondary)' }}>
+                      <th style={{ padding: '12px' }}>Time</th>
+                      <th style={{ padding: '12px' }}>User</th>
+                      <th style={{ padding: '12px' }}>Action</th>
+                      <th style={{ padding: '12px' }}>Details</th>
+                      <th style={{ padding: '12px' }}>Branch</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {systemLogs.length === 0 ? (
+                      <tr><td colSpan="5" className="text-center p-10 text-muted">No logs recorded yet.</td></tr>
+                    ) : (
+                      systemLogs.map(log => (
+                        <tr key={log.id} className="border-b">
+                          <td className="p-3 text-xs text-muted">{new Date(log.timestamp).toLocaleString()}</td>
+                          <td className="p-3">
+                            <div className="font-bold">{log.userName}</div>
+                            <div className="text-xs text-muted">{log.userId?.slice(0,8)}...</div>
+                          </td>
+                          <td className="p-3">
+                            <span style={{ 
+                              padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', 
+                              backgroundColor: 'rgba(52, 152, 219, 0.1)', color: '#3498db' 
+                            }}>
+                              {log.action}
+                            </span>
+                          </td>
+                          <td className="p-3">
+                            <div className="text-xs font-mono" style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {log.details}
+                            </div>
+                          </td>
+                          <td className="p-3 text-xs">{log.branchId || 'Global'}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
