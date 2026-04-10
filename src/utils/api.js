@@ -182,7 +182,9 @@ const apiCall = async (path, options = {}) => {
   if (method === 'GET' && res.ok) {
     const storeName = ENDPOINT_MAP[path.split('?')[0]];
     if (storeName && Array.isArray(data)) {
-      idb.putAll(storeName, data).catch(console.error);
+      idb.putAll(storeName, data).catch(err => {
+        console.warn(`[Cache Update Ignored] Failed to mirror ${path} to local storage. This is safe to ignore during upgrades.`, err);
+      });
     }
   }
 

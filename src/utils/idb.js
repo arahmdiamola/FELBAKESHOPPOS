@@ -1,133 +1,184 @@
 const DB_NAME = 'fel_pos_db';
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 
 /**
- * Lightweight IndexedDB wrapper for Offline-First Bakery POS
+ * Robust Singleton IndexedDB Wrapper for Offline-First Bakery POS
+ * Prevents race conditions and ensures smooth version upgrades.
  */
+let dbPromise = null;
+
 export const initDB = () => {
-  return new Promise((resolve, reject) => {
+  if (dbPromise) return dbPromise;
+
+  dbPromise = new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
     request.onupgradeneeded = (event) => {
       const db = event.target.result;
+      console.log(`[IDB] Upgrading to Version ${DB_VERSION}...`);
       
-      // Sync Queue: Stores local changes to be pushed to the server
-      if (!db.objectStoreNames.contains('sync_queue')) {
-        db.createObjectStore('sync_queue', { keyPath: 'id', autoIncrement: true });
-      }
+      const stores = [
+        { name: 'sync_queue', options: { keyPath: 'id', autoIncrement: true } },
+        { name: 'cache_products', options: { keyPath: 'id' } },
+        { name: 'cache_categories', options: { keyPath: 'id' } },
+        { name: 'cache_branches', options: { keyPath: 'id' } },
+        { name: 'cache_customers', options: { keyPath: 'id' } },
+        { name: 'cache_preorders', options: { keyPath: 'id' } },
+        { name: 'cache_users', options: { keyPath: 'id' } },
+        { name: 'cache_transactions', options: { keyPath: 'id' } },
+        { name: 'cache_expenses', options: { keyPath: 'id' } }
+      ];
 
-      // Mirrors for Master Data: Local copies of server data
-      if (!db.objectStoreNames.contains('cache_products')) {
-        db.createObjectStore('cache_products', { keyPath: 'id' });
-      }
-      if (!db.objectStoreNames.contains('cache_categories')) {
-        db.createObjectStore('cache_categories', { keyPath: 'id' });
-      }
-      if (!db.objectStoreNames.contains('cache_branches')) {
-        db.createObjectStore('cache_branches', { keyPath: 'id' });
-      }
-      if (!db.objectStoreNames.contains('cache_customers')) {
-        db.createObjectStore('cache_customers', { keyPath: 'id' });
-      }
-      if (!db.objectStoreNames.contains('cache_preorders')) {
-        db.createObjectStore('cache_preorders', { keyPath: 'id' });
-      }
-      if (!db.objectStoreNames.contains('cache_users')) {
-        db.createObjectStore('cache_users', { keyPath: 'id' });
-      }
-      if (!db.objectStoreNames.contains('cache_transactions')) {
-        db.createObjectStore('cache_transactions', { keyPath: 'id' });
-      }
+      stores.forEach(store => {
+        if (!db.objectStoreNames.contains(store.name)) {
+          db.createObjectStore(store.name, store.options);
+          console.log(`[IDB] Created Store: ${store.name}`);
+        }
+      });
     };
 
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      const db = request.result;
+      
+      // Handle parallel version upgrades in other tabs
+      db.onversionchange = () => {
+        db.close();
+        dbPromise = null;
+        console.log('[IDB] Database closed due to version change. Refreshing...');
+        window.location.reload();
+      };
+
+      resolve(db);
+    };
+
+    request.onerror = () => {
+      dbPromise = null;
+      console.error('[IDB] Open Error:', request.error);
+      reject(request.error);
+    };
+
+    request.onblocked = () => {
+      console.warn('[IDB] Upgrade blocked by other tabs. Close other tabs of this app!');
+    };
   });
+
+  return dbPromise;
 };
 
 const getStore = async (storeName, mode = 'readonly') => {
   const db = await initDB();
-  const tx = db.transaction(storeName, mode);
-  return tx.objectStore(storeName);
+  try {
+    const tx = db.transaction(storeName, mode);
+    return tx.objectStore(storeName);
+  } catch (err) {
+    if (err.name === 'NotFoundError') {
+      console.error(`[IDB] Store "${storeName}" not found. Forcing schema refresh...`);
+      // Since version is already bumped, this usually means the connection is stale
+      db.close();
+      dbPromise = null;
+      throw err;
+    }
+    throw err;
+  }
 };
 
 export const idb = {
   // --- General CRUD ---
   put: async (storeName, data) => {
-    const store = await getStore(storeName, 'readwrite');
-    return new Promise((resolve, reject) => {
-      const request = store.put(data);
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
+    try {
+      const store = await getStore(storeName, 'readwrite');
+      return new Promise((resolve, reject) => {
+        const request = store.put(data);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    } catch (e) {
+      console.error(`[IDB Put Error] ${storeName}:`, e);
+      throw e;
+    }
   },
 
   putAll: async (storeName, items) => {
-    const db = await initDB();
-    const tx = db.transaction(storeName, 'readwrite');
-    const store = tx.objectStore(storeName);
-    items.forEach(item => store.put(item));
-    return new Promise((resolve, reject) => {
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
+    try {
+      const db = await initDB();
+      const tx = db.transaction(storeName, 'readwrite');
+      const store = tx.objectStore(storeName);
+      items.forEach(item => store.put(item));
+      return new Promise((resolve, reject) => {
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    } catch (e) {
+      console.error(`[IDB PutAll Error] ${storeName}:`, e);
+      throw e;
+    }
   },
 
   get: async (storeName, id) => {
-    const store = await getStore(storeName);
-    return new Promise((resolve, reject) => {
-      const request = store.get(id);
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
+    try {
+      const store = await getStore(storeName);
+      return new Promise((resolve, reject) => {
+        const request = store.get(id);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    } catch (e) {
+      console.warn(`[IDB Get Error] ${storeName}:`, e);
+      return null;
+    }
   },
 
   getAll: async (storeName) => {
-    const store = await getStore(storeName);
-    return new Promise((resolve, reject) => {
-      const request = store.getAll();
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
+    try {
+      const store = await getStore(storeName);
+      return new Promise((resolve, reject) => {
+        const request = store.getAll();
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    } catch (e) {
+      console.warn(`[IDB GetAll Error] ${storeName}:`, e);
+      return [];
+    }
   },
 
   delete: async (storeName, id) => {
-    const store = await getStore(storeName, 'readwrite');
-    return new Promise((resolve, reject) => {
-      const request = store.delete(id);
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
+    try {
+      const store = await getStore(storeName, 'readwrite');
+      return new Promise((resolve, reject) => {
+        const request = store.delete(id);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    } catch (e) {
+      console.error(`[IDB Delete Error] ${storeName}:`, e);
+      throw e;
+    }
   },
 
   clear: async (storeName) => {
-    const store = await getStore(storeName, 'readwrite');
-    return new Promise((resolve, reject) => {
-      const request = store.clear();
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
+    try {
+      const store = await getStore(storeName, 'readwrite');
+      return new Promise((resolve, reject) => {
+        const request = store.clear();
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      });
+    } catch (e) {
+      console.error(`[IDB Clear Error] ${storeName}:`, e);
+      throw e;
+    }
   },
 
   clearAllData: async () => {
     const stores = [
-      'sync_queue', 
-      'cache_products', 
-      'cache_categories', 
-      'cache_branches', 
-      'cache_customers', 
-      'cache_preorders', 
-      'cache_users', 
-      'cache_transactions'
+      'sync_queue', 'cache_products', 'cache_categories', 
+      'cache_branches', 'cache_customers', 'cache_preorders', 
+      'cache_users', 'cache_transactions', 'cache_expenses'
     ];
     for (const storeName of stores) {
       try {
-        const store = await getStore(storeName, 'readwrite');
-        await new Promise((resolve, reject) => {
-          const req = store.clear();
-          req.onsuccess = () => resolve();
-          req.onerror = () => reject(req.error);
-        });
+        await idb.clear(storeName);
       } catch (e) {
         console.warn(`[IDB] Could not clear ${storeName}`, e);
       }
