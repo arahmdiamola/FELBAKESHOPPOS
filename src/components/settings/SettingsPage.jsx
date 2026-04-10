@@ -26,7 +26,8 @@ export default function SettingsPage() {
     products: false,
     customers: false,
     expenses: true,
-    preorders: false
+    preorders: false,
+    syncQueue: false
   });
   const [isResetting, setIsResetting] = useState(false);
 
@@ -429,6 +430,14 @@ export default function SettingsPage() {
               <div>
                 <div className="font-bold text-sm">Pre-orders</div>
                 <div className="text-xs text-muted">Wipes all active and pending advance orders.</div>
+              </div>
+            </label>
+
+            <label className="flex items-center gap-3 p-3 border rounded-lg hover:bg-amber-50 cursor-pointer transition-colors" style={{ margin: 0, borderColor: 'var(--amber)' }}>
+              <input type="checkbox" className="checkbox" checked={resetTargets.syncQueue} onChange={e => setResetTargets(p => ({ ...p, syncQueue: e.target.checked }))} />
+              <div>
+                <div className="font-bold text-sm" style={{ color: 'var(--amber-dark)' }}>Offline Sync Queue (Repair)</div>
+                <div className="text-xs text-muted">Clears stuck transactions that are failing to sync. Use this if you see sync errors.</div>
               </div>
             </label>
           </div>

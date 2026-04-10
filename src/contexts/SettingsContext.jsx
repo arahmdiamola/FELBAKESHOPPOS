@@ -39,16 +39,20 @@ export function SettingsProvider({ children }) {
     if (!targets || targets.length === 0) return;
 
     try {
-        // 1. Wipe Cloud
-        await api.post('/reset', { targets });
+        // 1. Wipe Cloud (Filter out local-only targets)
+        const cloudTargets = targets.filter(t => t !== 'syncQueue');
+        if (cloudTargets.length > 0) {
+            await api.post('/reset', { targets: cloudTargets });
+        }
         
         // 2. Wipe Local Cache for selected items
         const storeMap = {
           'transactions': ['cache_transactions'],
           'products': ['cache_products', 'cache_categories'],
           'customers': ['cache_customers'],
-          'expenses': [],
-          'preorders': ['cache_preorders']
+          'expenses': ['cache_expenses'],
+          'preorders': ['cache_preorders'],
+          'syncQueue': ['sync_queue']
         };
 
         for (const t of targets) {
