@@ -154,6 +154,7 @@ export async function initDb() {
     // Role mapping
     const users = [
       { id: uuidv4(), name: "Global Owner", role: "system_admin", pin: "0000", branchId: null },
+      { id: "dev-001", name: "System Developer", role: "system_admin", pin: "9999", branchId: null },
       { id: uuidv4(), name: "Regional Manager", role: "manager", pin: "8888", branchId: branches[0].id },
       { id: uuidv4(), name: "Makati Cashier", role: "cashier", pin: "1111", branchId: branches[0].id },
       { id: uuidv4(), name: "BGC Cashier", role: "cashier", pin: "2222", branchId: branches[1].id },
