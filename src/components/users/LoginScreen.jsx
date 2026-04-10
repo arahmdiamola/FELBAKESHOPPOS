@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Fingerprint, Loader2, Search, X, User } from 'lucide-react';
+import { Search, X, User } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSettings } from '../../contexts/SettingsContext';
 
@@ -11,7 +11,6 @@ export default function LoginScreen() {
   const [searchTerm, setSearchTerm] = useState('');
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
-  const [scanning, setScanning] = useState(false);
 
   // Get recent users from localStorage
   const recentIds = useMemo(() => {
@@ -43,16 +42,6 @@ export default function LoginScreen() {
     }
   };
 
-  const handleFingerprint = async () => {
-    if (!selectedUser) return;
-    setScanning(true);
-    setError('');
-    setTimeout(async () => {
-      setScanning(false);
-      const success = await login(selectedUser.id, selectedUser.pin);
-      if (!success) setError('Biometric authentication failed');
-    }, 1500);
-  };
 
   if (loading) {
     return <div className="login-screen"><div className="login-card">Loading...</div></div>;
@@ -171,9 +160,6 @@ export default function LoginScreen() {
                 disabled={!pin}
               >
                 LOGIN
-              </button>
-              <button className={`btn btn-secondary ${scanning ? 'pulse-safe' : ''}`} style={{ aspectRatio: '1', padding: 14 }} onClick={handleFingerprint} disabled={scanning}>
-                {scanning ? <Loader2 className="animate-spin" /> : <Fingerprint />}
               </button>
             </div>
           </div>
