@@ -36,11 +36,31 @@ const apiCall = async (path, options = {}) => {
   if (!isOnline) {
     console.warn(`[Offline] Intercepting ${method} ${path}`);
     
-    // --- GET Requests: Serve from cache ---
+    // --- GET Requests: Serve from cache with branch filtering ---
     if (method === 'GET') {
       const storeName = ENDPOINT_MAP[path.split('?')[0]];
       if (storeName) {
-        const cached = await idb.getAll(storeName);
+        let cached = await idb.getAll(storeName);
+        
+        // Apply branch-specific filtering if applicable
+        if (['/products', '/users', '/preorders'].includes(path.split('?')[0])) {
+          try {
+            const user = JSON.parse(localStorage.getItem('fel_currentUser'));
+            const activeBranch = localStorage.getItem('fel_active_branch');
+            
+            let targetBranchId = user?.branchId;
+            if (user?.role === 'system_admin' && activeBranch && activeBranch !== 'all') {
+              targetBranchId = activeBranch;
+            }
+
+            if (targetBranchId && targetBranchId !== 'all') {
+               cached = cached.filter(item => item.branchId === targetBranchId);
+            }
+          } catch (e) {
+            console.error('[Offline Filter Error]', e);
+          }
+        }
+        
         if (cached && cached.length) return cached;
       }
       throw new Error('OFFLINE_CACHE_EMPTY');
