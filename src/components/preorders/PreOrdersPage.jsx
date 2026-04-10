@@ -7,6 +7,7 @@ import { CalendarClock, Plus, Clock, CheckCircle2, ChefHat, PackageCheck, Search
 import { v4 as uuidv4 } from 'uuid';
 import Header from '../layout/Header';
 import Modal from '../shared/Modal';
+import ProcessingOverlay from '../shared/ProcessingOverlay';
 
 const STATUSES = ['pending', 'confirmed', 'in_progress', 'ready', 'picked_up', 'cancelled'];
 const STATUS_CONFIG = {
@@ -28,6 +29,7 @@ export default function PreOrdersPage() {
   const [form, setForm] = useState(emptyForm);
   const [filterStatus, setFilterStatus] = useState('');
   const [productSearch, setProductSearch] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const filtered = filterStatus ? preorders.filter(o => o.status === filterStatus) : preorders;
 
@@ -63,6 +65,7 @@ export default function PreOrdersPage() {
   };
 
   const addPreorder = async () => {
+    if (isProcessing) return;
     if (localStorage.getItem('fel_active_branch') === 'all') {
       addToast('Please select a specific branch from the sidebar to create pre-orders', 'warning');
       return;
@@ -71,6 +74,8 @@ export default function PreOrdersPage() {
       addToast('Please fill required fields (Name, Items, Date)', 'error');
       return;
     }
+    
+    setIsProcessing(true);
     try {
       await addPreOrder({
         ...form,
@@ -85,12 +90,22 @@ export default function PreOrdersPage() {
       addToast('Pre-order created!', 'success');
     } catch (e) {
       addToast('Failed to create pre-order. Check your branch assignment.', 'error');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   const updateStatus = async (id, newStatus) => {
-    await updatePreOrder(id, { status: newStatus });
-    addToast(`Status updated to ${STATUS_CONFIG[newStatus].label}`, 'success');
+    if (isProcessing) return;
+    setIsProcessing(true);
+    try {
+      await updatePreOrder(id, { status: newStatus });
+      addToast(`Status updated to ${STATUS_CONFIG[newStatus].label}`, 'success');
+    } catch (e) {
+      addToast('Failed to update status', 'error');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleDelete = async (id) => {
@@ -102,6 +117,7 @@ export default function PreOrdersPage() {
 
   return (
     <>
+      <ProcessingOverlay isProcessing={isProcessing} message="Saving Order..." />
       <Header
         title="Pre-Orders"
         subtitle={`${preorders.length} pre-orders`}
@@ -178,11 +194,11 @@ export default function PreOrdersPage() {
 
                   {!['picked_up', 'cancelled'].includes(order.status) && (
                     <div className="flex gap-2">
-                       {order.status === 'pending' && <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={() => updateStatus(order.id, 'confirmed')}>Confirm</button>}
-                       {order.status === 'confirmed' && <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={() => updateStatus(order.id, 'in_progress')}>Start Baking</button>}
-                       {order.status === 'in_progress' && <button className="btn btn-success btn-sm" style={{ flex: 1 }} onClick={() => updateStatus(order.id, 'ready')}>Mark Ready</button>}
-                       {order.status === 'ready' && <button className="btn btn-success btn-sm" style={{ flex: 1 }} onClick={() => updateStatus(order.id, 'picked_up')}>Picked Up</button>}
-                       <button className="btn btn-ghost btn-sm" onClick={() => updateStatus(order.id, 'cancelled')}>Cancel</button>
+                       {order.status === 'pending' && <button className={`btn btn-primary btn-sm ${isProcessing ? 'loading' : ''}`} style={{ flex: 1 }} disabled={isProcessing} onClick={() => updateStatus(order.id, 'confirmed')}>{isProcessing ? 'Saving...' : 'Confirm'}</button>}
+                       {order.status === 'confirmed' && <button className={`btn btn-primary btn-sm ${isProcessing ? 'loading' : ''}`} style={{ flex: 1 }} disabled={isProcessing} onClick={() => updateStatus(order.id, 'in_progress')}>{isProcessing ? 'Working...' : 'Start Baking'}</button>}
+                       {order.status === 'in_progress' && <button className={`btn btn-success btn-sm ${isProcessing ? 'loading' : ''}`} style={{ flex: 1 }} disabled={isProcessing} onClick={() => updateStatus(order.id, 'ready')}>{isProcessing ? 'Saving...' : 'Mark Ready'}</button>}
+                       {order.status === 'ready' && <button className={`btn btn-success btn-sm ${isProcessing ? 'loading' : ''}`} style={{ flex: 1 }} disabled={isProcessing} onClick={() => updateStatus(order.id, 'picked_up')}>{isProcessing ? 'Saving...' : 'Picked Up'}</button>}
+                       <button className="btn btn-ghost btn-sm" disabled={isProcessing} onClick={() => updateStatus(order.id, 'cancelled')}>Cancel</button>
                     </div>
                   )}
                   {['picked_up', 'cancelled'].includes(order.status) && (
@@ -199,15 +215,17 @@ export default function PreOrdersPage() {
         footer={<div className="flex justify-between items-center w-full">
           <div className="text-lg font-bold">Total: {formatCurrency(totalPrice)}</div>
           <div className="flex gap-2">
-            <button className="btn btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>
-            <button className="btn btn-primary" onClick={addPreorder}>Create Pre-Order</button>
+            <button className="btn btn-secondary" onClick={() => setShowForm(false)} disabled={isProcessing}>Cancel</button>
+            <button className={`btn btn-primary ${isProcessing ? 'loading' : ''}`} onClick={addPreorder} disabled={isProcessing}>
+              {isProcessing ? 'Processing...' : 'Create Pre-Order'}
+            </button>
           </div>
         </div>}>
         <div className="form-grid">
           <div className="input-group"><label>Customer Name *</label><input className="input" value={form.customerName} onChange={e => setForm(p => ({ ...p, customerName: e.target.value }))} placeholder="Enter name..." /></div>
           <div className="input-group"><label>Phone</label><input className="input" value={form.customerPhone} onChange={e => setForm(p => ({ ...p, customerPhone: e.target.value }))} placeholder="Contact number..." /></div>
           
-          <div className="input-group" style={{ gridColumn: '1 / -1' }}>
+          <div className="input-group" style={{ gridColumn: '1 / -1', position: 'relative' }}>
             <label>Add Products to Order *</label>
             <div className="search-bar mb-2">
               <Search size={16} />

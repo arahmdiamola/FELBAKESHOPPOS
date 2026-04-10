@@ -15,6 +15,8 @@ const roleColors = {
 
 const emptyForm = { name: '', role: 'cashier', pin: '', branchId: '', image: '' };
 
+import ProcessingOverlay from '../shared/ProcessingOverlay';
+
 export default function UsersPage() {
   const { users, currentUser, addUser, updateUser, deleteUser, changePin } = useAuth();
   const { addToast } = useToast();
@@ -23,6 +25,7 @@ export default function UsersPage() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [branches, setBranches] = useState([]);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     api.get('/branches').then(setBranches).catch(console.error);
@@ -65,11 +68,13 @@ export default function UsersPage() {
   };
 
   const saveUser = async () => {
+    if (isProcessing) return;
     if (!form.name.trim()) {
       addToast('Name is required', 'error');
       return;
     }
 
+    setIsProcessing(true);
     try {
       if (editing) {
         await updateUser(editing, { name: form.name, role: form.role, branchId: form.branchId, image: form.image });
@@ -91,6 +96,8 @@ export default function UsersPage() {
       setShowForm(false);
     } catch (err) {
       addToast(err.message, 'error');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -123,6 +130,7 @@ export default function UsersPage() {
   };
 
   const savePin = async () => {
+    if (isProcessing) return;
     if (!newPin.trim()) {
       addToast('Password cannot be empty', 'error');
       return;
@@ -131,17 +139,22 @@ export default function UsersPage() {
       addToast('Passwords do not match', 'error');
       return;
     }
+    
+    setIsProcessing(true);
     try {
       await changePin(pinUserId, newPin);
       setShowPinModal(false);
       addToast('Password changed successfully', 'success');
     } catch (err) {
       addToast(err.message, 'error');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   return (
     <>
+      <ProcessingOverlay isProcessing={isProcessing} message="Saving User Profile..." />
       <Header
         title="User Management"
         subtitle={`${users.length} users`}
@@ -238,9 +251,9 @@ export default function UsersPage() {
         title={editing ? 'Edit User' : 'Add New User'}
         footer={
           <div className="flex gap-2">
-            <button className="btn btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>
-            <button className="btn btn-primary" onClick={saveUser}>
-              {editing ? 'Update User' : 'Create User'}
+            <button className="btn btn-secondary" onClick={() => setShowForm(false)} disabled={isProcessing}>Cancel</button>
+            <button className={`btn btn-primary ${isProcessing ? 'loading' : ''}`} onClick={saveUser} disabled={isProcessing}>
+              {isProcessing ? 'Processing...' : (editing ? 'Update User' : 'Create User')}
             </button>
           </div>
         }
@@ -314,8 +327,10 @@ export default function UsersPage() {
         title="Change Password"
         footer={
           <div className="flex gap-2">
-            <button className="btn btn-secondary" onClick={() => setShowPinModal(false)}>Cancel</button>
-            <button className="btn btn-primary" onClick={savePin}>Save New Password</button>
+            <button className="btn btn-secondary" onClick={() => setShowPinModal(false)} disabled={isProcessing}>Cancel</button>
+            <button className={`btn btn-primary ${isProcessing ? 'loading' : ''}`} onClick={savePin} disabled={isProcessing}>
+              {isProcessing ? 'Processing...' : 'Save New Password'}
+            </button>
           </div>
         }
       >

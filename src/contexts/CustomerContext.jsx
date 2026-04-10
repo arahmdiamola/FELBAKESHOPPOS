@@ -1,23 +1,29 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { api } from '../utils/api';
+import { useAuth } from './AuthContext';
 
 const CustomerContext = createContext();
 
 export function CustomerProvider({ children }) {
   const [customers, setCustomers] = useState([]);
+  const { currentUser, activeBranch } = useAuth();
 
   const fetchCustomers = useCallback(async () => {
+    if (!currentUser) {
+      setCustomers([]);
+      return;
+    }
     try {
       const data = await api.get('/customers');
       setCustomers(data || []);
     } catch (e) {
       console.error(e);
     }
-  }, []);
+  }, [currentUser]);
 
   useEffect(() => {
     fetchCustomers();
-  }, [fetchCustomers]);
+  }, [fetchCustomers, currentUser?.id, activeBranch]);
 
   const addCustomer = useCallback(async (customer) => {
     await api.post('/customers', customer);

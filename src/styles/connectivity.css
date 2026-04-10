@@ -1,0 +1,100 @@
+/* Global Connectivity Status Styles - Glassmorphism & High-End UX */
+
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.4);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-blur: blur(12px);
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  background: var(--glass-bg);
+  border: 1.5px solid var(--glass-border);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  cursor: default;
+  user-select: none;
+}
+
+.status-pill.online {
+  color: #2E7D32;
+  border-color: rgba(76, 175, 80, 0.3);
+  background: rgba(232, 245, 233, 0.5);
+}
+
+.status-pill.online::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  background: #4CAF50;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #4CAF50;
+}
+
+.status-pill.offline {
+  color: #D32F2F;
+  background: rgba(253, 237, 235, 0.6);
+  border-color: rgba(231, 76, 60, 0.4);
+  animation: pulse-border-red 2.5s infinite;
+}
+
+.status-pill.offline::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  background: #E74C3C;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #E74C3C;
+  animation: pulse-dot 1s infinite alternate;
+}
+
+@keyframes pulse-border-red {
+  0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(231, 76, 60, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
+}
+
+@keyframes pulse-dot {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0.5; transform: scale(0.8); }
+}
+
+.spinning {
+  animation: spin 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Sync Indicator (Small dot overlay on icons) */
+.sync-indicator {
+  position: relative;
+}
+.sync-indicator.active::after {
+  content: "";
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+  border: 2px solid white;
+  border-radius: 50%;
+  animation: bounce 0.5s infinite alternate;
+}
+
+@keyframes bounce {
+  to { transform: translateY(-2px); }
+}

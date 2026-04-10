@@ -17,6 +17,14 @@ app.use((req, res, next) => {
   next();
 });
 
+// 1. Ensure DB Readiness
+app.use('/api', (req, res, next) => {
+  if (!db) {
+    return res.status(503).json({ error: 'Server is starting up... Database not yet ready.' });
+  }
+  next();
+});
+
 let db;
 
 // Helper to append branch condition (strictly enforced by role)
@@ -366,6 +374,11 @@ const PORT = process.env.PORT || 3001;
 // Static Vite Frontend Serving for Production
 const distPath = path.join(__dirname, '../dist');
 app.use(express.static(distPath));
+
+// 404 for API
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: `API Route not found: ${req.method} ${req.originalUrl}` });
+});
 
 // Catch-all to support React Router natively
 app.use((req, res) => {

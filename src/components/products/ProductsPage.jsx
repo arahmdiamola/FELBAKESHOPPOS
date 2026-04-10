@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import Header from '../layout/Header';
 import Modal from '../shared/Modal';
 import BatchUploadModal from './BatchUploadModal';
+import ProcessingOverlay from '../shared/ProcessingOverlay';
 
 const emptyProduct = { name: '', categoryId: '', price: '', costPrice: '', stock: '', unit: 'pc', reorderPoint: '', emoji: '🍞', image: '', isTopSelling: 0 };
 
@@ -22,6 +23,7 @@ export default function ProductsPage() {
   const [showCatForm, setShowCatForm] = useState(false);
   const [catName, setCatName] = useState('');
   const [catEmoji, setCatEmoji] = useState('📦');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const filtered = useMemo(() => {
     let list = products;
@@ -60,6 +62,7 @@ export default function ProductsPage() {
   };
 
   const saveProduct = async () => {
+    if (isProcessing) return;
     if (localStorage.getItem('fel_active_branch') === 'all') {
       addToast('Please select a specific branch from the sidebar to add products', 'warning');
       return;
@@ -77,6 +80,7 @@ export default function ProductsPage() {
       isTopSelling: Number(form.isTopSelling) || 0
     };
     
+    setIsProcessing(true);
     try {
       if (editing) {
         await updateProduct(editing, data);
@@ -88,6 +92,8 @@ export default function ProductsPage() {
       setShowForm(false);
     } catch (e) {
       addToast(e.message, 'error');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -98,19 +104,27 @@ export default function ProductsPage() {
     }
   };
 
-  const saveCategory = () => {
-    if (!catName.trim()) return;
-    addCategory({ id: uuidv4(), name: catName, emoji: catEmoji });
-    setCatName('');
-    setCatEmoji('📦');
-    setShowCatForm(false);
-    addToast('Category added', 'success');
+  const saveCategory = async () => {
+    if (isProcessing || !catName.trim()) return;
+    setIsProcessing(true);
+    try {
+      await addCategory({ id: uuidv4(), name: catName, emoji: catEmoji });
+      setCatName('');
+      setCatEmoji('📦');
+      setShowCatForm(false);
+      addToast('Category added', 'success');
+    } catch (e) {
+      addToast('Failed to add category', 'error');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const getCatName = (id) => categories.find(c => c.id === id)?.name || 'Unknown';
 
   return (
     <>
+      <ProcessingOverlay isProcessing={isProcessing} message="Saving Product..." />
       <Header
         title="Products"
         subtitle={`${products.length} products in catalog`}
@@ -181,8 +195,10 @@ export default function ProductsPage() {
       <Modal isOpen={showForm} onClose={() => setShowForm(false)} title={editing ? 'Edit Product' : 'Add Product'} large
         footer={
           <div className="flex gap-2">
-            <button className="btn btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>
-            <button className="btn btn-primary" onClick={saveProduct}>{editing ? 'Update' : 'Add'} Product</button>
+            <button className="btn btn-secondary" onClick={() => setShowForm(false)} disabled={isProcessing}>Cancel</button>
+            <button className={`btn btn-primary ${isProcessing ? 'loading' : ''}`} onClick={saveProduct} disabled={isProcessing}>
+              {isProcessing ? 'Processing...' : (editing ? 'Update' : 'Add Product')}
+            </button>
           </div>
         }
       >

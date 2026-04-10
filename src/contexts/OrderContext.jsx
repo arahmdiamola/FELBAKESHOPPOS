@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { api } from '../utils/api';
 import { useProducts } from './ProductContext';
+import { useAuth } from './AuthContext';
 
 const OrderContext = createContext();
 
@@ -8,8 +9,14 @@ export function OrderProvider({ children }) {
   const [transactions, setTransactions] = useState([]);
   const [preOrders, setPreOrders] = useState([]);
   const { deductStock } = useProducts();
+  const { currentUser, activeBranch } = useAuth();
 
   const fetchData = useCallback(async () => {
+    if (!currentUser) {
+      setTransactions([]);
+      setPreOrders([]);
+      return;
+    }
     try {
       const [tx, po] = await Promise.all([
         api.get('/transactions?limit=100'),
@@ -20,11 +27,11 @@ export function OrderProvider({ children }) {
     } catch (e) {
       console.error(e);
     }
-  }, []);
+  }, [currentUser]);
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+  }, [fetchData, currentUser?.id, activeBranch]);
 
   const addTransaction = useCallback(async (transaction) => {
     await api.post('/transactions', transaction);

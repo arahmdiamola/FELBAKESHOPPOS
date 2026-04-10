@@ -10,22 +10,35 @@ import { ExpenseProvider } from './contexts/ExpenseContext';
 import { SettingsProvider } from './contexts/SettingsContext';
 import { ToastProvider } from './contexts/ToastContext';
 
+import { SyncProvider } from './contexts/SyncContext';
+
+// Register Service Worker for PWA / Offline usage
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('[SW] Registered', reg))
+      .catch(err => console.error('[SW] Registration failed', err));
+  });
+}
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ToastProvider>
-      <SettingsProvider>
-        <AuthProvider>
-          <ProductProvider>
-            <CustomerProvider>
-              <OrderProvider>
-                <ExpenseProvider>
-                  <App />
-                </ExpenseProvider>
-              </OrderProvider>
-            </CustomerProvider>
-          </ProductProvider>
-        </AuthProvider>
-      </SettingsProvider>
+      <SyncProvider>
+        <SettingsProvider>
+          <AuthProvider>
+            <ProductProvider>
+              <CustomerProvider>
+                <OrderProvider>
+                  <ExpenseProvider>
+                    <App />
+                  </ExpenseProvider>
+                </OrderProvider>
+              </CustomerProvider>
+            </ProductProvider>
+          </AuthProvider>
+        </SettingsProvider>
+      </SyncProvider>
     </ToastProvider>
   </StrictMode>
 );

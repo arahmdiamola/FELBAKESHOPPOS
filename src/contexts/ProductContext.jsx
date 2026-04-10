@@ -1,13 +1,20 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { api } from '../utils/api';
+import { useAuth } from './AuthContext';
 
 const ProductContext = createContext();
 
 export function ProductProvider({ children }) {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const { currentUser, activeBranch } = useAuth();
 
   const fetchData = useCallback(async () => {
+    if (!currentUser) {
+      setProducts([]);
+      setCategories([]);
+      return;
+    }
     try {
       const [p, c] = await Promise.all([api.get('/products'), api.get('/categories')]);
       const sortedProducts = (p || []).sort((a, b) => a.name.localeCompare(b.name));
@@ -17,11 +24,11 @@ export function ProductProvider({ children }) {
     } catch (e) {
       console.error(e);
     }
-  }, []);
+  }, [currentUser]);
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+  }, [fetchData, currentUser?.id, activeBranch]);
 
   const addProduct = useCallback(async (product) => {
     await api.post('/products', product);

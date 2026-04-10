@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useSettings } from '../../contexts/SettingsContext';
 
 export default function LoginScreen() {
-  const { users, login, loading } = useAuth();
+  const { users, login, loading, syncRequired } = useAuth();
   const { settings } = useSettings();
   const [selectedUser, setSelectedUser] = useState(null);
   const [pin, setPin] = useState('');
@@ -53,24 +53,39 @@ export default function LoginScreen() {
         <p>Select your account and enter password</p>
 
         <div className="login-users">
-          {showUserSwitch || !activeUser ? (
-            <select
-              className="select"
-              style={{ width: '100%', padding: '12px', fontSize: '1.1rem', textAlign: 'center', marginBottom: 16, background: 'var(--bg-input)' }}
-              value={activeUser?.id || ''}
-              onChange={(e) => {
-                const u = users.find(x => x.id === e.target.value);
-                setSelectedUser(u);
-                setShowUserSwitch(false);
-                setPin('');
-                setError('');
-              }}
-            >
-              <option value="" disabled>-- Select your account --</option>
-              {users.map(user => (
-                <option key={user.id} value={user.id}>{user.name} • {user.role}</option>
-              ))}
-            </select>
+          {syncRequired ? (
+            <div className="sync-required-msg animate-fade-in">
+              <div className="msg-icon">📡</div>
+              <h3>Sync Required</h3>
+              <p>This appears to be a new device or the local cache is empty.</p>
+              <p><strong>Please connect to the internet once</strong> to sync the user accounts for offline use.</p>
+              <button 
+                className="btn btn-primary btn-block mt-4" 
+                onClick={() => window.location.reload()}
+              >
+                Reload & Sync Now
+              </button>
+            </div>
+          ) : showUserSwitch || !activeUser ? (
+            <>
+              <select
+                className="select"
+                style={{ width: '100%', padding: '12px', fontSize: '1.1rem', textAlign: 'center', marginBottom: 16, background: 'var(--bg-input)' }}
+                value={activeUser?.id || ''}
+                onChange={(e) => {
+                  const u = users.find(x => x.id === e.target.value);
+                  setSelectedUser(u);
+                  setShowUserSwitch(false);
+                  setPin('');
+                  setError('');
+                }}
+              >
+                <option value="" disabled>-- Select account --</option>
+                {users.map(user => (
+                  <option key={user.id} value={user.id}>{user.name} • {user.role}</option>
+                ))}
+              </select>
+            </>
           ) : (
             <button
               className="login-user-btn selected"
@@ -122,6 +137,31 @@ export default function LoginScreen() {
 
         {error && <div className="login-error">{error}</div>}
       </div>
+      <style jsx>{`
+        .sync-required-msg {
+          background: rgba(44, 24, 16, 0.05);
+          padding: 24px;
+          border-radius: var(--radius-lg);
+          border: 1px dashed var(--accent);
+          text-align: center;
+        }
+        .msg-icon {
+          font-size: 3rem;
+          margin-bottom: 12px;
+          display: block;
+        }
+        .sync-required-msg h3 {
+          color: var(--accent);
+          font-weight: 800;
+          margin-bottom: 8px;
+        }
+        .sync-required-msg p {
+          font-size: 0.9rem;
+          color: var(--text-secondary);
+          line-height: 1.4;
+          margin-bottom: 4px;
+        }
+      `}</style>
     </div>
   );
 }

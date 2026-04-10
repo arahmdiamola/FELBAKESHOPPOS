@@ -12,6 +12,7 @@ import { v4 as uuidv4 } from 'uuid';
 import PaymentModal from './PaymentModal';
 import ReceiptPreview from './ReceiptPreview';
 import Modal from '../shared/Modal';
+import ProcessingOverlay from '../shared/ProcessingOverlay';
 
 export default function POSTerminal() {
   const { products, categories, deductStock } = useProducts();
@@ -79,6 +80,8 @@ export default function POSTerminal() {
       c.name.toLowerCase().includes(q) || c.phone?.includes(q)
     );
   }, [customers, customerSearch]);
+
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const subtotal = calcSubtotal(cart);
   const discount = calcCartDiscount(subtotal, cartDiscount.type, cartDiscount.value);
@@ -159,38 +162,46 @@ export default function POSTerminal() {
     }
   };
 
-  const completePayment = (paymentMethod, amountPaid) => {
-    const transaction = {
-      id: uuidv4(),
-      receiptNumber: generateReceiptNumber(),
-      items: cart.map(i => ({ ...i, total: i.price * i.quantity * (1 - (i.discount || 0) / 100) })),
-      subtotal, discount, tax, total, paymentMethod,
-      amountPaid: paymentMethod === 'cash' ? amountPaid : total,
-      change: paymentMethod === 'cash' ? Math.max(0, amountPaid - total) : 0,
-      customerId: selectedCustomer?.id || null,
-      customerName: selectedCustomer?.name || 'Walk-in Customer',
-      cashierId: currentUser.id,
-      cashierName: currentUser.name,
-      date: new Date().toISOString(),
-      status: 'completed',
-      notes,
-    };
+  const completePayment = async (paymentMethod, amountPaid) => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    try {
+      const transaction = {
+        id: uuidv4(),
+        receiptNumber: generateReceiptNumber(),
+        items: cart.map(i => ({ ...i, total: i.price * i.quantity * (1 - (i.discount || 0) / 100) })),
+        subtotal, discount, tax, total, paymentMethod,
+        amountPaid: paymentMethod === 'cash' ? amountPaid : total,
+        change: paymentMethod === 'cash' ? Math.max(0, amountPaid - total) : 0,
+        customerId: selectedCustomer?.id || null,
+        customerName: selectedCustomer?.name || 'Walk-in Customer',
+        cashierId: currentUser.id,
+        cashierName: currentUser.name,
+        date: new Date().toISOString(),
+        status: 'completed',
+        notes,
+      };
 
-    addTransaction(transaction);
-    deductStock(cart.map(i => ({ productId: i.productId, quantity: i.quantity })));
+      await addTransaction(transaction);
+      await deductStock(cart.map(i => ({ productId: i.productId, quantity: i.quantity })));
 
-    if (paymentMethod === 'on_account' && selectedCustomer) {
-      adjustBalance(selectedCustomer.id, total);
+      if (paymentMethod === 'on_account' && selectedCustomer) {
+        await adjustBalance(selectedCustomer.id, total);
+      }
+      if (selectedCustomer) {
+        await recordVisit(selectedCustomer.id, total);
+      }
+
+      setLastTransaction(transaction);
+      setShowPayment(false);
+      setShowReceipt(true);
+      clearCart();
+      addToast('Sale completed! 🎉', 'success');
+    } catch (e) {
+      addToast('Failed to complete sale', 'error');
+    } finally {
+      setIsProcessing(false);
     }
-    if (selectedCustomer) {
-      recordVisit(selectedCustomer.id, total);
-    }
-
-    setLastTransaction(transaction);
-    setShowPayment(false);
-    setShowReceipt(true);
-    clearCart();
-    addToast('Sale completed! 🎉', 'success');
   };
 
   return (
@@ -354,7 +365,8 @@ export default function POSTerminal() {
       </div>
 
       {/* Modals */}
-      {showPayment && <PaymentModal total={total} customer={selectedCustomer} onComplete={completePayment} onClose={() => setShowPayment(false)} />}
+      <ProcessingOverlay isProcessing={isProcessing} message="Finalizing Transaction..." />
+      {showPayment && <PaymentModal total={total} customer={selectedCustomer} onComplete={completePayment} isProcessing={isProcessing} onClose={() => setShowPayment(false)} />}
       {showReceipt && lastTransaction && <ReceiptPreview transaction={lastTransaction} settings={settings} onClose={() => setShowReceipt(false)} />}
 
       <Modal isOpen={showCustomerPicker} onClose={() => setShowCustomerPicker(false)} title="Select Customer">

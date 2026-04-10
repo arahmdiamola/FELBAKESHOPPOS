@@ -9,13 +9,13 @@ const METHODS = [
   { id: 'on_account', name: 'On Account', icon: '📒', Icn: BookOpen },
 ];
 
-export default function PaymentModal({ total, customer, onComplete, onClose }) {
+export default function PaymentModal({ total, customer, onComplete, isProcessing, onClose }) {
   const [method, setMethod] = useState('cash');
   const [amountPaid, setAmountPaid] = useState('');
 
   const paid = parseFloat(amountPaid) || 0;
   const change = Math.max(0, paid - total);
-  const canPay = method !== 'cash' || paid >= total;
+  const canPay = (method !== 'cash' || paid >= total) && !isProcessing;
 
   const quickAmounts = [
     Math.ceil(total / 10) * 10,
@@ -29,7 +29,7 @@ export default function PaymentModal({ total, customer, onComplete, onClose }) {
       <div className="modal modal-lg" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h2>Payment</h2>
-          <button className="modal-close" onClick={onClose}>✕</button>
+          <button className="modal-close" onClick={onClose} disabled={isProcessing}>✕</button>
         </div>
         <div className="modal-body">
           <div className="payment-total">
@@ -43,7 +43,7 @@ export default function PaymentModal({ total, customer, onComplete, onClose }) {
                 key={m.id}
                 className={`payment-method-btn ${method === m.id ? 'active' : ''}`}
                 onClick={() => setMethod(m.id)}
-                disabled={m.id === 'on_account' && !customer}
+                disabled={isProcessing || (m.id === 'on_account' && !customer)}
               >
                 <span className="method-icon">{m.icon}</span>
                 <span className="method-name">{m.name}</span>
@@ -62,6 +62,7 @@ export default function PaymentModal({ total, customer, onComplete, onClose }) {
                   value={amountPaid}
                   onChange={e => setAmountPaid(e.target.value)}
                   autoFocus
+                  disabled={isProcessing}
                   style={{ fontSize: '1.3rem', fontWeight: 700, textAlign: 'center' }}
                 />
               </div>
@@ -71,6 +72,7 @@ export default function PaymentModal({ total, customer, onComplete, onClose }) {
                     key={amt}
                     className="btn btn-secondary btn-sm"
                     onClick={() => setAmountPaid(String(amt))}
+                    disabled={isProcessing}
                     style={{ flex: '1 0 auto' }}
                   >
                     {formatCurrency(amt)}
@@ -87,14 +89,14 @@ export default function PaymentModal({ total, customer, onComplete, onClose }) {
           )}
         </div>
         <div className="modal-footer">
-          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+          <button className="btn btn-secondary" onClick={onClose} disabled={isProcessing}>Cancel</button>
           <button
-            className="btn btn-primary btn-lg"
+            className={`btn btn-primary btn-lg ${isProcessing ? 'loading' : ''}`}
             disabled={!canPay}
             onClick={() => onComplete(method, paid)}
-            style={{ minWidth: 180 }}
+            style={{ minWidth: 200 }}
           >
-            Complete Sale
+            {isProcessing ? 'Processing Transaction...' : 'Complete Sale'}
           </button>
         </div>
       </div>

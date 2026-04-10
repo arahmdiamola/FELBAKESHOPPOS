@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSettings } from '../../contexts/SettingsContext';
 import { api } from '../../utils/api';
+import SyncStatus from '../shared/SyncStatus';
 import {
   ShoppingBag, LayoutDashboard, Package, ClipboardList,
   Users, Wallet, Settings, LogOut, CalendarClock, Boxes, Menu, ChevronsLeft
@@ -24,12 +25,11 @@ const navItems = [
 ];
 
 export default function Sidebar() {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, activeBranch, switchBranch } = useAuth();
   const { settings } = useSettings();
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [branches, setBranches] = useState([]);
-  const [activeBranch, setActiveBranch] = useState(localStorage.getItem('fel_active_branch') || 'all');
 
   useEffect(() => {
     if (currentUser?.role === 'system_admin') {
@@ -43,13 +43,9 @@ export default function Sidebar() {
   }, [currentUser]);
 
   const handleBranchChange = (e) => {
-    const val = e.target.value;
-    setActiveBranch(val);
-    localStorage.setItem('fel_active_branch', val);
-    window.location.reload();
+    switchBranch(e.target.value);
   };
 
-  // Role based filtering
   const visibleNavItems = navItems.filter(item => {
     if (item.section) return true;
     if (currentUser?.role === 'cashier') {
@@ -61,7 +57,6 @@ export default function Sidebar() {
     return true;
   });
 
-  // Filter out empty sections
   const finalNavItems = visibleNavItems.filter((item, i) => {
     if (item.section) {
       const nextItem = visibleNavItems[i + 1];
@@ -147,6 +142,11 @@ export default function Sidebar() {
           );
         })}
       </nav>
+
+      <div style={{ marginTop: 'auto' }}>
+        {!isCollapsed && <SyncStatus />}
+        {isCollapsed && <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0' }}><SyncStatus mini /></div>}
+      </div>
 
       <div className="sidebar-footer">
         <div className="sidebar-user" onClick={logout} title={isCollapsed ? "Logout" : ""}>

@@ -1,23 +1,29 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { api } from '../utils/api';
+import { useAuth } from './AuthContext';
 
 const ExpenseContext = createContext();
 
 export function ExpenseProvider({ children }) {
   const [expenses, setExpenses] = useState([]);
+  const { currentUser, activeBranch } = useAuth();
 
   const fetchExpenses = useCallback(async () => {
+    if (!currentUser) {
+      setExpenses([]);
+      return;
+    }
     try {
       const data = await api.get('/expenses');
       setExpenses(data || []);
     } catch (e) {
       console.error(e);
     }
-  }, []);
+  }, [currentUser]);
 
   useEffect(() => {
     fetchExpenses();
-  }, [fetchExpenses]);
+  }, [fetchExpenses, currentUser?.id, activeBranch]);
 
   const addExpense = useCallback(async (expense) => {
     await api.post('/expenses', expense);

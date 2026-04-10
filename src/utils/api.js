@@ -1,3 +1,5 @@
+import { idb } from './idb';
+
 const API_URL = '/api';
 
 function getHeaders() {
@@ -7,26 +9,66 @@ function getHeaders() {
     if (user) {
       headers['X-User-Id'] = user.id;
       headers['X-User-Role'] = user.role;
-      // If user has a branch id (i.e. not systemic admin), attach it
-      if (user.branchId) {
-        headers['X-Branch-Id'] = user.branchId;
-      }
-      
-      // Multi-branch overarching toggle for system admins
+      if (user.branchId) headers['X-Branch-Id'] = user.branchId;
       const activeBranch = localStorage.getItem('fel_active_branch');
-      if (user.role === 'system_admin') {
-        if (activeBranch && activeBranch !== 'all') {
-          headers['X-Branch-Id'] = activeBranch;
-        }
+      if (user.role === 'system_admin' && activeBranch && activeBranch !== 'all') {
+        headers['X-Branch-Id'] = activeBranch;
       }
     }
-  } catch (e) {
-    // Ignore prefix errors
-  }
+  } catch (e) {}
   return headers;
 }
 
+// Map endpoints to IDB cache stores
+const ENDPOINT_MAP = {
+  '/products': 'cache_products',
+  '/customers': 'cache_customers',
+  '/preorders': 'cache_preorders',
+  '/users': 'cache_users',
+};
+
 const apiCall = async (path, options = {}) => {
+  const method = options.method || 'GET';
+  const isOnline = navigator.onLine;
+
+  if (!isOnline) {
+    console.warn(`[Offline] Intercepting ${method} ${path}`);
+    
+    // --- GET Requests: Serve from cache ---
+    if (method === 'GET') {
+      const storeName = ENDPOINT_MAP[path.split('?')[0]];
+      if (storeName) {
+        const cached = await idb.getAll(storeName);
+        if (cached && cached.length) return cached;
+      }
+      throw new Error('OFFLINE_CACHE_EMPTY');
+    }
+
+    // --- Write Requests: Add to Sync Queue ---
+    if (['POST', 'PUT', 'DELETE'].includes(method)) {
+      const body = options.body ? JSON.parse(options.body) : null;
+      
+      // OPTIMISTIC UPDATE: Update the local cache immediately so UI reflects change
+      const storeName = ENDPOINT_MAP[path.split('/')[1] ? `/${path.split('/')[1]}` : ''];
+      if (storeName && body && body.id) {
+        if (method === 'DELETE') await idb.delete(storeName, body.id);
+        else await idb.put(storeName, body);
+      }
+
+      await idb.put('sync_queue', {
+        id: crypto.randomUUID(),
+        method,
+        path,
+        body,
+        timestamp: Date.now(),
+        originalUpdatedAt: body?.updatedAt || null
+      });
+
+      return { success: true, offline: true, message: 'Queued for sync' };
+    }
+  }
+
+  // --- ONLINE: Normal Fetch ---
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: { ...getHeaders(), ...options.headers }
@@ -41,9 +83,24 @@ const apiCall = async (path, options = {}) => {
   }
 
   if (!res.ok) {
-    const errorMsg = data?.error || data?.message || (typeof data === 'string' ? data : 'An unexpected error occurred');
-    throw new Error(errorMsg);
+    let errorMessage = `Error ${res.status} at ${path}`;
+    if (data?.error || data?.message) {
+      errorMessage = data.error || data.message;
+    } else if (typeof data === 'string' && data.includes('<!DOCTYPE html>')) {
+      const preview = data.substring(0, 100).replace(/[\n\r]/g, ' ');
+      errorMessage = `Server Error: Received HTML instead of JSON at ${path}. Preview: "${preview}..." (Check if Backend is running on port 3001)`;
+    }
+    throw new Error(errorMessage);
   }
+
+  // UPDATE CACHE: If it was a GET request for a key entity, update our mirror
+  if (method === 'GET' && res.ok) {
+    const storeName = ENDPOINT_MAP[path.split('?')[0]];
+    if (storeName && Array.isArray(data)) {
+      idb.putAll(storeName, data).catch(console.error);
+    }
+  }
+
   return data;
 };
 
@@ -51,5 +108,6 @@ export const api = {
   get: (path) => apiCall(path),
   post: (path, body) => apiCall(path, { method: 'POST', body: JSON.stringify(body) }),
   put: (path, body) => apiCall(path, { method: 'PUT', body: JSON.stringify(body) }),
-  del: (path) => apiCall(path, { method: 'DELETE' })
+  del: (path) => apiCall(path, { method: 'DELETE' }),
+  callRaw: (path, options) => apiCall(path, { ...options, skipInterceptor: true }) // Helper for sync engine
 };

@@ -46,13 +46,23 @@ export const formatNumber = (num) => {
   return new Intl.NumberFormat('en-US').format(num || 0);
 };
 
+// Unique Device ID for offline collision prevention
+const getDeviceId = () => {
+  let id = localStorage.getItem('fel_device_id');
+  if (!id) {
+    id = Math.random().toString(36).substring(2, 6).toUpperCase();
+    localStorage.setItem('fel_device_id', id);
+  }
+  return id;
+};
+
 // Receipt number generator
 export const generateReceiptNumber = () => {
   const now = new Date();
-  const prefix = 'FEL';
-  const date = now.toISOString().slice(2, 10).replace(/-/g, '');
-  const seq = String(Math.floor(Math.random() * 9999)).padStart(4, '0');
-  return `${prefix}-${date}-${seq}`;
+  const device = getDeviceId();
+  const dateStr = now.toISOString().slice(2, 10).replace(/-/g, '');
+  const randomSuffix = Math.floor(Math.random() * 999).toString().padStart(3, '0');
+  return `RC-${device}-${dateStr}-${randomSuffix}`;
 };
 
 // CSV Export Utility
