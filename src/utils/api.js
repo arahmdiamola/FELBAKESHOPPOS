@@ -82,7 +82,9 @@ const apiCall = async (path, options = {}) => {
       try {
         const user = JSON.parse(localStorage.getItem('fel_currentUser'));
         const activeBranch = localStorage.getItem('fel_active_branch');
-        const targetBranchId = (user?.role === 'system_admin' && activeBranch !== 'all') ? activeBranch : user?.branchId;
+        
+        // Priority: selected active branch -> user's assigned branch
+        let targetBranchId = (activeBranch && activeBranch !== 'all') ? activeBranch : user?.branchId;
         
         if (targetBranchId && body && !body.branchId && typeof body === 'object') {
           body.branchId = String(targetBranchId);

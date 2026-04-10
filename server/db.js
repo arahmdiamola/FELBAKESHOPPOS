@@ -131,20 +131,6 @@ export async function initDb() {
     await db.run("ALTER TABLE products ADD COLUMN IF NOT EXISTS costPrice REAL DEFAULT 0");
     await db.run("ALTER TABLE preorders ADD COLUMN IF NOT EXISTS quantity INTEGER DEFAULT 1");
 
-    // Table migrations for existing databases
-    await db.run(`
-      CREATE TABLE IF NOT EXISTS expenses (
-        id TEXT PRIMARY KEY,
-        branchId TEXT NOT NULL,
-        category TEXT NOT NULL,
-        description TEXT,
-        amount REAL NOT NULL,
-        date TEXT NOT NULL,
-        addedBy TEXT,
-        FOREIGN KEY (branchId) REFERENCES branches(id)
-      )
-    `);
-
     // Ensure System Developer exists in active databases
     const devExists = await db.get("SELECT id FROM users WHERE id = 'dev-001'");
     if (!devExists) {

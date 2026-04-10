@@ -177,6 +177,7 @@ export default function POSTerminal() {
     try {
       const transaction = {
         id: uuidv4(),
+        branchId: activeBranch, // Explicitly pin the branch at creation time
         receiptNumber: generateReceiptNumber(),
         items: cart.map(i => ({ ...i, total: i.price * i.quantity * (1 - (i.discount || 0) / 100) })),
         subtotal, discount, tax, total, paymentMethod,
@@ -422,8 +423,17 @@ export default function POSTerminal() {
         )}
 
         <div className="pos-cart-actions">
-          <button className="btn btn-pay" disabled={cart.length === 0} onClick={() => setShowPayment(true)} id="btn-pay">
-            <Receipt size={22} /> Charge {formatCurrency(total)}
+          <button 
+            className="btn btn-pay" 
+            disabled={cart.length === 0 || activeBranch === 'all'} 
+            onClick={() => setShowPayment(true)} 
+            id="btn-pay"
+          >
+            {activeBranch === 'all' ? (
+              <>Pick Branch to Charge</>
+            ) : (
+              <><Receipt size={22} /> Charge {formatCurrency(total)}</>
+            )}
           </button>
           <div className="cart-action-buttons">
             {['system_admin', 'owner', 'manager'].includes(currentUser?.role) && (

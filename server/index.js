@@ -251,17 +251,27 @@ app.get('/api/transactions', async (req, res) => {
 app.post('/api/transactions', async (req, res) => {
   const t = req.body;
   const branchId = req.headers['x-branch-id'] || t.branchId;
-  await db.run(
-    "INSERT INTO transactions (id, branchId, receiptNumber, subtotal, discount, tax, total, paymentMethod, amountPaid, change, customerId, customerName, cashierId, cashierName, date, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    [t.id, branchId, t.receiptNumber, t.subtotal, t.discount, t.tax, t.total, t.paymentMethod, t.amountPaid, t.change, t.customerId, t.customerName, t.cashierId, t.cashierName, t.date, t.status, t.notes]
-  );
-  for (const i of t.items) {
-    await db.run(
-      "INSERT INTO transaction_items (id, transactionId, productId, name, price, quantity, unit, discount, total) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      [i.id || uuidv4(), t.id, i.productId, i.name, i.price, i.quantity, i.unit, i.discount, i.total]
-    );
+  
+  if (!branchId || branchId === 'all') {
+    return res.status(400).json({ error: 'Transaction must have a valid branchId' });
   }
-  res.json({ success: true });
+
+  try {
+    await db.run(
+      "INSERT INTO transactions (id, branchId, receiptNumber, subtotal, discount, tax, total, paymentMethod, amountPaid, change, customerId, customerName, cashierId, cashierName, date, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      [t.id, branchId, t.receiptNumber, t.subtotal, t.discount, t.tax, t.total, t.paymentMethod, t.amountPaid, t.change, t.customerId, t.customerName, t.cashierId, t.cashierName, t.date, t.status, t.notes]
+    );
+    for (const i of t.items) {
+      await db.run(
+        "INSERT INTO transaction_items (id, transactionId, productId, name, price, quantity, unit, discount, total) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [i.id || uuidv4(), t.id, i.productId, i.name, i.price, i.quantity, i.unit, i.discount, i.total]
+      );
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[Transaction Sync Error]', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // --- CUSTOMERS ---
