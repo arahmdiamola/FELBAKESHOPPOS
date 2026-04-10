@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useOrders } from '../../contexts/OrderContext';
 import { useProducts } from '../../contexts/ProductContext';
 import { useExpenses } from '../../contexts/ExpenseContext';
@@ -10,6 +11,7 @@ import Header from '../layout/Header';
 import ReceiptPreview from '../pos/ReceiptPreview';
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
   const { allSales, getTodayStats, dueTodayOrders, dueTodayCount } = useOrders();
   const { products, categories, getLowStockProducts } = useProducts();
   const { getTotalExpenses } = useExpenses();
@@ -153,7 +155,7 @@ export default function DashboardPage() {
                 </p>
               </div>
             </div>
-            <button className="btn btn-primary btn-sm" onClick={() => window.location.hash = '#/pre-orders'}>View Schedules</button>
+            <button className="btn btn-primary btn-sm" onClick={() => navigate('/preorders')}>View Schedules</button>
           </div>
         )}
         <div className="stats-grid">

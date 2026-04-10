@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useMemo } 
 import { api } from '../utils/api';
 import { useProducts } from './ProductContext';
 import { useAuth } from './AuthContext';
+import { v4 as uuidv4 } from 'uuid';
 
 const OrderContext = createContext();
 
