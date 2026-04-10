@@ -251,13 +251,26 @@ export default function POSTerminal() {
               {product.isTopSelling === 3 && <div className="top-badge">⭐ Popular</div>}
               
               {product.image ? (
-                <img src={product.image} alt={product.name} loading="lazy" style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 'var(--radius-sm)', marginBottom: 4 }} />
+                <div style={{ width: 80, height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 4 }}>
+                  <img 
+                    src={product.image} 
+                    alt={product.name} 
+                    loading="lazy" 
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'var(--radius-md)' }} 
+                  />
+                </div>
               ) : (
-                <div className="product-emoji">{product.emoji}</div>
+                <div className="product-emoji" style={{ fontSize: '2.5rem' }}>{product.emoji}</div>
               )}
-              <div className="product-name">{product.name}</div>
-              <div className="product-price">{formatCurrency(product.price)}</div>
-              <div className={`product-stock ${product.stock <= product.reorderPoint ? 'low' : ''}`}>
+
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4, width: '100%' }}>
+                <div className="product-name" style={{ minHeight: '2.4em', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {product.name}
+                </div>
+                <div className="product-price">{formatCurrency(product.price)}</div>
+              </div>
+
+              <div className={`product-stock ${product.stock <= product.reorderPoint ? 'low' : ''}`} style={{ marginTop: 'auto', paddingTop: 8, fontSize: '0.7rem' }}>
                 {product.stock} {product.unit}
               </div>
             </div>

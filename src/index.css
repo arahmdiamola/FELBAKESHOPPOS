@@ -1016,19 +1016,19 @@ td.primary {
 
 .pos-product-card {
   background: var(--bg-input);
-  border: 1px solid var(--border-light);
+  border: 1.5px solid var(--border-light);
   border-radius: var(--radius-xl);
-  padding: 20px;
+  padding: 16px;
   cursor: pointer;
   transition: all var(--transition-base);
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 10px;
+  gap: 8px;
   user-select: none;
-  min-height: 160px;
-  justify-content: center;
+  min-height: 180px;
+  justify-content: space-between;
   box-shadow: 0 4px 15px rgba(44, 24, 16, 0.02);
   position: relative;
 }
@@ -1040,17 +1040,17 @@ td.primary {
 
 .top-badge {
   position: absolute;
-  top: -12px;
-  right: -12px;
+  top: 8px;
+  right: 8px;
   background: linear-gradient(135deg, #f59e0b, #ea580c);
   color: white;
-  padding: 4px 12px;
+  padding: 4px 10px;
   border-radius: var(--radius-full);
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 800;
-  box-shadow: 0 4px 10px rgba(234, 88, 12, 0.3);
+  box-shadow: 0 4px 8px rgba(234, 88, 12, 0.2);
   z-index: 10;
-  border: 2px solid var(--bg-card);
+  border: 1.5px solid #fff;
   white-space: nowrap;
 }
 
