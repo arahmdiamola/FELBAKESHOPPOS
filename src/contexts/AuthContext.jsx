@@ -18,6 +18,22 @@ export function AuthProvider({ children }) {
     localStorage.setItem('fel_active_branch', branchId);
   };
 
+  useEffect(() => {
+    const hydrateUser = async () => {
+      if (currentUser && !currentUser.image) {
+        try {
+          const fullUser = await idb.get('cache_users', currentUser.id);
+          if (fullUser && fullUser.image) {
+            setCurrentUser(fullUser);
+          }
+        } catch (e) {
+          console.warn('[Auth] User hydration failed:', e);
+        }
+      }
+    };
+    hydrateUser();
+  }, [currentUser?.id]);
+
   const fetchUsers = useCallback(async () => {
     try {
       const data = await api.get('/users');
@@ -58,7 +74,9 @@ export function AuthProvider({ children }) {
         const user = await api.post('/auth/login', { id: userId, pin });
         if (user) {
           setCurrentUser(user);
-          localStorage.setItem('fel_currentUser', JSON.stringify(user));
+          // Only store lightweight metadata in localStorage to avoid QuotaExceededError
+          const { image, ...userMeta } = user;
+          localStorage.setItem('fel_currentUser', JSON.stringify(userMeta));
           
           // Cache for offline login
           await idb.put('cache_users', { ...user, cachedPin: pin, lastLogin: Date.now() });
