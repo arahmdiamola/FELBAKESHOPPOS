@@ -107,5 +107,30 @@ export const idb = {
       request.onsuccess = () => resolve();
       request.onerror = () => reject(request.error);
     });
+  },
+
+  clearAllData: async () => {
+    const stores = [
+      'sync_queue', 
+      'cache_products', 
+      'cache_categories', 
+      'cache_branches', 
+      'cache_customers', 
+      'cache_preorders', 
+      'cache_users', 
+      'cache_transactions'
+    ];
+    for (const storeName of stores) {
+      try {
+        const store = await getStore(storeName, 'readwrite');
+        await new Promise((resolve, reject) => {
+          const req = store.clear();
+          req.onsuccess = () => resolve();
+          req.onerror = () => reject(req.error);
+        });
+      } catch (e) {
+        console.warn(`[IDB] Could not clear ${storeName}`, e);
+      }
+    }
   }
 };

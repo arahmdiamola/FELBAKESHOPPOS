@@ -34,8 +34,16 @@ export function SettingsProvider({ children }) {
 
   const resetData = async () => {
     if (confirm('Are you sure you want to completely clear the entire database?')) {
+        // Aggressive reset: Both Cloud and Local Device
         await api.post('/reset', {});
-        window.location.reload();
+        await idb.clearAllData();
+        
+        // Clear login and settings but keep basic keys if needed
+        Object.keys(localStorage).forEach(key => {
+            if (key.startsWith('fel_')) localStorage.removeItem(key);
+        });
+
+        window.location.href = '/login';
     }
   };
 

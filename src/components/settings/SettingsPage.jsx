@@ -261,23 +261,28 @@ export default function SettingsPage() {
           <div className="card">
             <div className="card-body">
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div className="flex items-center justify-between" style={{ padding: 16, background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
+                <div className="flex items-center justify-between" style={{ padding: 16, background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
                   <div>
-                    <div className="font-bold">Export Data</div>
-                    <div className="text-sm text-muted">Download all your data as JSON backup</div>
+                    <div className="font-bold">System Backup</div>
+                    <div className="text-sm text-muted">Download a complete snapshot of all products, sales, and customers.</div>
                   </div>
-                  <button className="btn btn-secondary" onClick={handleExport}>
-                    <Database size={16} /> Export
+                  <button className="btn btn-secondary" onClick={() => window.location.href = '/api/backup-full'}>
+                    <Database size={16} /> Download Backup
                   </button>
                 </div>
-                <div className="flex items-center justify-between" style={{ padding: 16, background: 'var(--danger-light)', borderRadius: 'var(--radius-md)' }}>
+
+                <div className="flex items-center justify-between" style={{ padding: 16, background: 'rgba(231, 76, 60, 0.05)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(231, 76, 60, 0.1)' }}>
                   <div>
-                    <div className="font-bold" style={{ color: 'var(--danger)' }}>Reset All Data</div>
-                    <div className="text-sm text-muted">Delete all products, transactions, customers, and expenses</div>
+                    <div className="font-bold" style={{ color: 'var(--danger)' }}>Aggressive System Reset</div>
+                    <div className="text-sm text-muted">Wipe EVERYTHING (Cloud + Local Device). Required for fresh branch setup.</div>
                   </div>
                   <button className="btn btn-danger" onClick={handleReset}>
-                    <RotateCcw size={16} /> Reset
+                    <RotateCcw size={16} /> Wipe All Data
                   </button>
+                </div>
+
+                <div style={{ marginTop: 20, padding: 16, borderLeft: '4px solid #F1C40F', background: 'rgba(241, 196, 15, 0.05)', fontSize: '14px' }}>
+                  <strong>Note:</strong> Resetting data is permanent. We recommend performing a **System Backup** first. After resetting, you will be automatically logged out.
                 </div>
               </div>
             </div>

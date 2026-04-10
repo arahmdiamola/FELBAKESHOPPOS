@@ -369,6 +369,31 @@ app.post('/api/reset', async (req, res) => {
   res.json({ success: true });
 });
 
+app.get('/api/backup-full', async (req, res) => {
+  try {
+    const backup = {
+      timestamp: new Date().toISOString(),
+      branches: await db.all("SELECT * FROM branches"),
+      users: await db.all("SELECT * FROM users"),
+      categories: await db.all("SELECT * FROM categories"),
+      products: await db.all("SELECT * FROM products"),
+      transactions: await db.all("SELECT * FROM transactions"),
+      transaction_items: await db.all("SELECT * FROM transaction_items"),
+      customers: await db.all("SELECT * FROM customers"),
+      expenses: await db.all("SELECT * FROM expenses"),
+      preorders: await db.all("SELECT * FROM preorders"),
+      settings: await db.all("SELECT * FROM settings"),
+    };
+    
+    // Set headers to force download as JSON file
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="fel-pos-backup-${new Date().toISOString().slice(0,10)}.json"`);
+    res.send(JSON.stringify(backup, null, 2));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 const PORT = process.env.PORT || 3001;
 
 // Static Vite Frontend Serving for Production
