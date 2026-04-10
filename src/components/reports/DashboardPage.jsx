@@ -99,6 +99,10 @@ export default function DashboardPage() {
     return allSales.filter(t => new Date(t.date) >= cutoff).reduce((sum, t) => sum + t.total, 0);
   }, [allSales]);
 
+  const inventoryValue = useMemo(() => {
+    return products.reduce((sum, p) => sum + (p.costPrice * p.stock), 0);
+  }, [products]);
+
   // Today's Sales Pulse (Hourly)
   const todayPulseData = useMemo(() => {
     const data = [];

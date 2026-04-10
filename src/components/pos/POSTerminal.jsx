@@ -210,6 +210,7 @@ export default function POSTerminal() {
       // 3. Instant UI feedback
       setSuccessTransaction(transaction);
       setShowSuccessCheckout(true);
+      setShowPayment(false); 
       
       setCart([]);
       setCartDiscount({ type: 'percentage', value: 0 });
