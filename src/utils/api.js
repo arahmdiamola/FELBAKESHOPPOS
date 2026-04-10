@@ -27,6 +27,7 @@ const ENDPOINT_MAP = {
   '/customers': 'cache_customers',
   '/preorders': 'cache_preorders',
   '/users': 'cache_users',
+  '/transactions': 'cache_transactions',
 };
 
 const apiCall = async (path, options = {}) => {
@@ -43,7 +44,7 @@ const apiCall = async (path, options = {}) => {
         let cached = await idb.getAll(storeName);
         
         // Apply branch-specific filtering if applicable
-        if (['/products', '/users', '/preorders'].includes(path.split('?')[0])) {
+        if (['/products', '/users', '/preorders', '/transactions'].includes(path.split('?')[0])) {
           try {
             const user = JSON.parse(localStorage.getItem('fel_currentUser'));
             const activeBranch = localStorage.getItem('fel_active_branch');
@@ -66,18 +67,43 @@ const apiCall = async (path, options = {}) => {
       throw new Error('OFFLINE_CACHE_EMPTY');
     }
 
-    // --- Write Requests: Add to Sync Queue ---
+    // --- Write Requests: Add to Sync Queue + Optimistic Updates ---
     if (['POST', 'PUT', 'DELETE'].includes(method)) {
       const body = options.body ? JSON.parse(options.body) : null;
+      const cleanPath = path.split('?')[0];
       
-      // OPTIMISTIC UPDATE: Update the local cache immediately so UI reflects change
-      const segments = path.split('/');
+      // 1. STANDARD OPTIMISTIC UPDATE: Map simple entities (Users, Customers, etc.)
+      const segments = cleanPath.split('/');
       const storeName = ENDPOINT_MAP['/' + segments[1]];
       if (storeName && body && body.id) {
         if (method === 'DELETE') await idb.delete(storeName, body.id);
         else await idb.put(storeName, body);
       }
 
+      // 2. ADVANCED OFFLINE SIDE EFFECTS (Hardened Logic)
+      
+      // CASE: Inventory Deduction
+      if (cleanPath === '/products/inventory' && body?.direction === 'deduct' && Array.isArray(body?.items)) {
+        for (const item of body.items) {
+          try {
+            const product = await idb.get('cache_products', item.productId);
+            if (product) {
+              product.stock = Math.max(0, (product.stock || 0) - (item.quantity || 0));
+              await idb.put('cache_products', product);
+              console.log(`[Offline Inventory] Deducted ${item.quantity} from ${product.name}`);
+            }
+          } catch (e) { console.error('[Offline Inventory Error]', e); }
+        }
+      }
+
+      // CASE: Transaction Record (for Dashboard/Reports)
+      if (cleanPath === '/transactions' && method === 'POST' && body) {
+         try {
+           await idb.put('cache_transactions', body);
+         } catch (e) { console.error('[Offline Transaction Cache Error]', e); }
+      }
+
+      // 3. QUEUE FOR SYNC
       await idb.put('sync_queue', {
         id: crypto.randomUUID(),
         method,
