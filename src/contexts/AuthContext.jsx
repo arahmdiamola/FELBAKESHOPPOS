@@ -78,7 +78,10 @@ export function AuthProvider({ children }) {
     console.log('[Auth] Attempting offline login fallback...');
     try {
       const cachedUser = await idb.get('cache_users', userId);
-      if (cachedUser && cachedUser.cachedPin === pin) {
+      // Check both the manually cached PIN (from a previous login) and the server-synced PIN
+      const storedPin = cachedUser?.cachedPin || cachedUser?.pin;
+      
+      if (cachedUser && storedPin === pin) {
         setCurrentUser(cachedUser);
         localStorage.setItem('fel_currentUser', JSON.stringify(cachedUser));
         
