@@ -65,12 +65,35 @@ export function OrderProvider({ children }) {
     // Detect if we are marking a preorder as picked_up to deduct stock
     if (updates.status === 'picked_up') {
       const order = preOrders.find(o => o.id === id);
-      if (order && order.status !== 'picked_up' && Array.isArray(order.items)) {
-        // Only deduct if it wasn't already picked_up
-        deductStock(order.items.map(i => ({ 
-          productId: i.productId, 
-          quantity: i.quantity || 1 
-        })));
+      if (order && order.status !== 'picked_up') {
+        // 1. Deduct Stock
+        if (Array.isArray(order.items)) {
+          await deductStock(order.items.map(i => ({ 
+            productId: i.productId, 
+            quantity: i.quantity || 1 
+          })));
+        }
+
+        // 2. Create permanent transaction record
+        const transaction = {
+          id: `TX-${uuidv4()}`,
+          receiptNumber: `PRE-${order.id.slice(0, 8).toUpperCase()}`,
+          date: new Date().toISOString(),
+          customerName: order.customerName,
+          customerId: order.customerId || null,
+          items: Array.isArray(order.items) ? order.items : [],
+          total: order.totalPrice,
+          subtotal: order.totalPrice, // Simplified for pre-orders
+          discount: 0,
+          tax: 0,
+          paymentMethod: 'prepaid/balance',
+          cashierName: 'System (Pre-order)',
+          isPreorder: true,
+          status: 'completed'
+        };
+
+        await api.post('/transactions', transaction);
+        setTransactions(prev => [transaction, ...prev]);
       }
     }
 
@@ -99,42 +122,18 @@ export function OrderProvider({ children }) {
       return d >= todayStart && d <= todayEnd;
     });
 
-    const todayPreOrders = preOrders.filter(o => {
-      if (o.status !== 'picked_up' || !o.dueDate) return false;
-      const d = new Date(o.dueDate); 
-      return d >= todayStart && d <= todayEnd;
-    });
-
-    const posRevenue = todayTxns.reduce((sum, t) => sum + Number(t.total || 0), 0);
-    const preRevenue = todayPreOrders.reduce((sum, o) => sum + Number(o.totalPrice || 0), 0);
-
-    console.log(`[Stats Update] Today\'s Sales: ${todayTxns.length}, POS Revenue: ${posRevenue}`);
+    const revenue = todayTxns.reduce((sum, t) => sum + Number(t.total || 0), 0);
 
     return {
-      revenue: posRevenue + preRevenue,
-      count: todayTxns.length + todayPreOrders.length,
-      items: todayTxns.reduce((sum, t) => sum + (t.items || []).reduce((s, i) => s + (i.quantity || 0), 0), 0) +
-             todayPreOrders.reduce((sum, o) => sum + (Array.isArray(o.items) ? o.items.reduce((s, i) => s + (i.quantity || 1), 0) : 1), 0),
+      revenue,
+      count: todayTxns.length,
+      items: todayTxns.reduce((sum, t) => sum + (t.items || []).reduce((s, i) => s + (i.quantity || 0), 0), 0),
     };
   }, [transactions, preOrders]);
 
   const allSales = useMemo(() => {
-    const closedPreOrders = preOrders
-      .filter(o => o.status === 'picked_up')
-      .map(o => ({
-        id: o.id,
-        date: o.dueDate, 
-        receiptNumber: `PRE-${o.id.slice(0, 4)}`,
-        customerName: o.customerName,
-        cashierName: 'Pre-order System',
-        paymentMethod: 'prepaid',
-        total: o.totalPrice,
-        items: Array.isArray(o.items) ? o.items : [{ name: o.items, price: o.totalPrice, quantity: 1, productId: 'custom' }],
-        isPreorder: true
-      }));
-
-    return [...transactions, ...closedPreOrders].sort((a, b) => new Date(b.date) - new Date(a.date));
-  }, [transactions, preOrders]);
+    return [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
+  }, [transactions]);
 
   return (
     <OrderContext.Provider value={{
