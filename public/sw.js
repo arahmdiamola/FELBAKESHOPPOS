@@ -36,8 +36,15 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // IGNORE API calls and external domains
-  if (url.pathname.startsWith('/api') || url.hostname !== self.location.hostname) {
+  // IGNORE API calls, external domains, and Vite-specific dev assets
+  if (
+    url.pathname.startsWith('/api') || 
+    url.hostname !== self.location.hostname ||
+    url.pathname.startsWith('/@') ||
+    url.pathname.includes('node_modules') ||
+    url.pathname.endsWith('.jsx') ||
+    url.search.includes('v=') // Vite versioning params
+  ) {
     return;
   }
 
