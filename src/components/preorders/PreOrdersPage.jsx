@@ -1,13 +1,15 @@
 import { useState, useMemo } from 'react';
 import { useOrders } from '../../contexts/OrderContext';
 import { useProducts } from '../../contexts/ProductContext';
+import { useSettings } from '../../contexts/SettingsContext';
 import { useToast } from '../../contexts/ToastContext';
 import { formatCurrency, formatDate, formatDateTime } from '../../utils/formatters';
-import { CalendarClock, Plus, Clock, CheckCircle2, ChefHat, PackageCheck, Search, Trash2, ShoppingCart } from 'lucide-react';
+import { CalendarClock, Plus, Clock, CheckCircle2, ChefHat, PackageCheck, Search, Trash2, ShoppingCart, CheckCircle } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import Header from '../layout/Header';
 import Modal from '../shared/Modal';
 import ProcessingOverlay from '../shared/ProcessingOverlay';
+import ReceiptPreview from '../pos/ReceiptPreview';
 
 const STATUSES = ['pending', 'confirmed', 'in_progress', 'ready', 'picked_up', 'cancelled'];
 const STATUS_CONFIG = {
@@ -24,12 +26,14 @@ const emptyForm = { customerName: '', customerPhone: '', items: [], deposit: '',
 export default function PreOrdersPage() {
   const { preOrders: preorders, addPreOrder, updatePreOrder, deletePreOrder } = useOrders();
   const { products } = useProducts();
+  const { settings } = useSettings();
   const { addToast } = useToast();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [filterStatus, setFilterStatus] = useState('');
   const [productSearch, setProductSearch] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [successTransaction, setSuccessTransaction] = useState(null);
 
   const filtered = filterStatus ? preorders.filter(o => o.status === filterStatus) : preorders;
 
@@ -99,7 +103,10 @@ export default function PreOrdersPage() {
     if (isProcessing) return;
     setIsProcessing(true);
     try {
-      await updatePreOrder(id, { status: newStatus });
+      const transaction = await updatePreOrder(id, { status: newStatus });
+      if (newStatus === 'picked_up' && transaction) {
+        setSuccessTransaction(transaction);
+      }
       addToast(`Status updated to ${STATUS_CONFIG[newStatus].label}`, 'success');
     } catch (e) {
       addToast('Failed to update status', 'error');
@@ -275,6 +282,42 @@ export default function PreOrdersPage() {
           <div className="input-group" style={{ gridColumn: '1 / -1' }}><label>Special Instructions / Customizations</label><textarea className="input" rows={2} value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} placeholder="Decoration, flavor, packaging details..." /></div>
         </div>
       </Modal>
+
+      {/* Fulfillment Receipt Modal */}
+      {successTransaction && (
+        <Modal 
+          onClose={() => setSuccessTransaction(null)}
+          title="Fulfillment Success"
+          maxWidth="500px"
+        >
+          <div style={{ textAlign: 'center', padding: '10px 0' }}>
+            <div className="success-check-anim" style={{ marginBottom: 15 }}>
+              <CheckCircle size={40} style={{ color: 'var(--success)' }} />
+            </div>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: 8 }}>Order Picked Up!</h2>
+            <div style={{ fontSize: '1rem', color: 'var(--text-secondary)', marginBottom: 20 }}>
+              Balance Collected: <span style={{ fontWeight: 800, color: 'var(--success)' }}>{formatCurrency(successTransaction.total)}</span>
+            </div>
+            
+            <div style={{ border: '1px solid var(--border-light)', borderRadius: 12, overflow: 'hidden', marginBottom: 20, maxHeight: 350, overflowY: 'auto', background: '#fff' }}>
+              <ReceiptPreview 
+                transaction={successTransaction} 
+                settings={settings} 
+                onClose={() => {}} 
+                isEmbed 
+              />
+            </div>
+            
+            <button 
+              className="btn btn-primary btn-block" 
+              style={{ padding: 14, fontSize: '1.1rem', fontWeight: 800 }}
+              onClick={() => setSuccessTransaction(null)}
+            >
+              CLOSE PRE-ORDER
+            </button>
+          </div>
+        </Modal>
+      )}
     </>
   );
 }

@@ -94,11 +94,16 @@ export function OrderProvider({ children }) {
 
         await api.post('/transactions', transaction);
         setTransactions(prev => [transaction, ...prev]);
+        
+        await api.put(`/preorders/${id}`, updates);
+        await fetchData();
+        return transaction; // RETURN FOR UI
       }
     }
 
     await api.put(`/preorders/${id}`, updates);
     await fetchData();
+    return null;
   }, [fetchData, preOrders, deductStock]);
 
   const deletePreOrder = useCallback(async (id) => {
