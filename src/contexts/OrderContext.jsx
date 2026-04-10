@@ -79,22 +79,33 @@ export function OrderProvider({ children }) {
           // 2. Create permanent transaction record
           const transaction = {
             id: uuidv4(),
+            branchId: order.branchId, // Source of truth: the order's originating branch
             receiptNumber: `PRE-${(order.id || '').slice(0, 8).toUpperCase()}`,
             date: new Date().toISOString(),
             customerName: order.customerName || 'Walk-in Customer',
             customerId: order.customerId || null,
-            items: Array.isArray(order.items) ? order.items : [],
-            total: order.totalPrice || 0,
-            subtotal: order.totalPrice || 0,
+            items: (Array.isArray(order.items) ? order.items : []).map(i => ({
+              ...i,
+              id: uuidv4(),
+              productId: i.productId,
+              name: i.name,
+              price: Number(i.price || 0),
+              quantity: Number(i.quantity || 1),
+              discount: 0,
+              total: Number(i.price || 0) * Number(i.quantity || 1)
+            })),
+            total: Number(order.totalPrice || 0),
+            subtotal: Number(order.totalPrice || 0),
             discount: 0,
             tax: 0,
-            amountPaid: order.totalPrice || 0,
+            amountPaid: Number(order.totalPrice || 0),
             change: 0,
             paymentMethod: 'prepaid/balance',
             cashierId: currentUser?.id || 'system',
             cashierName: currentUser?.name || 'System',
             isPreorder: true,
-            status: 'completed'
+            status: 'completed',
+            notes: order.notes || ''
           };
 
           // Save transaction first
