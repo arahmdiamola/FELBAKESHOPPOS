@@ -11,6 +11,30 @@ import ProcessingOverlay from '../shared/ProcessingOverlay';
 
 const emptyProduct = { name: '', categoryId: '', price: '', costPrice: '', stock: '', unit: 'pc', reorderPoint: '', emoji: '🍞', image: '', isTopSelling: 0 };
 
+const BAKERY_EMOJIS = [
+  '🧁', '🍰', '🎂', '🥧', '🍩', '🍪', '🥨', '🥐', '🥯', '🥖', '🍞', '🥯', '🥞', '🧇', '🍮', 
+  '🍨', '🍦', '🍫', '🍬', '🍭', '🍓', '🍋', '🍇', '☕', '🥤', '🧋', '🥛', '🥪', '🍕', '📦', '🎁', '🎀'
+];
+
+function EmojiSelector({ selected, onSelect }) {
+  return (
+    <div className="emoji-grid-container">
+      <div className="emoji-grid">
+        {BAKERY_EMOJIS.map(emoji => (
+          <button 
+            key={emoji} 
+            type="button"
+            className={`emoji-btn ${selected === emoji ? 'active' : ''}`}
+            onClick={() => onSelect(emoji)}
+          >
+            {emoji}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function ProductsPage() {
   const { products, categories, addProduct, addProductsBatch, updateProduct, deleteProduct, addCategory, deleteCategory } = useProducts();
   const { addToast } = useToast();
@@ -241,9 +265,12 @@ export default function ProductsPage() {
             <label>Reorder Point</label>
             <input className="input" type="number" min="0" value={form.reorderPoint} onChange={e => setForm(prev => ({ ...prev, reorderPoint: e.target.value }))} />
           </div>
-          <div className="input-group">
-            <label>Emoji (Icon)</label>
-            <input className="input" value={form.emoji} onChange={e => setForm(prev => ({ ...prev, emoji: e.target.value }))} style={{ fontSize: '1.5rem', textAlign: 'center' }} />
+          <div className="input-group" style={{ gridColumn: '1 / -1' }}>
+            <label>Choose Icon (Emoji)</label>
+            <EmojiSelector 
+              selected={form.emoji} 
+              onSelect={(emoji) => setForm(prev => ({ ...prev, emoji }))} 
+            />
           </div>
           <div className="input-group">
             <label>Popularity Badge</label>
@@ -278,13 +305,16 @@ export default function ProductsPage() {
       <Modal isOpen={showCatForm} onClose={() => setShowCatForm(false)} title="Add Category"
         footer={<button className="btn btn-primary" onClick={saveCategory}>Add Category</button>}>
         <div className="form-grid">
-          <div className="input-group">
+          <div className="input-group" style={{ gridColumn: '1 / -1' }}>
             <label>Category Name</label>
             <input className="input" value={catName} onChange={e => setCatName(e.target.value)} placeholder="e.g. Donuts" />
           </div>
-          <div className="input-group">
-            <label>Emoji</label>
-            <input className="input" value={catEmoji} onChange={e => setCatEmoji(e.target.value)} style={{ fontSize: '1.5rem', textAlign: 'center' }} />
+          <div className="input-group" style={{ gridColumn: '1 / -1' }}>
+            <label>Choose Icon (Emoji)</label>
+            <EmojiSelector 
+              selected={catEmoji} 
+              onSelect={setCatEmoji} 
+            />
           </div>
         </div>
       </Modal>
