@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fel-bakery-pos-v5';
+const CACHE_NAME = 'fel-bakery-pos-v6';
 
 // 1. Install: Cache the core entry point
 self.addEventListener('install', (event) => {

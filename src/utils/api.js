@@ -75,7 +75,18 @@ const apiCall = async (path, options = {}) => {
     if (['POST', 'PUT', 'DELETE'].includes(method)) {
       const body = options.body ? JSON.parse(options.body) : null;
       const cleanPath = path.split('?')[0];
-      
+
+      // 0. AUTO-INJECT BRANCH ID: Ensure data belongs to current branch for offline filtering
+      try {
+        const user = JSON.parse(localStorage.getItem('fel_currentUser'));
+        const activeBranch = localStorage.getItem('fel_active_branch');
+        const targetBranchId = (user?.role === 'system_admin' && activeBranch !== 'all') ? activeBranch : user?.branchId;
+        
+        if (targetBranchId && body && !body.branchId && typeof body === 'object') {
+          body.branchId = targetBranchId;
+        }
+      } catch (e) {}
+
       // 1. STANDARD OPTIMISTIC UPDATE: Map simple entities (Users, Customers, etc.)
       const segments = cleanPath.split('/');
       const storeName = ENDPOINT_MAP['/' + segments[1]];
@@ -86,18 +97,36 @@ const apiCall = async (path, options = {}) => {
 
       // 2. ADVANCED OFFLINE SIDE EFFECTS (Hardened Logic)
       
-      // CASE: Inventory Deduction
-      if (cleanPath === '/products/inventory' && body?.direction === 'deduct' && Array.isArray(body?.items)) {
+      // CASE: Inventory Adjustment (Bulk POST)
+      if (cleanPath === '/products/inventory' && body?.direction && Array.isArray(body?.items)) {
         for (const item of body.items) {
           try {
             const product = await idb.get('cache_products', item.productId);
             if (product) {
-              product.stock = Math.max(0, (product.stock || 0) - (item.quantity || 0));
+              const change = (item.quantity || 0);
+              if (body.direction === 'deduct') {
+                product.stock = Math.max(0, (product.stock || 0) - change);
+              } else if (body.direction === 'restore') {
+                product.stock = (product.stock || 0) + change;
+              }
               await idb.put('cache_products', product);
-              console.log(`[Offline Inventory] Deducted ${item.quantity} from ${product.name}`);
+              console.log(`[Offline Inventory] ${body.direction}: ${change} for ${product.name}`);
             }
           } catch (e) { console.error('[Offline Inventory Error]', e); }
         }
+      }
+
+      // CASE: Manual Stock Adjustment (Single PUT)
+      if (cleanPath.startsWith('/products/') && cleanPath.endsWith('/adjust') && body?.quantity) {
+        try {
+          const productId = segments[2];
+          const product = await idb.get('cache_products', productId);
+          if (product) {
+            product.stock = (product.stock || 0) + (body.quantity || 0);
+            await idb.put('cache_products', product);
+            console.log(`[Offline Adjust] Adjusted ${body.quantity} for ${product.name}`);
+          }
+        } catch (e) { console.error('[Offline Adjust Error]', e); }
       }
 
       // CASE: Transaction Record (for Dashboard/Reports)
