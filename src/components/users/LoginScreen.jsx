@@ -128,34 +128,50 @@ export default function LoginScreen() {
           </div>
         ) : (
           <div className="password-area animate-fade-in">
-            <div className="selected-user-card" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12, background: 'var(--bg-secondary)', borderRadius: 16, marginBottom: 20 }}>
+            <div className="selected-user-card" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12, background: 'var(--bg-secondary)', borderRadius: 16, marginBottom: 16 }}>
                {selectedUser.image ? (
-                 <img src={selectedUser.image} alt="" style={{ width: 44, height: 44, borderRadius: 12, objectFit: 'cover' }} />
+                 <img src={selectedUser.image} alt="" style={{ width: 40, height: 40, borderRadius: 10, objectFit: 'cover' }} />
                ) : (
-                 <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>{selectedUser.name.charAt(0)}</div>
+                 <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>{selectedUser.name.charAt(0)}</div>
                )}
                <div style={{ flex: 1, textAlign: 'left' }}>
-                 <div style={{ fontWeight: 800, fontSize: '1rem' }}>{selectedUser.name}</div>
-                 <div style={{ fontSize: '0.75rem', opacity: 0.6 }}>{selectedUser.role}</div>
+                 <div style={{ fontWeight: 800, fontSize: '0.95rem' }}>{selectedUser.name}</div>
+                 <div style={{ fontSize: '0.7rem', opacity: 0.6 }}>{selectedUser.role}</div>
                </div>
                <button className="btn-icon" onClick={() => { setSelectedUser(null); setPin(''); setError(''); }}>
                  <X size={18} />
                </button>
             </div>
 
-            <input 
-              type="password" 
-              className="input" 
-              placeholder="Enter Password" 
-              autoFocus
-              style={{ textAlign: 'center', fontSize: '1.25rem', letterSpacing: 4, padding: 12, width: '100%' }}
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              onKeyDown={(e) => { if(e.key === 'Enter') handlePasswordSubmit(); }}
-            />
+            {/* PIN Bubbles Display */}
+            <div className={`pin-display ${error ? 'shake' : ''}`} style={{ display: 'flex', justifyContent: 'center', gap: 12, marginBottom: 20 }}>
+               {[...Array(4)].map((_, i) => (
+                 <div key={i} className={`pin-bubble ${pin.length > i ? 'filled' : ''}`} />
+               ))}
+               {pin.length > 4 && [...Array(pin.length - 4)].map((_, i) => (
+                 <div key={i + 4} className="pin-bubble filled" />
+               ))}
+            </div>
+
+            {/* Numeric Keypad Grid */}
+            <div className="numeric-keypad">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
+                <button key={num} className="key-btn" onClick={() => { setError(''); setPin(p => p + num); }}>{num}</button>
+              ))}
+              <button className="key-btn secondary" onClick={() => { setPin(''); setError(''); }}>CLR</button>
+              <button className="key-btn" onClick={() => { setError(''); setPin(p => p + '0'); }}>0</button>
+              <button className="key-btn secondary" onClick={() => { setError(''); setPin(p => p.slice(0, -1)); }}>DEL</button>
+            </div>
             
-            <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
-              <button className="btn btn-primary" style={{ flex: 1, padding: 14 }} onClick={handlePasswordSubmit}>Login</button>
+            <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
+              <button 
+                className="btn btn-primary" 
+                style={{ flex: 1, padding: 14, fontWeight: 800 }} 
+                onClick={handlePasswordSubmit}
+                disabled={!pin}
+              >
+                LOGIN
+              </button>
               <button className={`btn btn-secondary ${scanning ? 'pulse-safe' : ''}`} style={{ aspectRatio: '1', padding: 14 }} onClick={handleFingerprint} disabled={scanning}>
                 {scanning ? <Loader2 className="animate-spin" /> : <Fingerprint />}
               </button>
@@ -244,6 +260,73 @@ export default function LoginScreen() {
           display: flex;
         }
         .btn-icon:hover { color: var(--danger); }
+
+        /* Keypad Styles */
+        .numeric-keypad {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 12px;
+          margin-bottom: 8px;
+        }
+
+        .key-btn {
+          height: 60px;
+          border-radius: 16px;
+          border: 1px solid var(--border-light);
+          background: var(--bg-card);
+          color: var(--text-primary);
+          font-size: 1.5rem;
+          font-weight: 800;
+          cursor: pointer;
+          transition: all 0.15s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .key-btn:active {
+          transform: scale(0.92);
+          background: var(--accent-light);
+          border-color: var(--accent);
+          color: var(--accent);
+        }
+
+        .key-btn.secondary {
+          font-size: 0.9rem;
+          color: var(--text-muted);
+          background: var(--bg-secondary);
+        }
+
+        .pin-display {
+           height: 48px;
+           align-items: center;
+        }
+
+        .pin-bubble {
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          border: 2px solid var(--border);
+          transition: all 0.2s;
+        }
+
+        .pin-bubble.filled {
+          background: var(--accent);
+          border-color: var(--accent);
+          transform: scale(1.1);
+          box-shadow: 0 0 10px rgba(212, 118, 60, 0.3);
+        }
+
+        .shake {
+          animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+          10%, 90% { transform: translate3d(-1px, 0, 0); }
+          20%, 80% { transform: translate3d(2px, 0, 0); }
+          30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+          40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
       `}</style>
     </div>
   );
