@@ -72,13 +72,41 @@ export function ProductProvider({ children }) {
   }, [fetchData]);
 
   const adjustStock = useCallback(async (id, quantity) => {
-    await api.put(`/products/${id}/adjust`, { quantity });
-    await fetchData();
-  }, [fetchData]);
+    // 1. Optimistic Update
+    setProducts(prev => prev.map(p => 
+      p.id === id ? { ...p, stock: (p.stock || 0) + quantity } : p
+    ));
+
+    try {
+      await api.put(`/products/${id}/adjust`, { quantity });
+    } catch (e) {
+      console.error('[Sync Error] Stock adjustment failed, reverting', e);
+      // Revert: subtract the quantity back
+      setProducts(prev => prev.map(p => 
+        p.id === id ? { ...p, stock: (p.stock || 0) - quantity } : p
+      ));
+      throw e;
+    }
+  }, []);
 
   const deductStock = useCallback(async (items) => {
-    await api.post('/products/inventory', { items, direction: 'deduct' });
-    await fetchData();
+    // 1. Optimistic Update
+    setProducts(prev => prev.map(p => {
+      const item = items.find(i => i.productId === p.id);
+      if (item) {
+        return { ...p, stock: Math.max(0, (p.stock || 0) - (item.quantity || 0)) };
+      }
+      return p;
+    }));
+
+    try {
+      await api.post('/products/inventory', { items, direction: 'deduct' });
+    } catch (e) {
+      console.error('[Sync Error] Bulk stock deduction failed, reverting', e);
+      // Note: Reverting bulk updates is complex, ideally we'd refetch
+      await fetchData();
+      throw e;
+    }
   }, [fetchData]);
 
   const restoreStock = useCallback(async (items) => {

@@ -34,14 +34,32 @@ export function OrderProvider({ children }) {
   }, [fetchData, currentUser?.id, activeBranch]);
 
   const addTransaction = useCallback(async (transaction) => {
-    await api.post('/transactions', transaction);
-    await fetchData();
-  }, [fetchData]);
+    // 1. Optimistic Update: Add to state instantly
+    setTransactions(prev => [transaction, ...prev]);
+    
+    // 2. Fire and Forget (Background Sync)
+    // We still await the API call to handle potential immediate errors, 
+    // but we don't block the UI refresh
+    try {
+      await api.post('/transactions', transaction);
+    } catch (e) {
+      console.error('[Sync Error] Transaction failed, reverting state', e);
+      setTransactions(prev => prev.filter(t => t.id !== transaction.id));
+      throw e;
+    }
+  }, []);
 
   const addPreOrder = useCallback(async (preOrder) => {
-    await api.post('/preorders', preOrder);
-    await fetchData();
-  }, [fetchData]);
+    // 1. Optimistic Update
+    setPreOrders(prev => [preOrder, ...prev]);
+
+    try {
+      await api.post('/preorders', preOrder);
+    } catch (e) {
+      setPreOrders(prev => prev.filter(o => o.id !== preOrder.id));
+      throw e;
+    }
+  }, []);
 
   const updatePreOrder = useCallback(async (id, updates) => {
     // Detect if we are marking a preorder as picked_up to deduct stock

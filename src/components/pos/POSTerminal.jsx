@@ -182,22 +182,30 @@ export default function POSTerminal() {
         notes,
       };
 
-      await addTransaction(transaction);
-      await deductStock(cart.map(i => ({ productId: i.productId, quantity: i.quantity })));
+      // 1. IMPROVED: Parallel Background Execution
+      const tasks = [
+        addTransaction(transaction),
+        deductStock(cart.map(i => ({ productId: i.productId, quantity: i.quantity })))
+      ];
 
       if (paymentMethod === 'on_account' && selectedCustomer) {
-        await adjustBalance(selectedCustomer.id, total);
+        tasks.push(adjustBalance(selectedCustomer.id, total));
       }
       if (selectedCustomer) {
-        await recordVisit(selectedCustomer.id, total);
+        tasks.push(recordVisit(selectedCustomer.id, total));
       }
 
+      // 2. Perform all saves in parallel
+      await Promise.all(tasks);
+
+      // 3. Instant UI feedback
       setLastTransaction(transaction);
       setShowPayment(false);
       setShowReceipt(true);
       clearCart();
       addToast('Sale completed! 🎉', 'success');
     } catch (e) {
+      console.error('Checkout failed:', e);
       addToast('Failed to complete sale', 'error');
     } finally {
       setIsProcessing(false);
