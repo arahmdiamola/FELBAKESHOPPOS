@@ -49,7 +49,8 @@ const apiCall = async (path, options = {}) => {
       const body = options.body ? JSON.parse(options.body) : null;
       
       // OPTIMISTIC UPDATE: Update the local cache immediately so UI reflects change
-      const storeName = ENDPOINT_MAP[path.split('/')[1] ? `/${path.split('/')[1]}` : ''];
+      const segments = path.split('/');
+      const storeName = ENDPOINT_MAP['/' + segments[1]];
       if (storeName && body && body.id) {
         if (method === 'DELETE') await idb.delete(storeName, body.id);
         else await idb.put(storeName, body);
@@ -64,7 +65,8 @@ const apiCall = async (path, options = {}) => {
         originalUpdatedAt: body?.updatedAt || null
       });
 
-      return { success: true, offline: true, message: 'Queued for sync' };
+      console.log(`[Offline] Successfully queued ${method} ${path}`);
+      return { success: true, offline: true, message: 'Saved to local vault. Will sync when online.' };
     }
   }
 

@@ -13,6 +13,7 @@ import UsersPage from './components/users/UsersPage';
 import SettingsPage from './components/settings/SettingsPage';
 import ReportsPage from './components/reports/ReportsPage';
 import ToastContainer from './components/shared/ToastContainer';
+import SyncStatusPill from './components/shared/SyncStatusPill';
 
 function AppRoutes() {
   const { currentUser } = useAuth();
@@ -39,6 +40,7 @@ function AppRoutes() {
           <Route path="*" element={<Navigate to="/pos" replace />} />
         </Routes>
       </div>
+      <SyncStatusPill floating />
       <ToastContainer />
     </div>
   );

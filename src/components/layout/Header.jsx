@@ -1,5 +1,3 @@
-import SyncStatusPill from '../shared/SyncStatusPill';
-
 export default function Header({ title, subtitle, actions }) {
   return (
     <div className="page-header">
@@ -9,7 +7,6 @@ export default function Header({ title, subtitle, actions }) {
       </div>
       
       <div className="page-header-actions">
-        <SyncStatusPill />
         {actions && <div className="flex items-center gap-2">{actions}</div>}
       </div>
     </div>
