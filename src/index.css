@@ -1293,206 +1293,184 @@ td.primary {
   flex: 1;
 }
 
-/* ---------- Login Screen ---------- */
+/* ---------- iOS Login Redesign (Apple Aesthetics) ---------- */
+
 .login-screen {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
   height: 100vh;
+  background: radial-gradient(circle at top right, #3D2317, #1A0F0A);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #FDF6EE 0%, #F0D9C6 50%, #E8C4A8 100%);
-  position: relative;
   overflow: hidden;
+  z-index: 1000;
 }
 
-.login-screen::before {
-  content: '';
-  position: absolute;
-  width: 600px;
-  height: 600px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(212,118,60,0.12) 0%, transparent 70%);
-  top: -200px;
-  right: -200px;
-}
-
-.login-screen::after {
-  content: '';
-  position: absolute;
-  width: 500px;
-  height: 500px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(212,118,60,0.08) 0%, transparent 70%);
-  bottom: -150px;
-  left: -150px;
-}
-
-.login-card {
-  background: var(--bg-card);
-  border-radius: var(--radius-xl);
+.glass-panel {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 40px;
+  width: 95%;
+  max-width: 480px;
   padding: 40px;
-  width: 360px;
-  box-shadow: var(--shadow-xl);
-  text-align: center;
-  position: relative;
-  z-index: 1;
-  border: 1px solid var(--border-light);
-}
-
-.login-logo {
-  width: 72px;
-  height: 72px;
-  background: var(--accent-gradient);
-  border-radius: var(--radius-lg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 16px;
-  font-size: 2.2rem;
-  box-shadow: 0 8px 24px rgba(212, 118, 60, 0.3);
-}
-
-.login-card h1 {
-  font-size: var(--font-xl);
-  font-weight: 800;
-  color: var(--text-primary);
-  margin-bottom: 4px;
-}
-
-.login-card p {
-  color: var(--text-secondary);
-  font-size: var(--font-sm);
-  margin-bottom: 24px;
-}
-
-.login-users {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 12px;
-  margin-bottom: 20px;
-  max-height: 220px;
-  overflow-y: auto;
-  padding: 4px;
-}
-
-.login-user-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 8px 12px;
-  border: 2px solid var(--border);
-  border-radius: var(--radius-md);
-  background: transparent;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.login-brand {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.login-logo-xl {
+    font-size: 4.5rem;
+    margin-bottom: 12px;
+    filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5));
+}
+
+.store-title {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.5px;
+    margin: 0;
+}
+
+/* iOS Horizontal User Carousel */
+.user-carousel {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  width: 100%;
+  gap: 24px;
+  padding: 30px 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.user-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.user-snap-item {
+  scroll-snap-align: center;
+  flex: 0 0 auto;
+  width: 110px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.3s ease;
+}
+
+.user-avatar-large {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+  color: #fff;
+  border: 4px solid transparent;
+  transition: all 0.3s ease;
   cursor: pointer;
-  transition: all var(--transition-fast);
-  min-width: 76px;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+  object-fit: cover;
 }
 
-.login-user-btn:hover,
-.login-user-btn.selected {
-  border-color: var(--accent);
-  background: var(--accent-light);
-  transform: translateY(-2px);
+.user-snap-item.active .user-avatar-large {
+  border-color: #fff;
+  transform: scale(1.15);
+  box-shadow: 0 0 0 6px rgba(255,255,255,0.15);
 }
 
-.login-user-btn .avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  background: var(--accent-gradient);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: 800;
-  font-size: var(--font-base);
+.user-snap-item .user-name {
+  margin-top: 14px;
+  color: #fff;
+  font-weight: 500;
+  opacity: 0.5;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
 }
 
-.login-user-btn .name {
-  font-size: 0.70rem;
+.user-snap-item.active .user-name {
+  opacity: 1;
   font-weight: 700;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 60px;
 }
 
-.login-user-btn .switch-text {
-  font-size: 0.65rem;
-  color: var(--text-muted);
-}
-
-.pin-dots {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.pin-dot {
-  width: 44px;
-  height: 44px;
-  border: 2px solid var(--border);
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--font-lg);
-  font-weight: 800;
-  transition: all var(--transition-fast);
-}
-
-.pin-dot.filled {
-  border-color: var(--accent);
-  background: var(--accent-light);
-}
-
-.pin-dot.filled::after {
-  content: '●';
-  color: var(--accent);
-}
-
-.pin-pad {
+/* Keypad Grid */
+.pin-pad-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 20px;
+  width: 100%;
   max-width: 280px;
-  margin: 0 auto;
+  margin-top: 20px;
 }
 
-.pin-key {
-  height: 56px;
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--bg-card);
-  color: var(--text-primary);
-  font-family: inherit;
-  font-size: var(--font-lg);
-  font-weight: 700;
+.pin-btn {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 1.6rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.pin-key:hover {
-  background: var(--bg-hover);
-  border-color: var(--accent);
+.pin-btn:active {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(0.9);
 }
 
-.pin-key:active {
-  transform: scale(0.95);
-  background: var(--accent-light);
+.pin-btn.btn-action {
+    background: transparent;
+    font-size: 1.1rem;
+    font-weight: 600;
+    opacity: 0.8;
 }
 
-.login-error {
-  color: var(--danger);
-  font-size: var(--font-sm);
+/* PIN Indicator */
+.pin-indicator {
+  display: flex;
+  gap: 18px;
+  margin: 15px 0 25px;
+}
+
+.dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.5);
+  background: transparent;
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.dot.active {
+  background: #fff;
+  border-color: #fff;
+  transform: scale(1.3);
+}
+
+.login-error-msg {
+  color: #FF6B6B;
+  font-size: 0.9rem;
   font-weight: 600;
-  margin-top: 12px;
+  margin-top: 15px;
+  text-align: center;
   animation: shake 0.4s ease;
 }
 
