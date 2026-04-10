@@ -91,12 +91,28 @@ const apiCall = async (path, options = {}) => {
         }
       } catch (e) {}
 
-      // 1. STANDARD OPTIMISTIC UPDATE: Map simple entities (Users, Customers, etc.)
+      // 1. STANDARD OPTIMISTIC UPDATE: Map simple entities (Users, Customers, Pre-orders, etc.)
       const segments = cleanPath.split('/');
       const storeName = ENDPOINT_MAP['/' + segments[1]];
-      if (storeName && body && body.id) {
-        if (method === 'DELETE') await idb.delete(storeName, body.id);
-        else await idb.put(storeName, body);
+      if (storeName && body) {
+        let updateData = { ...body };
+        const pathId = segments[2];
+
+        // Ensure we have an ID for the IndexedDB operation (from body or path)
+        if (!updateData.id && pathId) updateData.id = pathId;
+
+        if (updateData.id) {
+          if (method === 'DELETE') {
+            await idb.delete(storeName, updateData.id);
+          } else if (method === 'PUT') {
+            // Merge update into existing record to prevent data loss
+            const existing = await idb.get(storeName, updateData.id);
+            await idb.put(storeName, { ...(existing || {}), ...updateData });
+          } else {
+            // POST: Standard put
+            await idb.put(storeName, updateData);
+          }
+        }
       }
 
       // 2. ADVANCED OFFLINE SIDE EFFECTS (Hardened Logic)
