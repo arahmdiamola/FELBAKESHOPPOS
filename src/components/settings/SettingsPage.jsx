@@ -133,6 +133,9 @@ export default function SettingsPage() {
           <button className={`tab ${activeTab === 'tax' ? 'active' : ''}`} onClick={() => setActiveTab('tax')}>
             <Percent size={14} style={{ marginRight: 6 }} />Tax
           </button>
+          <button className={`tab ${activeTab === 'promos' ? 'active' : ''}`} onClick={() => setActiveTab('promos')}>
+            <Star size={14} style={{ marginRight: 6 }} />Promos & VIP
+          </button>
           <button className={`tab ${activeTab === 'data' ? 'active' : ''}`} onClick={() => setActiveTab('data')}>
             <Database size={14} style={{ marginRight: 6 }} />Data
           </button>
@@ -246,6 +249,47 @@ export default function SettingsPage() {
                 {branches.length === 0 && (
                   <div className="empty-state">No branches configured yet</div>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'promos' && (
+          <div className="card">
+            <div className="card-body">
+              <div className="form-grid">
+                <div className="input-group">
+                  <label className="flex items-center gap-2">
+                    <Percent size={14} /> Flash Sale Discount (%)
+                  </label>
+                  <input 
+                    className="input" 
+                    type="number" 
+                    min="0" 
+                    max="100" 
+                    value={form.flashSalePercent} 
+                    onChange={e => setForm(p => ({ ...p, flashSalePercent: parseFloat(e.target.value) || 0 }))} 
+                  />
+                  <div className="text-xs text-muted mt-1">
+                    The discount percentage applied when the end-of-day toggle is active at the register.
+                  </div>
+                </div>
+
+                <div className="input-group">
+                  <label className="flex items-center gap-2">
+                    <Star size={14} /> VIP Regular Threshold
+                  </label>
+                  <input 
+                    className="input" 
+                    type="number" 
+                    min="1" 
+                    value={form.vipThreshold} 
+                    onChange={e => setForm(p => ({ ...p, vipThreshold: parseInt(e.target.value) || 1 }))} 
+                  />
+                  <div className="text-xs text-muted mt-1">
+                    The number of orders a customer needs to earn a "Regular" status and gold star.
+                  </div>
+                </div>
               </div>
             </div>
           </div>

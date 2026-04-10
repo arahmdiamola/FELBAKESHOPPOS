@@ -11,6 +11,8 @@ const DEFAULT_SETTINGS = {
   taxRate: 0,
   receiptFooter: 'Thank you for choosing FEL Bakeshop! 🧁',
   storeLogo: '',
+  flashSalePercent: 10,
+  vipThreshold: 5,
 };
 
 export function SettingsProvider({ children }) {

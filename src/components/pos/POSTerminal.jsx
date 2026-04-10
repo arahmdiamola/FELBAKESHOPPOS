@@ -93,7 +93,7 @@ export default function POSTerminal() {
 
   const subtotal = calcSubtotal(cart);
   const discount = calcCartDiscount(subtotal, cartDiscount.type, cartDiscount.value);
-  const flashSaleDiscount = isFlashSale ? (subtotal * 0.1) : 0;
+  const flashSaleDiscount = isFlashSale ? (subtotal * (settings.flashSalePercent / 100)) : 0;
   const taxableAmount = subtotal - discount - flashSaleDiscount;
   const tax = calcTax(taxableAmount, settings.taxRate);
   const total = taxableAmount + tax;
@@ -324,7 +324,7 @@ export default function POSTerminal() {
               <div className="flex items-center gap-2">
                 <div style={{ position: 'relative' }}>
                   <User size={18} style={{ color: 'var(--accent)' }} />
-                  {customerOrderCount > 3 && (
+                  {customerOrderCount >= settings.vipThreshold && (
                     <div style={{ position: 'absolute', top: -5, right: -5, background: '#FFD700', borderRadius: '50%', padding: 1, border: '1px solid #fff' }}>
                       <Star size={8} fill="#2C1810" />
                     </div>
@@ -333,7 +333,7 @@ export default function POSTerminal() {
                 <div>
                   <div className="text-sm font-bold flex items-center gap-2">
                     {selectedCustomer.name}
-                    {customerOrderCount > 3 && <span className="vip-badge"><Star size={8} fill="currentColor" /> REGULAR</span>}
+                    {customerOrderCount >= settings.vipThreshold && <span className="vip-badge"><Star size={8} fill="currentColor" /> REGULAR</span>}
                   </div>
                   <div className="text-xs text-muted">{customerOrderCount} Lifetime Orders</div>
                 </div>
@@ -379,22 +379,24 @@ export default function POSTerminal() {
 
         {cart.length > 0 && (
           <div className="pos-cart-summary">
-            {/* Flash Sale Toggle */}
-            <div className="flex items-center justify-between mb-4 p-2 bg-red-50 rounded-lg border border-red-100" style={{ background: isFlashSale ? 'var(--danger-light)' : 'rgba(0,0,0,0.02)', borderColor: isFlashSale ? 'var(--danger)' : 'transparent', borderRadius: 12 }}>
-              <div className="flex items-center gap-2">
-                <Percent size={14} className={isFlashSale ? 'flash-sale-active' : ''} />
-                <span className={`text-xs font-bold ${isFlashSale ? 'flash-sale-active' : ''}`}>
-                  Flash Sale (10% OFF)
-                </span>
+            {/* Flash Sale Toggle - Admin/Manager Only */}
+            {['system_admin', 'owner', 'manager'].includes(currentUser?.role) && (
+              <div className="flex items-center justify-between mb-4 p-2" style={{ background: isFlashSale ? 'var(--danger-light)' : 'rgba(0,0,0,0.02)', borderColor: isFlashSale ? 'var(--danger)' : 'transparent', borderRadius: 12, border: '1px solid transparent' }}>
+                <div className="flex items-center gap-2">
+                  <Percent size={14} className={isFlashSale ? 'flash-sale-active' : ''} />
+                  <span className={`text-xs font-bold ${isFlashSale ? 'flash-sale-active' : ''}`}>
+                    Flash Sale ({settings.flashSalePercent}% OFF)
+                  </span>
+                </div>
+                <button 
+                  className={`switch ${isFlashSale ? 'active' : ''}`}
+                  onClick={() => setIsFlashSale(!isFlashSale)}
+                  style={{ width: 40, height: 20, background: isFlashSale ? 'var(--danger)' : 'var(--border)', borderRadius: 10, position: 'relative', cursor: 'pointer', border: 'none' }}
+                >
+                  <div style={{ position: 'absolute', left: isFlashSale ? 22 : 2, top: 2, width: 16, height: 16, background: '#fff', borderRadius: '50%', transition: 'all 0.2s' }} />
+                </button>
               </div>
-              <button 
-                className={`switch ${isFlashSale ? 'active' : ''}`}
-                onClick={() => setIsFlashSale(!isFlashSale)}
-                style={{ width: 40, height: 20, background: isFlashSale ? 'var(--danger)' : 'var(--border)', borderRadius: 10, position: 'relative', cursor: 'pointer', border: 'none' }}
-              >
-                <div style={{ position: 'absolute', left: isFlashSale ? 22 : 2, top: 2, width: 16, height: 16, background: '#fff', borderRadius: '50%', transition: 'all 0.2s' }} />
-              </button>
-            </div>
+            )}
 
             <div className="cart-summary-row"><span>Subtotal</span><span>{formatCurrency(subtotal)}</span></div>
             {flashSaleDiscount > 0 && (
