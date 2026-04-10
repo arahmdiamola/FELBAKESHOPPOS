@@ -18,7 +18,7 @@ export default function POSTerminal() {
   const { products, categories, deductStock } = useProducts();
   const { customers, adjustBalance, recordVisit } = useCustomers();
   const { transactions, addTransaction, dueTodayCount } = useOrders();
-  const { currentUser } = useAuth();
+  const { currentUser, activeBranch } = useAuth();
   const { settings } = useSettings();
   const { addToast } = useToast();
 
