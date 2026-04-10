@@ -426,9 +426,11 @@ export default function POSTerminal() {
             <Receipt size={22} /> Charge {formatCurrency(total)}
           </button>
           <div className="cart-action-buttons">
-            <button className="btn btn-secondary btn-sm" onClick={() => setShowDiscount(true)} disabled={cart.length === 0}>
-              <Percent size={14} /> Discount
-            </button>
+            {['system_admin', 'owner', 'manager'].includes(currentUser?.role) && (
+              <button className="btn btn-secondary btn-sm" onClick={() => setShowDiscount(true)} disabled={cart.length === 0}>
+                <Percent size={14} /> Discount
+              </button>
+            )}
             <button className="btn btn-secondary btn-sm" onClick={holdOrder} disabled={cart.length === 0}>
               <Pause size={14} /> Hold
             </button>
