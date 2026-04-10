@@ -70,34 +70,32 @@ export function OrderProvider({ children }) {
   }, [updatePreOrder]);
 
   const getTodayStats = useCallback(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    // Robust local midnight calculation
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
     const todayTxns = transactions.filter(t => {
+      if (!t.date) return false;
       const d = new Date(t.date);
-      return d >= today && d < tomorrow;
+      return d >= todayStart && d <= todayEnd;
     });
 
     const todayPreOrders = preOrders.filter(o => {
-      if (o.status !== 'picked_up') return false;
-      // Note: We don't have a specific 'completedAt' field yet, 
-      // but usually 'createdAt' or 'dueDate' are proxies, 
-      // or we can just filter by orders picked up today.
-      // For now, let's use the current date as a simple proxy for 'picked_up' orders 
-      // that are relevant if they were picked up recently.
+      if (o.status !== 'picked_up' || !o.dueDate) return false;
       const d = new Date(o.dueDate); 
-      return d >= today && d < tomorrow;
+      return d >= todayStart && d <= todayEnd;
     });
 
-    const posRevenue = todayTxns.reduce((sum, t) => sum + t.total, 0);
-    const preRevenue = todayPreOrders.reduce((sum, o) => sum + o.totalPrice, 0);
+    const posRevenue = todayTxns.reduce((sum, t) => sum + Number(t.total || 0), 0);
+    const preRevenue = todayPreOrders.reduce((sum, o) => sum + Number(o.totalPrice || 0), 0);
+
+    console.log(`[Stats Update] Today\'s Sales: ${todayTxns.length}, POS Revenue: ${posRevenue}`);
 
     return {
       revenue: posRevenue + preRevenue,
       count: todayTxns.length + todayPreOrders.length,
-      items: todayTxns.reduce((sum, t) => sum + (t.items || []).reduce((s, i) => s + i.quantity, 0), 0) +
+      items: todayTxns.reduce((sum, t) => sum + (t.items || []).reduce((s, i) => s + (i.quantity || 0), 0), 0) +
              todayPreOrders.reduce((sum, o) => sum + (Array.isArray(o.items) ? o.items.reduce((s, i) => s + (i.quantity || 1), 0) : 1), 0),
     };
   }, [transactions, preOrders]);

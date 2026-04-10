@@ -55,7 +55,8 @@ const apiCall = async (path, options = {}) => {
             }
 
             if (targetBranchId && targetBranchId !== 'all') {
-               cached = cached.filter(item => item.branchId === targetBranchId);
+               const tid = String(targetBranchId);
+               cached = cached.filter(item => String(item.branchId) === tid);
             }
           } catch (e) {
             console.error('[Offline Filter Error]', e);
@@ -83,7 +84,7 @@ const apiCall = async (path, options = {}) => {
         const targetBranchId = (user?.role === 'system_admin' && activeBranch !== 'all') ? activeBranch : user?.branchId;
         
         if (targetBranchId && body && !body.branchId && typeof body === 'object') {
-          body.branchId = targetBranchId;
+          body.branchId = String(targetBranchId);
         }
       } catch (e) {}
 
