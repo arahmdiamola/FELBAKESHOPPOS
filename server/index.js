@@ -32,15 +32,18 @@ const branchFilter = (req) => {
   const branchId = req.headers['x-branch-id'];
   const role = req.headers['x-user-role'];
 
-  // Debug log to monitor visibility
-  console.log(`[ACL] Role: ${role}, BranchHeader: ${branchId}`);
+  // Global access check (System Admins and Owners see everything if no filter)
+  if (['system_admin', 'owner'].includes(role) && (!branchId || branchId === 'all')) {
+    return "1=1";
+  }
 
-  if (role === 'system_admin' && (!branchId || branchId === 'all')) {
-    return "1=1"; // Global access only for system admins
-  }
   if (!branchId || branchId === 'all') {
-    return "branchId = 'UNASSIGNED_OR_LOCKED'"; // Lock out legacy/unassigned staff
+    // If a manager has no branch, allow them to see everything as well
+    if (role === 'manager') return "1=1";
+    // Otherwise, lock out unassigned staff
+    return "branchId = 'UNASSIGNED_OR_LOCKED'";
   }
+
   return `branchId = '${branchId}'`;
 };
 

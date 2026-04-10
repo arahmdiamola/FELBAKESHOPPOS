@@ -286,14 +286,14 @@ export default function POSTerminal() {
                 <div className="product-emoji" style={{ fontSize: '2.5rem' }}>{product.emoji}</div>
               )}
 
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4, width: '100%' }}>
-                <div className="product-name" style={{ minHeight: '2.4em', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', width: '100%', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+                <div className="product-name">
                     {product.name}
                 </div>
                 <div className="product-price">{formatCurrency(product.price)}</div>
               </div>
 
-              <div className={`product-stock ${product.stock <= product.reorderPoint ? 'low' : ''}`} style={{ marginTop: 'auto', paddingTop: 8, fontSize: '0.7rem' }}>
+              <div className={`product-stock ${product.stock <= product.reorderPoint ? 'low' : ''}`}>
                 {product.stock} {product.unit}
               </div>
             </div>
