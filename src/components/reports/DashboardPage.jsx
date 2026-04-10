@@ -1,16 +1,27 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useOrders } from '../../contexts/OrderContext';
 import { useProducts } from '../../contexts/ProductContext';
 import { useExpenses } from '../../contexts/ExpenseContext';
+import { useSettings } from '../../contexts/SettingsContext';
 import { formatCurrency, formatNumber } from '../../utils/formatters';
-import { DollarSign, ShoppingBag, TrendingUp, AlertTriangle, Package, Wallet } from 'lucide-react';
+import { DollarSign, ShoppingBag, TrendingUp, AlertTriangle, Package, Wallet, Printer } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import Header from '../layout/Header';
+import ReceiptPreview from '../pos/ReceiptPreview';
 
 export default function DashboardPage() {
   const { allSales, getTodayStats } = useOrders();
   const { products, categories, getLowStockProducts } = useProducts();
   const { getTotalExpenses } = useExpenses();
+  const { settings } = useSettings();
+
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [showReceipt, setShowReceipt] = useState(false);
+
+  const handleReprint = (transaction) => {
+    setSelectedTransaction(transaction);
+    setShowReceipt(true);
+  };
 
   const todayStats = getTodayStats();
   const lowStock = getLowStockProducts();
@@ -222,7 +233,7 @@ export default function DashboardPage() {
           </div>
           <div className="table-container" style={{ border: 'none' }}>
             <table className="table">
-              <thead><tr><th>Type</th><th>Receipt</th><th>Customer</th><th>Items</th><th>Amount</th><th>Method</th></tr></thead>
+              <thead><tr><th>Type</th><th>Receipt</th><th>Customer</th><th>Items</th><th>Amount</th><th>Method</th><th style={{ textAlign: 'right' }}>Action</th></tr></thead>
               <tbody>
                 {allSales.slice(0, 10).map(t => (
                   <tr key={t.id}>
@@ -232,6 +243,11 @@ export default function DashboardPage() {
                     <td>{t.items?.reduce((s, i) => s + i.quantity, 0) || 0} pcs</td>
                     <td className="font-bold">{formatCurrency(t.total)}</td>
                     <td><span className={`badge badge-${t.paymentMethod === 'cash' ? 'green' : t.paymentMethod === 'gcash' ? 'blue' : 'amber'}`}>{t.paymentMethod}</span></td>
+                    <td style={{ textAlign: 'right' }}>
+                      <button className="btn btn-icon btn-ghost" onClick={() => handleReprint(t)} title="Reprint Receipt">
+                        <Printer size={16} />
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -239,6 +255,13 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+      {showReceipt && selectedTransaction && (
+        <ReceiptPreview 
+          transaction={selectedTransaction} 
+          settings={settings} 
+          onClose={() => setShowReceipt(false)} 
+        />
+      )}
     </>
   );
 }

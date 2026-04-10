@@ -63,6 +63,10 @@ const apiCall = async (path, options = {}) => {
         }
         
         if (cached && cached.length) return cached;
+        // Return empty array instead of throwing if it's a valid list endpoint
+        if (['/products', '/users', '/preorders', '/transactions', '/categories', '/customers', '/branches'].includes(path.split('?')[0])) {
+          return [];
+        }
       }
       throw new Error('OFFLINE_CACHE_EMPTY');
     }

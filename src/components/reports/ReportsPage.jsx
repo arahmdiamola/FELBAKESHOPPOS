@@ -2,15 +2,26 @@ import { useState, useMemo } from 'react';
 import { useOrders } from '../../contexts/OrderContext';
 import { useProducts } from '../../contexts/ProductContext';
 import { useExpenses } from '../../contexts/ExpenseContext';
+import { useSettings } from '../../contexts/SettingsContext';
 import { formatCurrency, formatDateTime, exportToCSV } from '../../utils/formatters';
 import Header from '../layout/Header';
-import { DownloadCloud, Receipt, TrendingUp, PieChart, FileText } from 'lucide-react';
+import ReceiptPreview from '../pos/ReceiptPreview';
+import { DownloadCloud, Receipt, TrendingUp, PieChart, FileText, Printer } from 'lucide-react';
 
 export default function ReportsPage() {
   const { transactions, preOrders } = useOrders();
   const { products, categories } = useProducts();
   const { expenses } = useExpenses();
+  const { settings } = useSettings();
   const [activeTab, setActiveTab] = useState('transactions');
+
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [showReceipt, setShowReceipt] = useState(false);
+
+  const handleReprint = (transaction) => {
+    setSelectedTransaction(transaction);
+    setShowReceipt(true);
+  };
 
   // Unified Sales (Transactions + Picked Up Pre-orders)
   const allSales = useMemo(() => {
@@ -135,7 +146,7 @@ export default function ReportsPage() {
           <div className="card">
             <div className="table-container" style={{ border: 'none' }}>
               <table className="table">
-                <thead><tr><th>Date</th><th>Type</th><th>Receipt</th><th>Customer</th><th>Cashier</th><th>Method</th><th>Items</th><th>Total</th></tr></thead>
+                <thead><tr><th>Date</th><th>Type</th><th>Receipt</th><th>Customer</th><th>Cashier</th><th>Method</th><th>Items</th><th>Total</th><th style={{ textAlign: 'right' }}>Action</th></tr></thead>
                 <tbody>
                   {allSales.slice(0, 100).map(t => (
                     <tr key={t.id}>
@@ -147,10 +158,15 @@ export default function ReportsPage() {
                       <td><span className={`badge badge-${t.paymentMethod === 'cash' ? 'green' : t.paymentMethod === 'gcash' ? 'blue' : 'amber'}`}>{t.paymentMethod}</span></td>
                       <td>{t.items?.reduce((s, i) => s + i.quantity, 0) || 0} pcs</td>
                       <td className="font-bold text-right" style={{ color: 'var(--text-primary)' }}>{formatCurrency(t.total)}</td>
+                      <td style={{ textAlign: 'right' }}>
+                        <button className="btn btn-icon btn-ghost" onClick={() => handleReprint(t)} title="Reprint Receipt">
+                          <Printer size={16} />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                   {allSales.length === 0 && (
-                    <tr><td colSpan={8} className="text-center text-muted py-4">No transactions recorded yet</td></tr>
+                    <tr><td colSpan={9} className="text-center text-muted py-4">No transactions recorded yet</td></tr>
                   )}
                 </tbody>
               </table>
@@ -205,6 +221,13 @@ export default function ReportsPage() {
           </div>
         )}
       </div>
+      {showReceipt && selectedTransaction && (
+        <ReceiptPreview 
+          transaction={selectedTransaction} 
+          settings={settings} 
+          onClose={() => setShowReceipt(false)} 
+        />
+      )}
     </>
   );
 }
