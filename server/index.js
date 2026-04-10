@@ -280,21 +280,29 @@ app.get('/api/customers', async (req, res) => {
   res.json(customers);
 });
 app.post('/api/customers', async (req, res) => {
-  const c = req.body;
-  const branchId = req.headers['x-branch-id'] || c.branchId;
-  await db.run(
-    "INSERT INTO customers (id, branchId, name, phone, email, address, totalSpent, visits, balance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    [c.id, branchId, c.name, c.phone, c.email, c.address, c.totalSpent || 0, c.visits || 0, c.balance || 0]
-  );
-  res.json({ success: true });
+  try {
+    const c = req.body;
+    const branchId = req.headers['x-branch-id'] || c.branchId;
+    await db.run(
+      "INSERT INTO customers (id, branchId, name, phone, email, address, totalSpent, visits, balance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      [c.id, branchId, c.name, c.phone, c.email, c.address, c.totalSpent || 0, c.visits || 0, c.balance || 0]
+    );
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 app.put('/api/customers/:id', async (req, res) => {
-  const c = req.body;
-  await db.run(
-    "UPDATE customers SET name=?, phone=?, email=?, address=? WHERE id=?",
-    [c.name, c.phone, c.email, c.address, req.params.id]
-  );
-  res.json({ success: true });
+  try {
+    const c = req.body;
+    await db.run(
+      "UPDATE customers SET name=?, phone=?, email=?, address=? WHERE id=?",
+      [c.name, c.phone, c.email, c.address, req.params.id]
+    );
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 app.put('/api/customers/:id/balance', async (req, res) => {
   const { amount } = req.body;
@@ -339,23 +347,39 @@ app.get('/api/preorders', async (req, res) => {
   res.json(preorders);
 });
 app.post('/api/preorders', async (req, res) => {
-  const p = req.body;
-  const branchId = req.headers['x-branch-id'] || p.branchId;
-  await db.run(
-    "INSERT INTO preorders (id, branchId, customerName, customerPhone, items, totalPrice, deposit, status, dueDate, notes, quantity, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    [p.id, branchId, p.customerName, p.customerPhone, JSON.stringify(p.items), p.totalPrice, p.deposit, p.status, p.dueDate, p.notes, p.quantity || 1, p.createdAt]
-  );
-  res.json({ success: true });
+  try {
+    const p = req.body;
+    const branchId = req.headers['x-branch-id'] || p.branchId;
+    if (!branchId || branchId === 'all') {
+      return res.status(400).json({ error: 'Preorder must have a valid branchId' });
+    }
+    await db.run(
+      "INSERT INTO preorders (id, branchId, customerName, customerPhone, items, totalPrice, deposit, status, dueDate, notes, quantity, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      [p.id, branchId, p.customerName, p.customerPhone, JSON.stringify(p.items), p.totalPrice, p.deposit, p.status, p.dueDate, p.notes, p.quantity || 1, p.createdAt]
+    );
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 app.put('/api/preorders/:id', async (req, res) => {
-  if (req.body.status) {
-    await db.run("UPDATE preorders SET status = ? WHERE id = ?", [req.body.status, req.params.id]);
+  try {
+    if (req.body.status) {
+      await db.run("UPDATE preorders SET status = ? WHERE id = ?", [req.body.status, req.params.id]);
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[Preorder Detail Error]', error);
+    res.status(500).json({ error: error.message });
   }
-  res.json({ success: true });
 });
 app.delete('/api/preorders/:id', async (req, res) => {
-  await db.run("DELETE FROM preorders WHERE id = ?", [req.params.id]);
-  res.json({ success: true });
+  try {
+    await db.run("DELETE FROM preorders WHERE id = ?", [req.params.id]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // --- SETTINGS ---
