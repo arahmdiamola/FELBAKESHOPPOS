@@ -10,7 +10,7 @@ import Header from '../layout/Header';
 import ReceiptPreview from '../pos/ReceiptPreview';
 
 export default function DashboardPage() {
-  const { allSales, getTodayStats } = useOrders();
+  const { allSales, getTodayStats, dueTodayOrders, dueTodayCount } = useOrders();
   const { products, categories, getLowStockProducts } = useProducts();
   const { getTotalExpenses } = useExpenses();
   const { settings } = useSettings();
@@ -140,6 +140,22 @@ export default function DashboardPage() {
     <>
       <Header title="Dashboard" subtitle="Today's bakeshop performance at a glance" />
       <div className="page-content animate-fade-in">
+        {dueTodayCount > 0 && (
+          <div className="alert-banner pulse-soft" style={{ background: 'var(--amber-light)', border: '1px solid var(--warning)', borderRadius: 16, padding: '16px 20px', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ padding: 8, background: 'var(--warning)', borderRadius: '50%', color: '#fff' }}>
+                <Calendar size={20} />
+              </div>
+              <div>
+                <h4 style={{ margin: 0, fontWeight: 800, color: 'var(--text-primary)' }}>{dueTodayCount} Pre-orders Due Today!</h4>
+                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                  Upcoming pickups: {dueTodayOrders.map(o => o.customerName).join(', ')}
+                </p>
+              </div>
+            </div>
+            <button className="btn btn-primary btn-sm" onClick={() => window.location.hash = '#/pre-orders'}>View Schedules</button>
+          </div>
+        )}
         <div className="stats-grid">
           <div className="stat-card">
             <div className="stat-card-icon amber"><DollarSign size={24} /></div>

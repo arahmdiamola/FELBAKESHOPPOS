@@ -17,7 +17,7 @@ import ProcessingOverlay from '../shared/ProcessingOverlay';
 export default function POSTerminal() {
   const { products, categories, deductStock } = useProducts();
   const { customers, adjustBalance, recordVisit } = useCustomers();
-  const { transactions, addTransaction } = useOrders();
+  const { transactions, addTransaction, dueTodayCount } = useOrders();
   const { currentUser } = useAuth();
   const { settings } = useSettings();
   const { addToast } = useToast();
@@ -432,8 +432,9 @@ export default function POSTerminal() {
             <button className="btn btn-secondary btn-sm" onClick={holdOrder} disabled={cart.length === 0}>
               <Pause size={14} /> Hold
             </button>
-            <button className="btn btn-secondary btn-sm" onClick={() => setShowHeld(true)} disabled={heldOrders.length === 0}>
+            <button className="btn btn-secondary btn-sm" onClick={() => setShowHeld(true)} disabled={heldOrders.length === 0} style={{ position: 'relative' }}>
               <Play size={14} /> Recall ({heldOrders.length})
+              {dueTodayCount > 0 && <span className="notification-dot" style={{ position: 'absolute', top: -4, right: -4, background: 'var(--warning)', width: 10, height: 10, borderRadius: '50%', border: '2px solid #fff' }} />}
             </button>
             <button className="btn btn-secondary btn-sm" onClick={() => setShowNotes(true)}>
               <StickyNote size={14} />

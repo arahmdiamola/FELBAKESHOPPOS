@@ -150,9 +150,19 @@ export function OrderProvider({ children }) {
     return [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
   }, [transactions]);
 
+  const dueTodayOrders = useMemo(() => {
+    const todayStr = new Date().toDateString();
+    return preOrders.filter(o => 
+      !['picked_up', 'cancelled'].includes(o.status) && 
+      new Date(o.dueDate).toDateString() === todayStr
+    );
+  }, [preOrders]);
+
+  const dueTodayCount = dueTodayOrders.length;
+
   return (
     <OrderContext.Provider value={{
-      transactions, preOrders, allSales,
+      transactions, preOrders, allSales, dueTodayOrders, dueTodayCount,
       addTransaction, addPreOrder, updatePreOrder, deletePreOrder, completePreOrder, getTodayStats
     }}>
       {children}
