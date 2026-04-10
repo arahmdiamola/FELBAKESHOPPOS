@@ -4,7 +4,7 @@ import { useProducts } from '../../contexts/ProductContext';
 import { useExpenses } from '../../contexts/ExpenseContext';
 import { useSettings } from '../../contexts/SettingsContext';
 import { formatCurrency, formatNumber } from '../../utils/formatters';
-import { DollarSign, ShoppingBag, TrendingUp, AlertTriangle, Package, Wallet, Printer } from 'lucide-react';
+import { DollarSign, ShoppingBag, TrendingUp, AlertTriangle, Package, Wallet, Printer, Calendar, CreditCard } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import Header from '../layout/Header';
 import ReceiptPreview from '../pos/ReceiptPreview';
@@ -26,6 +26,14 @@ export default function DashboardPage() {
   const todayStats = getTodayStats();
   const lowStock = getLowStockProducts();
   const monthlyExpenses = getTotalExpenses(30);
+  const weeklyExpenses = getTotalExpenses(7);
+
+  // Weekly Revenue (Last 7 days)
+  const weeklyRevenueVal = useMemo(() => {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 7);
+    return allSales.filter(t => new Date(t.date) >= cutoff).reduce((sum, t) => sum + t.total, 0);
+  }, [allSales]);
 
   // Weekly revenue
   const weeklyData = useMemo(() => {
@@ -115,7 +123,15 @@ export default function DashboardPage() {
             <div className="stat-card-content">
               <h3>Today's Revenue</h3>
               <div className="stat-value">{formatCurrency(todayStats.revenue)}</div>
-              <div className="stat-change positive">{todayStats.count} orders • {todayStats.items} items</div>
+              <div className="stat-change positive">{todayStats.count} orders today</div>
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-card-icon blue"><Calendar size={24} /></div>
+            <div className="stat-card-content">
+              <h3>Weekly Revenue</h3>
+              <div className="stat-value">{formatCurrency(weeklyRevenueVal)}</div>
+              <div className="stat-change positive">Last 7 days</div>
             </div>
           </div>
           <div className="stat-card">
@@ -127,11 +143,11 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="stat-card">
-            <div className="stat-card-icon blue"><Package size={24} /></div>
+            <div className="stat-card-icon red"><CreditCard size={24} /></div>
             <div className="stat-card-content">
-              <h3>Inventory Value</h3>
-              <div className="stat-value">{formatCurrency(inventoryValue)}</div>
-              <div className="stat-change">{formatNumber(products.length)} products</div>
+              <h3>Weekly Expenses</h3>
+              <div className="stat-value">{formatCurrency(weeklyExpenses)}</div>
+              <div className="stat-change negative">Last 7 days</div>
             </div>
           </div>
           <div className="stat-card">
@@ -139,7 +155,15 @@ export default function DashboardPage() {
             <div className="stat-card-content">
               <h3>Monthly Expenses</h3>
               <div className="stat-value">{formatCurrency(monthlyExpenses)}</div>
-              <div className="stat-change negative">Est. Profit: {formatCurrency(monthlyRevenue - monthlyExpenses)}</div>
+              <div className="stat-change negative">Last 30 days</div>
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-card-icon green"><Package size={24} /></div>
+            <div className="stat-card-content">
+              <h3>Inventory Value</h3>
+              <div className="stat-value">{formatCurrency(inventoryValue)}</div>
+              <div className="stat-change">{formatNumber(products.length)} products</div>
             </div>
           </div>
         </div>
