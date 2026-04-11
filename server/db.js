@@ -170,9 +170,20 @@ export async function initDb() {
       CREATE INDEX IF NOT EXISTS idx_logs_branch_time ON system_logs(branchId, timestamp);
     `);
     
-    // Connectivity Heartbeat Tracking
-    await db.run("ALTER TABLE branches ADD COLUMN IF NOT EXISTS lastSeen TEXT");
-  } catch (err) {
+    // Multi-Session Connectivity Heartbeat Tracking
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS branch_sessions (
+        branchId TEXT NOT NULL,
+        userId TEXT NOT NULL,
+        lastSeen TEXT NOT NULL,
+        PRIMARY KEY (branchId, userId),
+        FOREIGN KEY (branchId) REFERENCES branches(id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_sessions_branch ON branch_sessions(branchId);
+    `);
+
+    // Ensure newer columns exist for existing databases (Migrations)
+    try {
     console.log("Migration info (safe to ignore if columns exist):", err.message);
   }
 

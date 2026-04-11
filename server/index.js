@@ -100,25 +100,37 @@ const requireSystemAdmin = (req, res, next) => {
 app.get('/api/branches', async (req, res) => {
   try {
     const branches = await db.all("SELECT * FROM branches");
+    // Master Session-Based Online Detection
     const now = new Date();
-    
-    // Server-side Online Detection (immune to client clock drift)
-    const processed = branches.map(b => {
-      // Handle both camelCase and lowercase versions from different DB adapters
-      const rawLastSeen = b.lastSeen || b.lastseen;
-      const lastSeenDate = rawLastSeen ? new Date(rawLastSeen) : null;
+    const processed = await Promise.all(branches.map(async b => {
+      // Get all active sessions for this branch in the last 2 minutes
+      const sessions = await db.all(
+        "SELECT lastSeen FROM branch_sessions WHERE branchId = ?", 
+        [b.id]
+      );
       
-      let isOnline = false;
-      let lastSeenSecondsAgo = null;
+      const activeSessions = sessions.filter(s => {
+        const lastSeenDate = new Date(s.lastSeen);
+        return Math.abs(now - lastSeenDate) < 120000;
+      });
 
-      if (lastSeenDate) {
-        const diffMs = Math.abs(now - lastSeenDate);
-        isOnline = diffMs < 120000; // 2 mins threshold (high responsiveness for TV)
-        lastSeenSecondsAgo = Math.floor(diffMs / 1000);
+      const isOnline = activeSessions.length > 0;
+      const sessionCount = activeSessions.length;
+      
+      // Calculate delay of the MOST RECENT signal across all sessions
+      let lastSeenSecondsAgo = null;
+      if (activeSessions.length > 0) {
+        const mostRecent = Math.min(...activeSessions.map(s => Math.abs(now - new Date(s.lastSeen))));
+        lastSeenSecondsAgo = Math.floor(mostRecent / 1000);
+      } else {
+        const rawLastSeen = b.lastSeen || b.lastseen;
+        if (rawLastSeen) {
+          lastSeenSecondsAgo = Math.floor(Math.abs(now - new Date(rawLastSeen)) / 1000);
+        }
       }
       
-      return { ...b, isOnline, lastSeenSecondsAgo };
-    });
+      return { ...b, isOnline, sessionCount, lastSeenSecondsAgo };
+    }));
     
     res.json(processed);
   } catch (error) {
@@ -128,17 +140,35 @@ app.get('/api/branches', async (req, res) => {
 
 // High-speed Pulse signal receiver (Connectivity Heartbeat)
 app.post('/api/branches/:id/pulse', async (req, res) => {
+  const { userId } = req.body;
+  const branchId = req.params.id;
   try {
     const timestamp = new Date().toISOString();
-    await db.run("UPDATE branches SET lastSeen = ? WHERE id = ?", [timestamp, req.params.id]);
+    // 1. Update master branch lastSeen (fallback)
+    await db.run("UPDATE branches SET lastSeen = ? WHERE id = ?", [timestamp, branchId]);
+    
+    // 2. Update specific session if userId provided
+    if (userId) {
+       await db.run(
+         "INSERT INTO branch_sessions (branchId, userId, lastSeen) VALUES (?, ?, ?) ON CONFLICT(branchId, userId) DO UPDATE SET lastSeen = excluded.lastSeen",
+         [branchId, userId, timestamp]
+       );
+    }
+    
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 app.post('/api/branches/:id/disconnect', async (req, res) => {
+  const { userId } = req.body;
+  const branchId = req.params.id;
   try {
-    await db.run("UPDATE branches SET lastSeen = NULL WHERE id = ?", [req.params.id]);
+    if (userId) {
+      await db.run("DELETE FROM branch_sessions WHERE branchId = ? AND userId = ?", [branchId, userId]);
+    } else {
+      await db.run("UPDATE branches SET lastSeen = NULL WHERE id = ?", [branchId]);
+    }
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });

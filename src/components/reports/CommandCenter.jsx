@@ -94,16 +94,13 @@ export default function CommandCenter() {
     })).sort((a, b) => b.revenue - a.revenue);
 
     const finalData = currentRanks.map((b, index) => {
-       // Handle NULL (Initial sync pending) gracefully
-       const isSyncing = !b.lastSeen; 
+       const isSyncing = (b.lastSeenSecondsAgo === null); 
        
-       // Critical Stock Logic: Check if any top product is low at THIS branch
        const branchProducts = products.filter(p => p.branchId === b.id);
        const criticalProducts = branchProducts.filter(p => globalTopProducts.includes(p.id) && p.stock < 5);
        
        return { 
          ...b, 
-         // Use server-side isOnline flag, but allow isSyncing to override for new branches
          isSyncing,
          criticalStock: criticalProducts.length > 0 ? criticalProducts : null,
          rank: index + 1
@@ -134,7 +131,7 @@ export default function CommandCenter() {
     return finalData;
   }, [globalSales, branches, products, globalTopProducts]);
 
-  // Global Sales Pulse Data (Hourly) - 24H Coverage
+  // Global Sales Pulse Data (Hourly)
   const pulseMetrics = useMemo(() => {
     const data = [];
     const today = new Date();
@@ -158,7 +155,6 @@ export default function CommandCenter() {
     return { data, total };
   }, [globalSales]);
 
-  // Recent Ticker Items (double for smooth loop)
   const tickerItems = useMemo(() => {
       const items = globalSales.slice(0, 10).map(t => ({
           branchName: branches.find(b => b.id === t.branchId)?.name || 'Branch',
@@ -186,22 +182,13 @@ export default function CommandCenter() {
         {isFullscreen ? <Minimize size={24} /> : <Maximize size={24} />}
       </button>
 
-      {/* Header Section */}
       <div className="tv-header" style={{ padding: '15px 30px', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: 15 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
           {settings.storeLogo ? (
             <img 
               src={settings.storeLogo} 
               alt="Logo" 
-              style={{ 
-                width: 60, 
-                height: 60, 
-                background: '#fff', 
-                borderRadius: 12, 
-                objectFit: 'contain', 
-                padding: 4,
-                boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
-              }} 
+              style={{ width: 60, height: 60, background: '#fff', borderRadius: 12, objectFit: 'contain', padding: 4, boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }} 
             />
           ) : (
             <div className="sidebar-brand-icon" style={{ width: 60, height: 60, fontSize: '2rem' }}>🧁</div>
@@ -224,42 +211,21 @@ export default function CommandCenter() {
         </div>
       </div>
 
-      {/* Empire Grid */}
       <div className="tv-grid" style={{ padding: '0 15px', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 15, flex: 1, overflow: 'hidden' }}>
         {branchPerformance.map((branch, index) => (
           <div 
             key={branch.id} 
-            className={`tv-branch-card 
-              ${justSoldBranch === branch.id ? 'just-sold' : ''} 
-              ${branch.isOnline ? 'card-online-neon' : ''} 
-              ${branch.criticalStock ? 'panic-stock' : ''}
-              ${rankedUpBranches[branch.id] ? 'ranked-up' : ''}
-            `}
-            style={{ 
-               padding: 15,
-               borderRadius: 12,
-               minHeight: 130,
-               border: !branch.isOnline ? '1px dashed rgba(255,255,255,0.1)' : '1px solid #00ff00'
-            }}
+            className={`tv-branch-card ${justSoldBranch === branch.id ? 'just-sold' : ''} ${branch.isOnline ? 'card-online-neon' : ''} ${branch.criticalStock ? 'panic-stock' : ''} ${rankedUpBranches[branch.id] ? 'ranked-up' : ''}`}
+            style={{ padding: 15, borderRadius: 12, minHeight: 130, border: !branch.isOnline ? '1px dashed rgba(255,255,255,0.1)' : '1px solid #00ff00' }}
           >
             <div className="tv-rank-badge" style={{ fontSize: '0.7rem', padding: '3px 8px', top: 10, right: 10 }}>RANK #{branch.rank}</div>
             
-            {rankedUpBranches[branch.id] && (
-               <div className="rank-up-tag" style={{ fontSize: '0.7rem', padding: '3px 10px' }}>
-                 <Zap size={12} fill="currentColor" /> UP!
-               </div>
-            )}
-
             <div className="tv-branch-name" style={{ fontSize: '1.2rem', marginBottom: 5, gap: 10, display: 'flex', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <MapPin size={18} style={{ color: index === 0 ? '#FFD700' : 'var(--accent)' }} />
                 {branch.name}
+                {branch.isOnline && <Award size={18} style={{ color: '#FFD700', marginLeft: 4 }} />}
               </div>
-              {rankedUpBranches[branch.id] && (
-                 <div className="rank-up-badge-mini">
-                   <Zap size={12} fill="currentColor" /> RISE!
-                 </div>
-              )}
             </div>
 
             <div className="tv-branch-revenue" style={{ fontSize: '2.4rem', fontWeight: 900, marginBottom: 2 }}>
@@ -271,59 +237,42 @@ export default function CommandCenter() {
             
             <div style={{ marginTop: 15, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {branch.isOnline ? (
-                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                     <div className="vivid-signal" />
-                     <div style={{ background: '#00ff00', color: '#000', padding: '2px 8px', borderRadius: 6, fontSize: '0.65rem', fontWeight: 900 }}>CONNECTED</div>
-                     <span style={{ fontSize: '0.75rem', opacity: 0.8, color: '#00ff00' }}>{branch.lastSeenSecondsAgo < 10 ? 'INSTANT' : `${branch.lastSeenSecondsAgo}s`}</span>
-                   </div>
-                ) : branch.isSyncing ? (
+                {branch.isSyncing && (
                   <div style={{ color: 'var(--info)', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 800 }}>
                     <Activity size={14} className="spinning" /> SYNCING
                   </div>
-                ) : (
-                  <div style={{ color: 'rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 800 }}>
-                    <WifiOff size={14} /> OFFLINE
-                  </div>
                 )}
-                {branch.criticalStock && !branch.isOffline && (
-                   <div className="stock-warning-badge" style={{ fontSize: '0.7rem', padding: '3px 8px' }}>
-                     STOCK!
-                   </div>
+                {branch.criticalStock && (
+                  <div className="stock-warning-badge" style={{ fontSize: '0.7rem', padding: '3px 8px' }}>
+                    STOCK!
+                  </div>
                 )}
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                {branch.isOnline && <Award size={22} style={{ color: '#FFD700' }} />}
-                <div style={{
-                  background: branch.isOnline ? '#00ff00' : 'rgba(255,255,255,0.05)',
-                  color: branch.isOnline ? '#000' : 'rgba(255,255,255,0.3)',
-                  padding: '5px 15px',
-                  borderRadius: 10,
-                  fontSize: '0.8rem',
-                  fontWeight: 900,
-                  boxShadow: branch.isOnline ? '0 0 20px rgba(0,255,0,0.4)' : 'none',
-                  letterSpacing: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  minWidth: 80,
-                  border: branch.isOnline ? 'none' : '1px solid rgba(255,255,255,0.1)'
-                }}>
-                  <span style={{ fontSize: '0.75rem' }}>{branch.isOnline ? 'ONLINE' : 'INACTIVE'}</span>
-                  {branch.lastSeenSecondsAgo !== null && (
-                    <span style={{ fontSize: '0.6rem', opacity: 0.7, marginTop: 2 }}>
-                      {branch.lastSeenSecondsAgo > 60 ? `${Math.floor(branch.lastSeenSecondsAgo/60)}m ago` : `${branch.lastSeenSecondsAgo}s ago`}
-                    </span>
-                  )}
-                </div>
+              <div style={{ 
+                background: branch.isOnline ? '#00ff00' : 'rgba(255,255,255,0.05)',
+                color: branch.isOnline ? '#000' : 'rgba(255,255,255,0.3)',
+                padding: '5px 15px', borderRadius: 10, fontSize: '0.8rem', fontWeight: 900,
+                boxShadow: branch.isOnline ? '0 0 20px rgba(0,255,0,0.4)' : 'none',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 90,
+                border: branch.isOnline ? 'none' : '1px solid rgba(255,255,255,0.1)'
+              }}>
+                <span style={{ fontSize: '0.7rem' }}>
+                  {branch.isOnline ? `ONLINE${branch.sessionCount > 1 ? ` (${branch.sessionCount})` : ''}` : 'INACTIVE'}
+                </span>
+                {branch.lastSeenSecondsAgo !== null && (
+                  <span style={{ fontSize: '0.6rem', opacity: 0.7, marginTop: 2 }}>
+                    {branch.lastSeenSecondsAgo > 3600 ? `${Math.floor(branch.lastSeenSecondsAgo/3600)}h ago` : 
+                     branch.lastSeenSecondsAgo > 60 ? `${Math.floor(branch.lastSeenSecondsAgo/60)}m ago` : 
+                     `${branch.lastSeenSecondsAgo}s ago`}
+                  </span>
+                )}
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Global Sales Activity (Empire Pulse) */}
       <div style={{ background: 'rgba(0,0,0,0.3)', padding: '15px 30px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.05)', margin: '10px 15px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', textTransform: 'uppercase', letterSpacing: 2, fontSize: '0.8rem', fontWeight: 800, opacity: 0.6 }}>
@@ -341,24 +290,14 @@ export default function CommandCenter() {
                         <stop offset="95%" stopColor="#D4763C" stopOpacity={0} />
                     </linearGradient>
                 </defs>
-                <XAxis 
-                  dataKey="hourLabel" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: '#fff', fontSize: 10, opacity: 0.4 }} 
-                  interval={3} 
-                />
+                <XAxis dataKey="hourLabel" axisLine={false} tickLine={false} tick={{ fill: '#fff', fontSize: 10, opacity: 0.4 }} interval={3} />
                 <YAxis hide domain={[0, 'auto']} />
-                <Tooltip 
-                  contentStyle={{ background: '#2C1810', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8 }}
-                  itemStyle={{ color: '#fff' }}
-                />
+                <Tooltip contentStyle={{ background: '#2C1810', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8 }} itemStyle={{ color: '#fff' }} />
                 <Area type="monotone" dataKey="revenue" stroke="#D4763C" strokeWidth={3} fill="url(#tvPulse)" />
             </AreaChart>
         </ResponsiveContainer>
       </div>
 
-      {/* Ticker Bar */}
       <div className="tv-ticker-bar" style={{ height: 40, borderRadius: 20, margin: '5px 15px 15px' }}>
         <div className="tv-ticker-content" style={{ gap: 50, fontSize: '1rem' }}>
           {tickerItems.map((item, i) => (
@@ -373,61 +312,12 @@ export default function CommandCenter() {
       </div>
 
       <style jsx>{`
-         .panic-stock {
-            border-color: var(--danger) !important;
-            background: rgba(231, 76, 60, 0.1) !important;
-            animation: pulse-panic 1.5s infinite;
-         }
-         @keyframes pulse-panic {
-            0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.4); }
-            70% { box-shadow: 0 0 0 15px rgba(231, 76, 60, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
-         }
-         .stock-warning-badge {
-            background: var(--danger);
-            color: white;
-            padding: 4px 10px;
-            border-radius: 8px;
-            font-size: 0.75rem;
-            font-weight: 800;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            animation: bounce-alert 0.5s infinite alternate;
-         }
-         @keyframes bounce-alert {
-            to { transform: translateY(-4px); }
-         }
-         .ranked-up {
-            border-color: #FFD700 !important;
-            background: rgba(255, 215, 0, 0.1) !important;
-         }
-         .tv-rank-pill {
-            background: rgba(255,255,255,0.1);
-            color: #fff;
-            padding: 4px 12px;
-            border-radius: 200px;
-            font-size: 0.8rem;
-            font-weight: 900;
-            border: 1px solid rgba(255,255,255,0.1);
-         }
-         .rank-up-badge-mini {
-            background: #FFD700;
-            color: #2C1810;
-            padding: 2px 8px;
-            border-radius: 6px;
-            font-size: 0.7rem;
-            font-weight: 900;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            animation: bounce-rank 0.4s ease-out;
-         }
-         @keyframes bounce-rank {
-            0% { transform: scale(0.5); opacity: 0; }
-            50% { transform: scale(1.2); }
-            100% { transform: scale(1); opacity: 1; }
-         }
+         .panic-stock { border-color: var(--danger) !important; background: rgba(231, 76, 60, 0.1) !important; animation: pulse-panic 1.5s infinite; }
+         @keyframes pulse-panic { 0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(231, 76, 60, 0); } 100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); } }
+         .stock-warning-badge { background: var(--danger); color: white; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; display: flex; align-items: center; gap: 6px; animation: bounce-alert 0.5s infinite alternate; }
+         @keyframes bounce-alert { to { transform: translateY(-4px); } }
+         .ranked-up { border-color: #FFD700 !important; background: rgba(255, 215, 0, 0.1) !important; }
+         .tv-rank-pill { background: rgba(255,255,255,0.1); color: #fff; padding: 4px 12px; border-radius: 200px; font-size: 0.8rem; font-weight: 900; border: 1px solid rgba(255,255,255,0.1); }
       `}</style>
     </div>
   );

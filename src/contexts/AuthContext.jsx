@@ -70,8 +70,8 @@ export function AuthProvider({ children }) {
     if (!currentUser || !activeBranch || activeBranch === 'all') return;
 
     const sendPulse = () => {
-      // Pass empty object to ensure valid JSON payload
-      api.post(`/branches/${activeBranch}/pulse`, {}).catch(() => {});
+      // Pass userId to track independent sessions
+      api.post(`/branches/${activeBranch}/pulse`, { userId: currentUser.id }).catch(() => {});
     };
 
     // 1. Send immediate pulse on login/branch switch
@@ -142,8 +142,8 @@ export function AuthProvider({ children }) {
 
   const logout = () => {
     // Send immediate disconnect pulse before clearing state
-    if (activeBranch && activeBranch !== 'all') {
-      api.post(`/branches/${activeBranch}/disconnect`, {}).catch(() => {});
+    if (activeBranch && activeBranch !== 'all' && currentUser) {
+      api.post(`/branches/${activeBranch}/disconnect`, { userId: currentUser.id }).catch(() => {});
     }
 
     setCurrentUser(null);
