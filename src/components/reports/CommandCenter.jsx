@@ -263,17 +263,18 @@ export default function CommandCenter() {
             
             <div style={{ marginTop: 15, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {branch.isOffline ? (
-                  <div style={{ color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 800 }}>
-                    <WifiOff size={14} /> OFFLINE
-                  </div>
+                {branch.isOnline ? (
+                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#00ff00', fontWeight: 900, fontSize: '0.8rem', textShadow: '0 0 10px rgba(0,255,0,0.5)' }}>
+                     <div className="vivid-signal" />
+                     {branch.lastSeenSecondsAgo < 10 ? 'INSTANT' : `${branch.lastSeenSecondsAgo}s ago`}
+                   </div>
                 ) : branch.isSyncing ? (
                   <div style={{ color: 'var(--info)', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 800 }}>
                     <Activity size={14} className="spinning" /> SYNCING
                   </div>
                 ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', color: 'var(--success)', fontWeight: 800 }}>
-                    <Activity size={14} /> LIVE
+                  <div style={{ color: 'rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 800 }}>
+                    <WifiOff size={14} /> OFFLINE
                   </div>
                 )}
                 {branch.criticalStock && !branch.isOffline && (
@@ -284,7 +285,7 @@ export default function CommandCenter() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                {index === 0 && !branch.isOffline && !branch.isSyncing && <Award size={22} style={{ color: '#FFD700' }} />}
+                {branch.isOnline && <Award size={22} style={{ color: '#FFD700' }} />}
                 <div className="tv-rank-pill">#{branch.rank}</div>
               </div>
             </div>
@@ -327,6 +328,18 @@ export default function CommandCenter() {
       </div>
 
       <style jsx>{`
+         .vivid-signal {
+            width: 10px;
+            height: 10px;
+            background: #00ff00;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #00ff00;
+            animation: pulse-signal 1s infinite alternate;
+         }
+         @keyframes pulse-signal {
+            from { opacity: 0.4; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1.2); }
+         }
          .panic-stock {
             border-color: var(--danger) !important;
             background: rgba(231, 76, 60, 0.1) !important;
@@ -360,7 +373,7 @@ export default function CommandCenter() {
             background: rgba(255,255,255,0.1);
             color: #fff;
             padding: 4px 12px;
-            border-radius: 20px;
+            border-radius: 200px;
             font-size: 0.8rem;
             font-weight: 900;
             border: 1px solid rgba(255,255,255,0.1);

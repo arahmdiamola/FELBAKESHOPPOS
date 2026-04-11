@@ -100,7 +100,17 @@ const requireSystemAdmin = (req, res, next) => {
 app.get('/api/branches', async (req, res) => {
   try {
     const branches = await db.all("SELECT * FROM branches");
-    res.json(branches);
+    const now = new Date();
+    
+    // Server-side Online Detection (immune to client clock drift)
+    const processed = branches.map(b => {
+      const lastSeenDate = b.lastSeen ? new Date(b.lastSeen) : null;
+      const isOnline = lastSeenDate && (now - lastSeenDate < 300000); // 5 mins
+      const lastSeenSecondsAgo = lastSeenDate ? Math.floor((now - lastSeenDate) / 1000) : null;
+      return { ...b, isOnline, lastSeenSecondsAgo };
+    });
+    
+    res.json(processed);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
