@@ -134,7 +134,23 @@ export default function CommandCenter() {
       {/* Header Section */}
       <div className="tv-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: 30 }}>
-          <div className="sidebar-brand-icon" style={{ width: 100, height: 100, fontSize: '3.5rem' }}>🧁</div>
+          {settings.storeLogo ? (
+            <img 
+              src={settings.storeLogo} 
+              alt="Logo" 
+              style={{ 
+                width: 120, 
+                height: 120, 
+                background: '#fff', 
+                borderRadius: 24, 
+                objectFit: 'contain', 
+                padding: 10,
+                boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
+              }} 
+            />
+          ) : (
+            <div className="sidebar-brand-icon" style={{ width: 100, height: 100, fontSize: '3.5rem' }}>🧁</div>
+          )}
           <div>
             <h1 style={{ fontSize: '4rem', fontWeight: 900, color: '#fff', letterSpacing: '-1px' }}>MISSION CONTROL</h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: 15, color: 'var(--success)', fontWeight: 800, fontSize: '1.2rem' }}>
