@@ -38,7 +38,14 @@ export default function CommandCenter() {
   }, []);
 
   // Detect new sales for visual "Pulse" effect on branch cards
-  // ... (unchanged sale pulse effect)
+  useEffect(() => {
+    if (allSales.length > 0) {
+      const topSale = allSales[0];
+      setJustSoldBranch(topSale.branchId);
+      const timer = setTimeout(() => setJustSoldBranch(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [allSales.length]);
 
   const stats = getTodayStats();
 
@@ -97,8 +104,7 @@ export default function CommandCenter() {
          rank: index + 1
        };
     });
-    // ... rest of useMemo logic unchanged
-    
+
     // Detect Rank-Ups
     const rankChanges = {};
     finalData.forEach(b => {
@@ -123,7 +129,46 @@ export default function CommandCenter() {
     return finalData;
   }, [allSales, branches, products, globalTopProducts]);
 
-  // ... rest of polling/recharts logic
+  // Global Sales Pulse Data (Hourly)
+  const pulseData = useMemo(() => {
+    const data = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    for (let h = 6; h <= 21; h++) {
+      const hSales = allSales.filter(t => {
+        const d = new Date(t.date);
+        return d >= today && d.getHours() === h;
+      });
+      data.push({
+        hour: h > 12 ? `${h - 12} PM` : h === 12 ? '12 PM' : `${h} AM`,
+        revenue: hSales.reduce((sum, t) => sum + t.total, 0)
+      });
+    }
+    return data;
+  }, [allSales]);
+
+  // Recent Ticker Items (double for smooth loop)
+  const tickerItems = useMemo(() => {
+      const items = allSales.slice(0, 10).map(t => ({
+          branchName: branches.find(b => b.id === t.branchId)?.name || 'Branch',
+          total: t.total,
+          id: t.id
+      }));
+      return [...items, ...items];
+  }, [allSales, branches]);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    }
+  };
 
   return (
     <div className="tv-background">
