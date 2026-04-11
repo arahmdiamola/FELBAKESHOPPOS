@@ -231,17 +231,15 @@ export default function CommandCenter() {
             key={branch.id} 
             className={`tv-branch-card 
               ${justSoldBranch === branch.id ? 'just-sold' : ''} 
-              ${branch.isOnline ? 'card-online' : ''} 
+              ${branch.isOnline ? 'card-online-neon' : ''} 
               ${branch.criticalStock ? 'panic-stock' : ''}
               ${rankedUpBranches[branch.id] ? 'ranked-up' : ''}
             `}
             style={{ 
-               opacity: 1, 
-               filter: !branch.isOnline ? 'grayscale(0.8) opacity(0.6)' : 'none',
                padding: 15,
                borderRadius: 12,
                minHeight: 130,
-               border: !branch.isOnline ? '1px dashed rgba(255,255,255,0.1)' : '1px solid rgba(0,255,0,0.3)'
+               border: !branch.isOnline ? '1px dashed rgba(255,255,255,0.1)' : '1px solid #00ff00'
             }}
           >
             <div className="tv-rank-badge" style={{ fontSize: '0.7rem', padding: '3px 8px', top: 10, right: 10 }}>RANK #{branch.rank}</div>
@@ -276,8 +274,8 @@ export default function CommandCenter() {
                 {branch.isOnline ? (
                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                      <div className="vivid-signal" />
-                     <div style={{ background: '#00ff00', color: '#000', padding: '3px 10px', borderRadius: 6, fontWeight: 900, fontSize: '0.9rem', letterSpacing: 1 }}>CONNECTED</div>
-                     <span style={{ color: '#00ff00', fontSize: '0.8rem', fontWeight: 800 }}>{branch.lastSeenSecondsAgo < 10 ? 'INSTANT' : `${branch.lastSeenSecondsAgo}s`}</span>
+                     <div style={{ background: '#00ff00', color: '#000', padding: '2px 8px', borderRadius: 6, fontSize: '0.65rem', fontWeight: 900 }}>CONNECTED</div>
+                     <span style={{ fontSize: '0.75rem', opacity: 0.8, color: '#00ff00' }}>{branch.lastSeenSecondsAgo < 10 ? 'INSTANT' : `${branch.lastSeenSecondsAgo}s`}</span>
                    </div>
                 ) : branch.isSyncing ? (
                   <div style={{ color: 'var(--info)', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 800 }}>
@@ -354,23 +352,6 @@ export default function CommandCenter() {
       </div>
 
       <style jsx>{`
-         .vivid-signal {
-            width: 14px;
-            height: 14px;
-            background: #00ff00;
-            border-radius: 50%;
-            box-shadow: 0 0 15px #00ff00;
-            animation: pulse-signal 0.8s infinite alternate;
-         }
-         .card-online {
-            border-color: rgba(0, 255, 0, 0.4) !important;
-            background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(0,255,0,0.03) 100%) !important;
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.1);
-         }
-         @keyframes pulse-signal {
-            from { opacity: 0.4; transform: scale(0.8); }
-            to { opacity: 1; transform: scale(1.2); }
-         }
          .panic-stock {
             border-color: var(--danger) !important;
             background: rgba(231, 76, 60, 0.1) !important;

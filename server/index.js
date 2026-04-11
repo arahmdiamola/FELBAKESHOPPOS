@@ -105,7 +105,7 @@ app.get('/api/branches', async (req, res) => {
     // Server-side Online Detection (immune to client clock drift)
     const processed = branches.map(b => {
       const lastSeenDate = b.lastSeen ? new Date(b.lastSeen) : null;
-      const isOnline = lastSeenDate && (now - lastSeenDate < 300000); // 5 mins
+      const isOnline = lastSeenDate && (now - lastSeenDate < 600000); // 10 mins threshold for stability
       const lastSeenSecondsAgo = lastSeenDate ? Math.floor((now - lastSeenDate) / 1000) : null;
       return { ...b, isOnline, lastSeenSecondsAgo };
     });
@@ -119,7 +119,9 @@ app.get('/api/branches', async (req, res) => {
 // High-speed Pulse signal receiver (Connectivity Heartbeat)
 app.post('/api/branches/:id/pulse', async (req, res) => {
   try {
-    await db.run("UPDATE branches SET lastSeen = ? WHERE id = ?", [new Date().toISOString(), req.params.id]);
+    const timestamp = new Date().toISOString();
+    await db.run("UPDATE branches SET lastSeen = ? WHERE id = ?", [timestamp, req.params.id]);
+    console.log(`[Pulse] Branch ${req.params.id} signaled at ${timestamp}`);
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -1,9 +1,51 @@
-/* Global Connectivity Status Styles - Glassmorphism & High-End UX */
+/* Global Connectivity Status Styles - High-Contrast Neon Upgrade */
 
 :root {
   --glass-bg: rgba(255, 255, 255, 0.4);
   --glass-border: rgba(255, 255, 255, 0.5);
   --glass-blur: blur(12px);
+  --neon-green: #00FF00;
+  --neon-red: #FF3131;
+}
+
+/* Vivid Neon Signal Orb */
+.vivid-signal {
+  width: 14px;
+  height: 14px;
+  background: var(--neon-green);
+  border-radius: 50%;
+  box-shadow: 0 0 15px var(--neon-green), 0 0 30px var(--neon-green);
+  animation: neon-breath 1.5s infinite alternate ease-in-out;
+}
+
+@keyframes neon-breath {
+  0% { transform: scale(0.9); opacity: 0.7; box-shadow: 0 0 10px var(--neon-green); }
+  100% { transform: scale(1.1); opacity: 1; box-shadow: 0 0 30px var(--neon-green), 0 0 50px var(--neon-green); }
+}
+
+/* High-Intensity Online Card */
+.card-online-neon {
+  border-color: var(--neon-green) !important;
+  background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(0,255,0,0.05) 100%) !important;
+  box-shadow: 0 0 40px rgba(0, 255, 0, 0.2), inset 0 0 20px rgba(0, 255, 0, 0.05) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.card-online-neon::after {
+  content: "";
+  position: absolute;
+  top: 0; left: -100%;
+  width: 50%; height: 100%;
+  background: linear-gradient(to right, transparent, rgba(0, 255, 0, 0.1), transparent);
+  transform: skewX(-25deg);
+  animation: neon-sweep 3s infinite;
+}
+
+@keyframes neon-sweep {
+  0% { left: -100%; }
+  30% { left: 150%; }
+  100% { left: 150%; }
 }
 
 .status-pill {
@@ -22,30 +64,29 @@
   border: 1.5px solid var(--glass-border);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  cursor: default;
-  user-select: none;
 }
 
 .status-pill.online {
-  color: #2E7D32;
-  border-color: rgba(76, 175, 80, 0.3);
-  background: rgba(232, 245, 233, 0.5);
+  color: #1B5E20;
+  border-color: rgba(0, 255, 0, 0.4);
+  background: rgba(0, 255, 0, 0.1);
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
 }
 
 .status-pill.online::before {
   content: "";
-  width: 6px;
-  height: 6px;
-  background: #4CAF50;
+  width: 8px;
+  height: 8px;
+  background: var(--neon-green);
   border-radius: 50%;
-  box-shadow: 0 0 10px #4CAF50;
+  box-shadow: 0 0 10px var(--neon-green);
+  animation: neon-breath 1s infinite alternate;
 }
 
 .status-pill.offline {
   color: #D32F2F;
   background: rgba(253, 237, 235, 0.6);
   border-color: rgba(231, 76, 60, 0.4);
-  animation: pulse-border-red 2.5s infinite;
 }
 
 .status-pill.offline::before {
@@ -54,19 +95,7 @@
   height: 6px;
   background: #E74C3C;
   border-radius: 50%;
-  box-shadow: 0 0 10px #E74C3C;
-  animation: pulse-dot 1s infinite alternate;
-}
-
-@keyframes pulse-border-red {
-  0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.4); }
-  70% { box-shadow: 0 0 0 10px rgba(231, 76, 60, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
-}
-
-@keyframes pulse-dot {
-  from { opacity: 1; transform: scale(1); }
-  to { opacity: 0.5; transform: scale(0.8); }
+  opacity: 0.6;
 }
 
 .spinning {
@@ -76,25 +105,4 @@
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
-}
-
-/* Sync Indicator (Small dot overlay on icons) */
-.sync-indicator {
-  position: relative;
-}
-.sync-indicator.active::after {
-  content: "";
-  position: absolute;
-  top: -2px;
-  right: -2px;
-  width: 8px;
-  height: 8px;
-  background: var(--accent);
-  border: 2px solid white;
-  border-radius: 50%;
-  animation: bounce 0.5s infinite alternate;
-}
-
-@keyframes bounce {
-  to { transform: translateY(-2px); }
 }
