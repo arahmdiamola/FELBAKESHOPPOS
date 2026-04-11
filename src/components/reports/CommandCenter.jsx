@@ -226,10 +226,12 @@ export default function CommandCenter() {
               ${rankedUpBranches[branch.id] ? 'ranked-up' : ''}
             `}
             style={{ 
-               opacity: branch.isOffline ? 0.3 : 1, 
+               opacity: 1, 
+               filter: branch.isOffline ? 'grayscale(0.8) opacity(0.7)' : 'none',
                padding: 35,
                borderRadius: 24,
-               minHeight: 220 
+               minHeight: 220,
+               border: branch.isOffline ? '1px dashed rgba(255,255,255,0.2)' : undefined
             }}
           >
             <div className="tv-rank-badge" style={{ fontSize: '1rem', padding: '6px 14px' }}>RANK #{branch.rank}</div>
