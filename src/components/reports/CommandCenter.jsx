@@ -270,7 +270,7 @@ export default function CommandCenter() {
                     {branch.isOnline ? (branch.lastSeenSecondsAgo < 1 ? '<1s' : `${branch.lastSeenSecondsAgo}s`) : 'OFF'}
                   </span>
                   <span style={{ fontSize: '0.6rem', opacity: 0.5, letterSpacing: 1 }}>
-                    {branch.isOnline ? 'PING' : 'LAST SEEN'}
+                    {branch.isOnline ? 'SYNC' : 'LAST SEEN'}
                   </span>
                 </div>
               </div>
