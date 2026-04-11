@@ -5,7 +5,12 @@ import { useProducts } from '../../contexts/ProductContext';
 import { useExpenses } from '../../contexts/ExpenseContext';
 import { useSettings } from '../../contexts/SettingsContext';
 import { formatCurrency, formatNumber } from '../../utils/formatters';
-import { DollarSign, ShoppingBag, TrendingUp, AlertTriangle, Package, Wallet, Printer, Calendar, CreditCard } from 'lucide-react';
+import { api } from '../../utils/api';
+import { 
+  DollarSign, ShoppingBag, TrendingUp, AlertTriangle, 
+  Package, Wallet, Printer, Calendar, CreditCard, 
+  Activity, WifiOff 
+} from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import Header from '../layout/Header';
 import ReceiptPreview from '../pos/ReceiptPreview';
@@ -16,12 +21,22 @@ export default function DashboardPage() {
   const { products, categories, getLowStockProducts } = useProducts();
   const { getTotalExpenses } = useExpenses();
   const { settings } = useSettings();
-
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [branches, setBranches] = useState([]);
   const [lastUpdated, setLastUpdated] = useState(new Date());
 
-  // Update lastUpdated whenever allSales changes (indicates a poll or new sale)
+  // Fetch branches for connectivity monitoring
+  useMemo(() => {
+    const fetchBranches = () => {
+      api.get('/branches').then(setBranches).catch(console.error);
+    };
+    fetchBranches();
+    const interval = setInterval(fetchBranches, 10000); // 10s poll
+    return () => clearInterval(interval);
+  }, []);
+
+  // Update lastUpdated whenever allSales changes
   useMemo(() => {
     setLastUpdated(new Date());
   }, [allSales]);
@@ -212,6 +227,46 @@ export default function DashboardPage() {
               <div className="stat-value">{formatCurrency(inventoryValue)}</div>
               <div className="stat-change">{formatNumber(products.length)} products</div>
             </div>
+          </div>
+        </div>
+        
+        {/* Empire Health Monitor (OWNER'S EYE) */}
+        <div className="card" style={{ marginBottom: 24, padding: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Activity size={20} style={{ color: 'var(--accent)' }} />
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Empire Health Monitor</h3>
+            </div>
+            <span className="text-xs text-muted" style={{ fontWeight: 600 }}>Updates every 10s</span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+            {branches.map(branch => (
+              <div key={branch.id} style={{ 
+                background: 'rgba(0,0,0,0.02)', 
+                border: '1px solid rgba(0,0,0,0.05)', 
+                padding: '12px 16px', 
+                borderRadius: 12,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <span style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-primary)' }}>{branch.name}</span>
+                  {branch.isOnline ? (
+                    <span style={{ fontSize: '0.75rem', color: 'var(--success)', fontWeight: 800 }}>
+                      {branch.lastSeenSecondsAgo < 10 ? 'INSTANT' : `${branch.lastSeenSecondsAgo}s ago`}
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: '0.75rem', color: 'var(--danger)', fontWeight: 800 }}>OFFLINE</span>
+                  )}
+                </div>
+                {branch.isOnline ? (
+                   <div className="vivid-signal" style={{ width: 10, height: 10, boxShadow: '0 0 10px #00ff00' }} />
+                ) : (
+                  <WifiOff size={16} style={{ color: 'var(--danger)', opacity: 0.5 }} />
+                )}
+              </div>
+            ))}
           </div>
         </div>
 

@@ -25,7 +25,7 @@ function AppRoutes() {
 
   // --- STANDALONE LAYOUT (TV DASHBOARD) ---
   if (location.pathname === '/command-center') {
-    if (currentUser.role !== 'system_admin') {
+    if (!['system_admin', 'owner'].includes(currentUser.role)) {
       return <Navigate to="/pos" replace />;
     }
     

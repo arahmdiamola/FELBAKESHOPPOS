@@ -50,8 +50,10 @@ export default function Sidebar() {
   const visibleNavItems = navItems.filter(item => {
     if (item.section) return true;
     
-    // Mission Control is strictly for System Admins (TV Dashboard)
-    if (item.to === '/command-center') return currentUser?.role === 'system_admin';
+    // Mission Control is for System Admins and Owners
+    if (item.to === '/command-center') {
+      return ['system_admin', 'owner'].includes(currentUser?.role);
+    }
 
     if (currentUser?.role === 'cashier') {
       return !['/reports', '/expenses', '/users', '/settings'].includes(item.to);
