@@ -124,23 +124,28 @@ export default function CommandCenter() {
     return finalData;
   }, [allSales, branches, products, globalTopProducts]);
 
-  // Global Sales Pulse Data (Hourly)
-  const pulseData = useMemo(() => {
+  // Global Sales Pulse Data (Hourly) - 24H Coverage
+  const pulseMetrics = useMemo(() => {
     const data = [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    let total = 0;
 
-    for (let h = 6; h <= 21; h++) {
+    for (let h = 0; h <= 23; h++) {
       const hSales = allSales.filter(t => {
         const d = new Date(t.date);
         return d >= today && d.getHours() === h;
       });
+      const revenue = hSales.reduce((sum, t) => sum + t.total, 0);
+      total += revenue;
+      
       data.push({
-        hour: h > 12 ? `${h - 12} PM` : h === 12 ? '12 PM' : `${h} AM`,
-        revenue: hSales.reduce((sum, t) => sum + t.total, 0)
+        hour: h,
+        hourLabel: h > 12 ? `${h - 12} PM` : h === 12 ? '12 PM' : h === 0 ? '12 AM' : `${h} AM`,
+        revenue
       });
     }
-    return data;
+    return { data, total };
   }, [allSales]);
 
   // Recent Ticker Items (double for smooth loop)
@@ -289,21 +294,36 @@ export default function CommandCenter() {
         ))}
       </div>
 
-      {/* Global Sales Pulse Chart */}
+      {/* Global Sales Activity (Empire Pulse) */}
       <div style={{ background: 'rgba(0,0,0,0.3)', padding: '15px 30px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.05)', margin: '10px 15px' }}>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 2, fontSize: '0.8rem', fontWeight: 800, opacity: 0.6 }}>
-            <Activity size={16} style={{ color: 'var(--accent)' }} /> Empire Pulse (Hourly)
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', textTransform: 'uppercase', letterSpacing: 2, fontSize: '0.8rem', fontWeight: 800, opacity: 0.6 }}>
+              <Activity size={16} style={{ color: 'var(--accent)' }} /> Global Daily Sales Activity
+          </div>
+          <div style={{ color: 'var(--success)', fontWeight: 900, fontSize: '1rem', textShadow: '0 0 10px rgba(0,255,0,0.3)' }}>
+             TOTAL Today: <span style={{ fontSize: '1.2rem' }}>{formatCurrency(pulseMetrics.total)}</span>
+          </div>
         </div>
-        <ResponsiveContainer width="100%" height={90}>
-            <AreaChart data={pulseData}>
+        <ResponsiveContainer width="100%" height={100}>
+            <AreaChart data={pulseMetrics.data}>
                 <defs>
                     <linearGradient id="tvPulse" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#D4763C" stopOpacity={0.4} />
                         <stop offset="95%" stopColor="#D4763C" stopOpacity={0} />
                     </linearGradient>
                 </defs>
-                <XAxis dataKey="hour" hide />
+                <XAxis 
+                  dataKey="hourLabel" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fill: '#fff', fontSize: 10, opacity: 0.4 }} 
+                  interval={3} 
+                />
                 <YAxis hide domain={[0, 'auto']} />
+                <Tooltip 
+                  contentStyle={{ background: '#2C1810', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8 }}
+                  itemStyle={{ color: '#fff' }}
+                />
                 <Area type="monotone" dataKey="revenue" stroke="#D4763C" strokeWidth={3} fill="url(#tvPulse)" />
             </AreaChart>
         </ResponsiveContainer>
