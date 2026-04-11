@@ -141,6 +141,16 @@ app.delete('/api/branches/:id', requireSystemAdmin, async (req, res) => {
   }
 });
 
+app.post('/api/branches/:id/heartbeat', async (req, res) => {
+  try {
+    const timestamp = new Date().toISOString();
+    await db.run("UPDATE branches SET lastSeen = ? WHERE id = ?", [timestamp, req.params.id]);
+    res.json({ success: true, timestamp });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // --- USERS ---
 app.get('/api/users', async (req, res) => {
   if (!req.headers['x-user-role'] || req.headers['x-user-role'] === 'system_admin') {
@@ -286,6 +296,10 @@ app.post('/api/transactions', async (req, res) => {
       "INSERT INTO transactions (id, branchId, receiptNumber, subtotal, discount, tax, total, paymentMethod, amountPaid, change, customerId, customerName, cashierId, cashierName, date, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       [t.id, branchId, t.receiptNumber, t.subtotal, t.discount, t.tax, t.total, t.paymentMethod, t.amountPaid, t.change, t.customerId, t.customerName, t.cashierId, t.cashierName, t.date, t.status, t.notes]
     );
+
+    // Refresh lastSeen on transaction (auto-heartbeat)
+    await db.run("UPDATE branches SET lastSeen = ? WHERE id = ?", [new Date().toISOString(), branchId]);
+
     for (const i of t.items) {
       await db.run(
         "INSERT INTO transaction_items (id, transactionId, productId, name, price, quantity, unit, discount, total) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",

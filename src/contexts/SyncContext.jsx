@@ -32,6 +32,23 @@ export function SyncProvider({ children }) {
     return () => clearInterval(interval);
   }, [refreshPendingCount]);
 
+  // --- CONNECTIVITY HEARTBEAT (Every 2 mins) ---
+  useEffect(() => {
+    const sendHeartbeat = async () => {
+       const user = JSON.parse(localStorage.getItem('fel_currentUser'));
+       if (!user || !user.branchId || !navigator.onLine) return;
+       try {
+          await api.post(`/branches/${user.branchId}/heartbeat`);
+       } catch (err) {}
+    };
+
+    if (isOnline) {
+       sendHeartbeat();
+       const hInterval = setInterval(sendHeartbeat, 120000); // 2 mins
+       return () => clearInterval(hInterval);
+    }
+  }, [isOnline]);
+
   // The Sync Engine
   const processSyncQueue = useCallback(async () => {
     if (!navigator.onLine || syncStatus.isSyncing) return;

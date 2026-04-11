@@ -169,6 +169,9 @@ export async function initDb() {
       CREATE INDEX IF NOT EXISTS idx_transactions_branch_date ON transactions(branchId, date);
       CREATE INDEX IF NOT EXISTS idx_logs_branch_time ON system_logs(branchId, timestamp);
     `);
+    
+    // Connectivity Heartbeat Tracking
+    await db.run("ALTER TABLE branches ADD COLUMN IF NOT EXISTS lastSeen TEXT");
   } catch (err) {
     console.log("Migration info (safe to ignore if columns exist):", err.message);
   }
