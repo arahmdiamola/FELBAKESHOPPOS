@@ -110,7 +110,7 @@ app.get('/api/branches', async (req, res) => {
       );
       
       const activeSessions = sessions.filter(s => {
-        const lastSeenDate = new Date(s.lastSeen);
+        const lastSeenDate = new Date(s.lastSeen || s.lastseen);
         return Math.abs(now - lastSeenDate) < 120000;
       });
 
@@ -120,7 +120,7 @@ app.get('/api/branches', async (req, res) => {
       // Calculate delay of the MOST RECENT signal across all sessions
       let lastSeenSecondsAgo = null;
       if (activeSessions.length > 0) {
-        const mostRecent = Math.min(...activeSessions.map(s => Math.abs(now - new Date(s.lastSeen))));
+        const mostRecent = Math.min(...activeSessions.map(s => Math.abs(now - new Date(s.lastSeen || s.lastseen))));
         lastSeenSecondsAgo = Math.floor(mostRecent / 1000);
       } else {
         const rawLastSeen = b.lastSeen || b.lastseen;
