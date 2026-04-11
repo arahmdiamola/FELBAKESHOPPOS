@@ -242,42 +242,36 @@ export default function CommandCenter() {
                </div>
             )}
 
-            <div className="tv-branch-name" style={{ fontSize: '1.2rem', marginBottom: 8, gap: 8 }}>
+            <div className="tv-branch-name" style={{ fontSize: '1.2rem', marginBottom: 5, gap: 8 }}>
               <MapPin size={18} style={{ color: index === 0 ? '#FFD700' : 'var(--accent)' }} />
               {branch.name}
             </div>
 
-            {branch.isOffline ? (
-               <div style={{ color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: 8, fontSize: '1.1rem', fontWeight: 900, margin: '10px 0' }}>
-                 <WifiOff size={20} /> OFFLINE
-               </div>
-            ) : branch.isSyncing ? (
-               <div style={{ color: 'var(--info)', display: 'flex', alignItems: 'center', gap: 8, fontSize: '1.1rem', fontWeight: 900, margin: '10px 0' }}>
-                 <Activity size={20} className="spinning" /> SYNC...
-               </div>
-            ) : (
-               <>
-                 <div className="tv-branch-revenue" style={{ fontSize: '2.2rem', marginBottom: 2 }}>
-                   {formatCurrency(branch.revenue)}
-                 </div>
-                 <div className="tv-branch-orders" style={{ fontSize: '0.85rem', opacity: 0.5 }}>
-                   {branch.orders} Orders • Avg {formatCurrency(branch.orders > 0 ? branch.revenue/branch.orders : 0)}
-                 </div>
-               </>
-            )}
+            <div className="tv-branch-revenue" style={{ fontSize: '2.2rem', marginBottom: 2 }}>
+              {formatCurrency(branch.revenue)}
+            </div>
+            <div className="tv-branch-orders" style={{ fontSize: '0.85rem', opacity: 0.5 }}>
+              {branch.orders} Orders • Avg {formatCurrency(branch.orders > 0 ? branch.revenue/branch.orders : 0)}
+            </div>
             
             <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              {!branch.isOffline && !branch.isSyncing ? (
+              {branch.isOffline ? (
+                <div style={{ color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 800 }}>
+                  <WifiOff size={14} /> OFFLINE
+                </div>
+              ) : branch.isSyncing ? (
+                <div style={{ color: 'var(--info)', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 800 }}>
+                  <Activity size={14} className="spinning" /> SYNCING...
+                </div>
+              ) : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', color: 'var(--success)', fontWeight: 800 }}>
                   <Activity size={14} /> LIVE
                 </div>
-              ) : (
-                <div style={{ fontSize: '0.75rem', opacity: 0.4 }}>MONITOR</div>
               )}
 
               {branch.criticalStock && !branch.isOffline && (
                  <div className="stock-warning-badge" style={{ fontSize: '0.7rem', padding: '4px 8px' }}>
-                   STOCK: {branch.criticalStock[0].name.slice(0,10)}..
+                   STOCK ALERT
                  </div>
               )}
 
