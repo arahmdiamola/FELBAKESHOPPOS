@@ -103,38 +103,39 @@ app.get('/api/branches', async (req, res) => {
     // Master Session-Based Online Detection
     const now = new Date();
     const processed = await Promise.all(branches.map(async b => {
-      // Get all active sessions for this branch in the last 2 minutes
-      const sessions = await db.all(
-        "SELECT lastSeen FROM branch_sessions WHERE branchId = ?", 
-        [b.id]
-      );
-      
-      const activeSessions = sessions.filter(s => {
-        const lastSeenDate = new Date(s.lastSeen || s.lastseen);
-        return Math.abs(now - lastSeenDate) < 120000;
-      });
+      try {
+        const sessions = await db.all("SELECT lastSeen FROM branch_sessions WHERE branchId = ?", [b.id]);
+        const sessionCount = sessions.length;
 
-      const isOnline = activeSessions.length > 0;
-      const sessionCount = activeSessions.length;
-      
-      // Calculate delay of the MOST RECENT signal across all sessions
-      let lastSeenSecondsAgo = null;
-      if (activeSessions.length > 0) {
-        const mostRecent = Math.min(...activeSessions.map(s => Math.abs(now - new Date(s.lastSeen || s.lastseen))));
-        lastSeenSecondsAgo = Math.floor(mostRecent / 1000);
-      } else {
-        const rawLastSeen = b.lastSeen || b.lastseen;
-        if (rawLastSeen) {
-          lastSeenSecondsAgo = Math.floor(Math.abs(now - new Date(rawLastSeen)) / 1000);
+        const activeSessions = sessions.filter(s => {
+          if (!s.lastSeen) return false;
+          const lastSeenDate = new Date(s.lastSeen);
+          return !isNaN(lastSeenDate.getTime()) && (now - lastSeenDate) < 60000;
+        });
+
+        const isOnline = activeSessions.length > 0;
+        let lastSeenSecondsAgo = null;
+
+        if (activeSessions.length > 0) {
+          const lates = activeSessions.map(s => {
+            const d = new Date(s.lastSeen);
+            return isNaN(d.getTime()) ? 0 : Math.abs(now - d);
+          });
+          const mostRecent = Math.min(...lates);
+          lastSeenSecondsAgo = isFinite(mostRecent) ? Math.floor(mostRecent / 1000) : 0;
         }
+        
+        return { ...b, isOnline, sessionCount, lastSeenSecondsAgo };
+      } catch (err) {
+        console.error(`[Status Calculation Error] Branch ${b.id}:`, err);
+        return { ...b, isOnline: false, sessionCount: 0, lastSeenSecondsAgo: null };
       }
-      
-      return { ...b, isOnline, sessionCount, lastSeenSecondsAgo };
     }));
     
     res.json(processed);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('[Branches API Failure]', error);
+    res.status(500).json({ error: 'Failed to fetch branches' });
   }
 });
 

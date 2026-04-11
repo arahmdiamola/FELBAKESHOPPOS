@@ -173,10 +173,19 @@ const apiCall = async (path, options = {}) => {
   }
 
   // --- ONLINE: Normal Fetch ---
-  const res = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers: { ...getHeaders(), ...options.headers }
-  });
+  let res;
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      ...options,
+      headers: { ...getHeaders(), ...options.headers }
+    });
+  } catch (netErr) {
+    if (netErr.message === 'Failed to fetch') {
+      console.error(`[Network Critical] Failed to fetch ${path}. The server may be down or the connection was interrupted.`);
+      throw new Error(`Network Error: Cannot reach server at ${path}. Please check your connection and ensure the backend is running.`);
+    }
+    throw netErr;
+  }
   
   const text = await res.text();
   let data;

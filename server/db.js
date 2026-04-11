@@ -190,8 +190,9 @@ export async function initDb() {
     }
 
   // Automatically Seed 5 Realistic Branches, 20 Products, Users if database is entirely empty
-  const branchCount = await db.get("SELECT COUNT(*) as count FROM branches");
-  if (branchCount.count == 0) { // Handles PG string zero '0' loosely
+  const branchCountResult = await db.get("SELECT COUNT(*) as count FROM branches");
+  const branchCount = parseInt(branchCountResult?.count || '0');
+  if (branchCount === 0) { // Reliable integer check
     console.log("Empty Database Detected! Initializing FULL Realistic Seeder...");
 
     const branches = [
@@ -268,8 +269,9 @@ export async function initDb() {
     }
 
     // Seed Default Settings
-    const settingsCheck = await db.get("SELECT COUNT(*) as count FROM settings");
-    if (settingsCheck.count == 0) {
+    const settingsCheckResult = await db.get("SELECT COUNT(*) as count FROM settings");
+    const settingsCount = parseInt(settingsCheckResult?.count || '0');
+    if (settingsCount === 0) {
       const defaultSettings = [
         ['storeName', 'FEL Bakeshop'],
         ['storeLogo', '/logo.png'],

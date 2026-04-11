@@ -45,6 +45,7 @@ const camelize = (obj) => {
       .replace('duedate', 'dueDate')
       .replace('customername', 'customerName')
       .replace('customerphone', 'customerPhone')
+      .replace('lastseen', 'lastSeen')
       .replace('createdat', 'createdAt');
     newObj[camelKey] = obj[key];
   }
