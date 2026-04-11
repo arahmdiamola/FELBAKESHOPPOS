@@ -530,8 +530,8 @@ app.post('/api/reset', requireSystemAdmin, async (req, res) => {
     }
 
     if (targets.includes('transactions')) {
-      await db.run("DELETE FROM transactions");
       await db.run("DELETE FROM transaction_items");
+      await db.run("DELETE FROM transactions");
       console.log("[Reset] Wiped Transactions");
     }
     
