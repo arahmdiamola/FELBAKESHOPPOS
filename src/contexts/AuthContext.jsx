@@ -81,6 +81,11 @@ export function AuthProvider({ children }) {
           // Cache for offline login
           await idb.put('cache_users', { ...user, cachedPin: pin, lastLogin: Date.now() });
 
+          // Set active branch based on user assignment
+          const initialBranch = user.branchId || 'all';
+          setActiveBranch(initialBranch);
+          localStorage.setItem('fel_active_branch', initialBranch);
+
           // Track recent users for Login Screen
           const rUsers = JSON.parse(localStorage.getItem('fel_recent_users') || '[]');
           const updatedRecent = [user.id, ...rUsers.filter(id => id !== user.id)].slice(0, 5);
