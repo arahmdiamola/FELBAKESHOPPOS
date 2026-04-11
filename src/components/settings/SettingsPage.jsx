@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../utils/api';
 import Header from '../layout/Header';
 import Modal from '../shared/Modal';
-import { Save, RotateCcw, Store, Receipt, Percent, Database, MapPin, Edit2, Trash2, Plus, AlertTriangle, CheckCircle, Smartphone, Star, TrendingUp, List, History, Upload } from 'lucide-react';
+import { Save, RotateCcw, Store, Receipt, Percent, Database, MapPin, Edit2, Trash2, Plus, AlertTriangle, CheckCircle, Smartphone, Star, TrendingUp, List, History, Upload, Download } from 'lucide-react';
 import BranchForm from './BranchForm';
 import { useSafetyShield } from '../../hooks/useSafetyShield';
 
