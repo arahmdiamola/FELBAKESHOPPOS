@@ -12,6 +12,7 @@ import ExpensesPage from './components/expenses/ExpensesPage';
 import UsersPage from './components/users/UsersPage';
 import SettingsPage from './components/settings/SettingsPage';
 import ReportsPage from './components/reports/ReportsPage';
+import CommandCenter from './components/reports/CommandCenter';
 import ToastContainer from './components/shared/ToastContainer';
 
 function AppRoutes() {
@@ -36,6 +37,7 @@ function AppRoutes() {
           <Route path="/users" element={<UsersPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/command-center" element={<CommandCenter />} />
           <Route path="*" element={<Navigate to="/pos" replace />} />
         </Routes>
       </div>

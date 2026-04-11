@@ -6,7 +6,7 @@ import { api } from '../../utils/api';
 import SyncStatus from '../shared/SyncStatus';
 import {
   ShoppingBag, LayoutDashboard, Package, ClipboardList,
-  Users, Wallet, Settings, LogOut, CalendarClock, Boxes, Menu, ChevronsLeft
+  Users, Wallet, Settings, LogOut, CalendarClock, Boxes, Menu, ChevronsLeft, Activity
 } from 'lucide-react';
 
 const navItems = [
@@ -19,6 +19,7 @@ const navItems = [
   { to: '/preorders', icon: CalendarClock, label: 'Pre-Orders' },
   { to: '/customers', icon: Users, label: 'Customers' },
   { to: '/expenses', icon: Wallet, label: 'Expenses' },
+  { to: '/command-center', icon: Activity, label: 'Mission Control' },
   { section: 'System' },
   { to: '/users', icon: Users, label: 'Users' },
   { to: '/settings', icon: Settings, label: 'Settings' },

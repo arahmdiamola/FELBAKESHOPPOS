@@ -2054,3 +2054,165 @@ td.primary {
   50% { opacity: 1; }
   100% { opacity: 0.8; }
 }
+
+/* ---------- TV COMMAND CENTER (MISSION CONTROL) ---------- */
+.tv-background {
+  background: radial-gradient(circle at top, #3D261C 0%, #1A0F0A 100%);
+  color: #FDF6EE;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 40px;
+  gap: 30px;
+}
+
+.tv-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid rgba(212, 118, 60, 0.2);
+  padding-bottom: 20px;
+}
+
+.tv-global-stats {
+  text-align: right;
+}
+
+.tv-main-revenue {
+  font-size: 5rem;
+  font-weight: 900;
+  color: #FFD700;
+  text-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+  line-height: 1;
+}
+
+.tv-revenue-label {
+  font-size: 1.2rem;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  opacity: 0.6;
+}
+
+.tv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+/* Branch Card (Mission Control Style) */
+.tv-branch-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(212, 118, 60, 0.15);
+  border-radius: 20px;
+  padding: 24px;
+  backdrop-filter: blur(10px);
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tv-branch-card.just-sold {
+  background: rgba(76, 175, 80, 0.1);
+  border-color: #4CAF50;
+  box-shadow: 0 0 30px rgba(76, 175, 80, 0.2);
+  transform: scale(1.02);
+}
+
+.tv-branch-name {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tv-branch-revenue {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.tv-branch-orders {
+  font-size: 0.9rem;
+  opacity: 0.5;
+  margin-top: 4px;
+}
+
+.tv-rank-badge {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: rgba(212, 118, 60, 0.2);
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #D4763C;
+  border: 1px solid rgba(212, 118, 60, 0.3);
+}
+
+/* Pulse Animations */
+.pulse-orb {
+  width: 10px;
+  height: 10px;
+  background: #4CAF50;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #4CAF50;
+  animation: pulse-live 2s infinite;
+}
+
+@keyframes pulse-live {
+  0% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+  70% { transform: scale(1.2); opacity: 0.8; box-shadow: 0 0 0 8px rgba(76, 175, 80, 0); }
+  100% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+}
+
+/* Ticker Style */
+.tv-ticker-bar {
+  background: rgba(0, 0, 0, 0.4);
+  height: 60px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  border-radius: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  margin-top: 20px;
+}
+
+.tv-ticker-content {
+  display: flex;
+  gap: 50px;
+  white-space: nowrap;
+  animation: ticker-scroll 30s linear infinite;
+  padding-left: 20px;
+}
+
+.tv-ticker-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 700;
+}
+
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.fullscreen-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: #fff;
+  padding: 10px;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 1000;
+}
