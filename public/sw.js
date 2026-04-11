@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fel-bakery-pos-v11';
+const CACHE_NAME = 'fel-bakery-pos-v12';
 
 // 1. Install: Cache the core entry point
 self.addEventListener('install', (event) => {
@@ -85,7 +85,12 @@ self.addEventListener('fetch', (event) => {
         }
         
         console.warn('[SW Fetch Failure]', request.url, err);
-        throw err; // Let the browser handle the network error naturally
+        // Instead of throwing, return a generic network error response
+        return new Response('Offline / Network Error', { 
+          status: 503, 
+          statusText: 'Service Unavailable',
+          headers: new Headers({ 'Content-Type': 'text/plain' })
+        });
       });
     })
   );
