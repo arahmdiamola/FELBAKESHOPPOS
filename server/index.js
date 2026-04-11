@@ -116,6 +116,16 @@ app.get('/api/branches', async (req, res) => {
   }
 });
 
+// High-speed Pulse signal receiver (Connectivity Heartbeat)
+app.post('/api/branches/:id/pulse', async (req, res) => {
+  try {
+    await db.run("UPDATE branches SET lastSeen = ? WHERE id = ?", [new Date().toISOString(), req.params.id]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.post('/api/branches', requireSystemAdmin, async (req, res) => {
   const { name, address } = req.body;
   const id = uuidv4();

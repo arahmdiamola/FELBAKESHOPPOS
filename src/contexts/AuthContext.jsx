@@ -65,6 +65,26 @@ export function AuthProvider({ children }) {
     fetchUsers();
   }, [fetchUsers]);
 
+  // Master Connectivity Pulse (Heartbeat) - High Performance
+  useEffect(() => {
+    if (!currentUser || !activeBranch || activeBranch === 'all') return;
+
+    const sendPulse = () => {
+      // Fire and forget - don't await or block anything
+      api.post(`/branches/${activeBranch}/pulse`).catch(() => {
+        /* Silently fail if offline or server is down */
+      });
+    };
+
+    // 1. Send immediate pulse on login/branch switch
+    sendPulse();
+
+    // 2. Schedule throttled pulses every 2 minutes
+    const interval = setInterval(sendPulse, 120000); 
+
+    return () => clearInterval(interval);
+  }, [currentUser?.id, activeBranch]);
+
   const login = async (userId, pin) => {
     const isOnline = navigator.onLine;
 
