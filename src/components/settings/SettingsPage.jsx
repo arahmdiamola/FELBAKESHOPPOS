@@ -544,11 +544,6 @@ export default function SettingsPage() {
                             </div>
                           </td>
                         </tr>
-                              {log.details}
-                            </div>
-                          </td>
-                          <td className="p-3 text-xs">{log.branchId || 'Global'}</td>
-                        </tr>
                       ))
                     )}
                   </tbody>

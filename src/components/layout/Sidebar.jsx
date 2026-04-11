@@ -171,19 +171,36 @@ export default function Sidebar() {
 
       <div className="sidebar-footer">
         {!isCollapsed && (
-          <div className="sidebar-safety-row">
-            <button className="safety-btn" onClick={() => triggerBackupDownload('UNIVERSAL_SECURE')} title="Secure Terminal Now">
+          <div style={{ display: 'flex', gap: 8, padding: '0 16px', marginBottom: 8 }}>
+            <button 
+              onClick={() => triggerBackupDownload('UNIVERSAL_SECURE')} 
+              title="Secure Terminal Now"
+              style={{
+                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                padding: 8, background: 'rgba(46, 204, 113, 0.1)', border: '1px solid rgba(46, 204, 113, 0.2)',
+                borderRadius: 8, color: '#2ecc71', fontSize: 10, fontWeight: 800, textTransform: 'uppercase',
+                cursor: 'pointer', border: '1px solid rgba(46, 204, 113, 0.2)'
+              }}
+            >
               <Shield size={14} /> <span>Secure Terminal</span>
             </button>
-            <button className="safety-btn reset" onClick={handleResetTerminal} title="Troubleshoot & Reset App">
+            <button 
+              onClick={handleResetTerminal} 
+              title="Troubleshoot & Reset App"
+              style={{
+                flex: '0 0 32px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: 8, background: 'rgba(231, 76, 60, 0.1)', border: '1px solid rgba(231, 76, 60, 0.2)',
+                borderRadius: 8, color: '#e74c3c', cursor: 'pointer'
+              }}
+            >
               <RotateCcw size={14} />
             </button>
           </div>
         )}
         {!isCollapsed && <SyncStatus />}
         {isCollapsed && (
-          <div className="flex flex-col items-center gap-2 mb-2">
-            <button className="text-white opacity-40 hover:opacity-100" onClick={() => triggerBackupDownload('UNIVERSAL_SECURE')} title="Secure Now">
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <button className="text-white opacity-40 hover:opacity-100" onClick={() => triggerBackupDownload('UNIVERSAL_SECURE')} title="Secure Now" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff' }}>
               <Shield size={16} />
             </button>
             <SyncStatus mini />
@@ -205,44 +222,6 @@ export default function Sidebar() {
           <LogOut size={16} style={{ color: 'var(--text-sidebar)', opacity: 0.5 }} />
         </div>
       </div>
-
-      <style jsx>{`
-        .sidebar-safety-row {
-          display: flex;
-          gap: 8px;
-          padding: 0 16px;
-          margin-bottom: 8px;
-        }
-        .safety-btn {
-          flex: 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 6px;
-          padding: 8px;
-          background: rgba(46, 204, 113, 0.1);
-          border: 1px solid rgba(46, 204, 113, 0.2);
-          border-radius: 8px;
-          color: #2ecc71;
-          font-size: 10px;
-          font-weight: 800;
-          text-transform: uppercase;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .safety-btn:hover {
-          background: rgba(46, 204, 113, 0.2);
-        }
-        .safety-btn.reset {
-          flex: 0 0 32px;
-          background: rgba(231, 76, 60, 0.1);
-          border-color: rgba(231, 76, 60, 0.2);
-          color: #e74c3c;
-        }
-        .safety-btn.reset:hover {
-          background: rgba(231, 76, 60, 0.2);
-        }
-      `}</style>
     </aside>
   );
 }
