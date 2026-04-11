@@ -184,8 +184,10 @@ export async function initDb() {
 
     // Ensure newer columns exist for existing databases (Migrations)
     try {
-    console.log("Migration info (safe to ignore if columns exist):", err.message);
-  }
+      await db.run("ALTER TABLE branches ADD COLUMN IF NOT EXISTS lastSeen TEXT");
+    } catch (err) {
+      console.log("Migration info (safe to ignore if columns exist):", err.message);
+    }
 
   // Automatically Seed 5 Realistic Branches, 20 Products, Users if database is entirely empty
   const branchCount = await db.get("SELECT COUNT(*) as count FROM branches");
