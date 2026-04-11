@@ -283,6 +283,9 @@ export async function initDb() {
     }
 
     console.log(`✅ Fully Seeded Postgres! Successfully injected 5 Branches, 7 Users, and ${pCount} Products.`);
+    }
+  } catch (err) {
+    console.warn("Database initialization/migration warning:", err.message);
   }
 
   return db;
