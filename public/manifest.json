@@ -4,13 +4,13 @@
   "description": "Premium, offline-first BAKERY Point of Sale system.",
   "icons": [
     {
-      "src": "logo.png",
+      "src": "favicon.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "logo.png",
+      "src": "favicon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

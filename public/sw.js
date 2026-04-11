@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fel-bakery-pos-v8';
+const CACHE_NAME = 'fel-bakery-pos-v9';
 
 // 1. Install: Cache the core entry point
 self.addEventListener('install', (event) => {
@@ -8,7 +8,7 @@ self.addEventListener('install', (event) => {
         '/',
         '/index.html',
         '/manifest.json',
-        '/logo.png',
+        '/favicon.png',
         'https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap'
       ]);
     })
@@ -74,9 +74,14 @@ self.addEventListener('fetch', (event) => {
         const responseToCache = networkResponse.clone();
         caches.open(CACHE_NAME).then((cache) => {
           cache.put(request, responseToCache);
-        });
+        }).catch(() => {});
         
         return networkResponse;
+      }).catch((err) => {
+        console.warn('[SW Fetch Failure]', request.url, err);
+        // On fatal fetch failure, try to serve a generic fallback or just let it fail silently
+        // Avoid throwing an uncaught rejection
+        return new Response('Network error occurred', { status: 408, statusText: 'Network Error' });
       });
     })
   );
