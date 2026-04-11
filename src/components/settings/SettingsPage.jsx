@@ -25,6 +25,7 @@ export default function SettingsPage() {
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [selectedBackupFile, setSelectedBackupFile] = useState(null);
+  const [lastBackupTime, setLastBackupTime] = useState(localStorage.getItem('fel_last_backup') || null);
   
   const [resetTargets, setResetTargets] = useState({
     transactions: false,
@@ -51,11 +52,15 @@ export default function SettingsPage() {
     const file = e.target.files[0];
     if (!file) return;
     
+    // Safety Shield: Force backup before overwrite
+    addToast('SAFETY SHIELD: Securing current data before restore...', 'info');
+    await triggerBackupDownload('RECOVERY_PRE_RESTORE');
+
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
         const backupData = JSON.parse(event.target.result);
-        if (!confirm("CRITICAL WARNING: This will DELETE all current data and replace it with this backup. This cannot be undone. Proceed?")) return;
+        if (!confirm("CRITICAL WARNING: This will DELETE all current data and replace it with this backup. Proceed? (A safety backup has been downloaded to your folder)")) return;
         
         setIsRestoring(true);
         await api.post('/restore', backupData);
@@ -139,6 +144,10 @@ export default function SettingsPage() {
 
     if (!confirm(`CAUTION: You are about to permanently delete ${targets.join(', ')}. This cannot be undone. Proceed?`)) return;
 
+    // Safety Shield: Force backup before wipe
+    addToast('SAFETY SHIELD: Securing current data before reset...', 'info');
+    await triggerBackupDownload('RECOVERY_PRE_RESET');
+
     setIsResetting(true);
     try {
       await resetData(targets);
@@ -151,25 +160,36 @@ export default function SettingsPage() {
     }
   };
 
-  const handleDownloadBackup = async () => {
+  const triggerBackupDownload = async (prefix = 'manual') => {
     try {
-      addToast('Preparing backup...', 'info');
       const data = await api.get('/backup-full');
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
+      const filename = `fel-pos-${prefix}-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
       link.href = url;
-      link.download = `fel-pos-backup-${new Date().toISOString().slice(0,10)}.json`;
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      addToast('Backup downloaded successfully', 'success');
       
-      await api.post('/logs', { action: 'SYSTEM_BACKUP', details: { type: 'Full JSON' } });
+      const now = new Date().toISOString();
+      setLastBackupTime(now);
+      localStorage.setItem('fel_last_backup', now);
+      
+      await api.post('/logs', { action: 'SYSTEM_BACKUP', details: { type: prefix } });
+      return true;
     } catch (e) {
       addToast('Backup failed: ' + e.message, 'error');
+      return false;
     }
+  };
+
+  const handleDownloadBackup = () => {
+    addToast('Preparing backup...', 'info');
+    triggerBackupDownload('manual');
+    addToast('Backup downloaded successfully', 'success');
   };
 
   const getActionColor = (action) => {
@@ -441,6 +461,15 @@ export default function SettingsPage() {
                        Database Backup
                     </div>
                     <div className="text-sm text-muted mt-1">Export your entire empire's data to a .json file for safe-keeping.</div>
+                    {lastBackupTime ? (
+                      <div className="text-[10px] mt-2 flex items-center gap-1 font-bold" style={{ color: (Date.now() - new Date(lastBackupTime).getTime()) > 86400000 ? 'var(--warning)' : 'var(--success)' }}>
+                         <CheckCircle size={10} /> LAST SECURED: {new Date(lastBackupTime).toLocaleString()}
+                      </div>
+                    ) : (
+                      <div className="text-[10px] mt-2 text-red-500 font-bold flex items-center gap-1">
+                         <AlertTriangle size={10} /> SYSTEM UNSECURED: Please download a backup
+                      </div>
+                    )}
                   </div>
                   <button className="btn btn-secondary" onClick={handleDownloadBackup}>
                     Download Full Backup
