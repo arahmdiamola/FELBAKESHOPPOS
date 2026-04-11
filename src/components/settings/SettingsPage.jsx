@@ -55,7 +55,11 @@ export default function SettingsPage() {
     
     // Safety Shield: Force backup before overwrite
     addToast('SAFETY SHIELD: Securing current data before restore...', 'info');
-    await triggerBackupDownload('RECOVERY_PRE_RESTORE');
+    const backupResult = await triggerBackupDownload('RECOVERY_PRE_RESTORE');
+    if (!backupResult) {
+       addToast('SAFETY SHIELD ERROR: Could not secure a backup. Restore aborted for your safety.', 'error');
+       return;
+    }
 
     const reader = new FileReader();
     reader.onload = async (event) => {
@@ -147,7 +151,11 @@ export default function SettingsPage() {
 
     // Safety Shield: Force backup before wipe
     addToast('SAFETY SHIELD: Securing current data before reset...', 'info');
-    await triggerBackupDownload('RECOVERY_PRE_RESET');
+    const backupResult = await triggerBackupDownload('RECOVERY_PRE_RESET');
+    if (!backupResult) {
+       addToast('SAFETY SHIELD ERROR: Could not secure a backup. Reset aborted for your safety.', 'error');
+       return;
+    }
 
     setIsResetting(true);
     try {
