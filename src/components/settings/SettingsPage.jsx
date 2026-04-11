@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../utils/api';
 import Header from '../layout/Header';
 import Modal from '../shared/Modal';
-import { Save, RotateCcw, Store, Receipt, Percent, Database, MapPin, Edit2, Trash2, Plus, AlertTriangle, CheckCircle, Smartphone, Star, TrendingUp, List, History, Upload, Download } from 'lucide-react';
+import { Save, RotateCcw, Store, Receipt, Percent, Database, MapPin, Edit2, Trash2, Plus, AlertTriangle, CheckCircle, Smartphone, Star, TrendingUp, List, History, Upload, DownloadCloud } from 'lucide-react';
 import BranchForm from './BranchForm';
 import { useSafetyShield } from '../../hooks/useSafetyShield';
 
@@ -440,7 +440,7 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between" style={{ padding: 16, background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
                   <div>
                     <div className="font-bold flex items-center gap-2">
-                       <Download size={18} className="text-success" />
+                       <DownloadCloud size={18} className="text-success" />
                        Database Backup
                     </div>
                     <div className="text-sm text-muted mt-1">Export your entire empire's data to a .json file for safe-keeping.</div>
