@@ -242,40 +242,51 @@ export default function CommandCenter() {
                </div>
             )}
 
-            <div className="tv-branch-name" style={{ fontSize: '1.2rem', marginBottom: 5, gap: 8 }}>
-              <MapPin size={18} style={{ color: index === 0 ? '#FFD700' : 'var(--accent)' }} />
-              {branch.name}
+            <div className="tv-branch-name" style={{ fontSize: '1.2rem', marginBottom: 5, gap: 10, display: 'flex', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <MapPin size={18} style={{ color: index === 0 ? '#FFD700' : 'var(--accent)' }} />
+                {branch.name}
+              </div>
+              {rankedUpBranches[branch.id] && (
+                 <div className="rank-up-badge-mini">
+                   <Zap size={12} fill="currentColor" /> RISE!
+                 </div>
+              )}
             </div>
 
-            <div className="tv-branch-revenue" style={{ fontSize: '2.2rem', marginBottom: 2 }}>
+            <div className="tv-branch-revenue" style={{ fontSize: '2.4rem', fontWeight: 900, marginBottom: 2 }}>
               {formatCurrency(branch.revenue)}
             </div>
-            <div className="tv-branch-orders" style={{ fontSize: '0.85rem', opacity: 0.5 }}>
+            <div className="tv-branch-orders" style={{ fontSize: '0.9rem', opacity: 0.5, fontWeight: 600 }}>
               {branch.orders} Orders • Avg {formatCurrency(branch.orders > 0 ? branch.revenue/branch.orders : 0)}
             </div>
             
-            <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              {branch.isOffline ? (
-                <div style={{ color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 800 }}>
-                  <WifiOff size={14} /> OFFLINE
-                </div>
-              ) : branch.isSyncing ? (
-                <div style={{ color: 'var(--info)', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 800 }}>
-                  <Activity size={14} className="spinning" /> SYNCING...
-                </div>
-              ) : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', color: 'var(--success)', fontWeight: 800 }}>
-                  <Activity size={14} /> LIVE
-                </div>
-              )}
+            <div style={{ marginTop: 15, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {branch.isOffline ? (
+                  <div style={{ color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 800 }}>
+                    <WifiOff size={14} /> OFFLINE
+                  </div>
+                ) : branch.isSyncing ? (
+                  <div style={{ color: 'var(--info)', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 800 }}>
+                    <Activity size={14} className="spinning" /> SYNCING
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', color: 'var(--success)', fontWeight: 800 }}>
+                    <Activity size={14} /> LIVE
+                  </div>
+                )}
+                {branch.criticalStock && !branch.isOffline && (
+                   <div className="stock-warning-badge" style={{ fontSize: '0.7rem', padding: '3px 8px' }}>
+                     STOCK!
+                   </div>
+                )}
+              </div>
 
-              {branch.criticalStock && !branch.isOffline && (
-                 <div className="stock-warning-badge" style={{ fontSize: '0.7rem', padding: '4px 8px' }}>
-                   STOCK ALERT
-                 </div>
-              )}
-
-              {index === 0 && !branch.isOffline && !branch.isSyncing && <Award size={20} style={{ color: '#FFD700' }} />}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {index === 0 && !branch.isOffline && !branch.isSyncing && <Award size={22} style={{ color: '#FFD700' }} />}
+                <div className="tv-rank-pill">#{branch.rank}</div>
+              </div>
             </div>
           </div>
         ))}
@@ -345,27 +356,31 @@ export default function CommandCenter() {
             border-color: #FFD700 !important;
             background: rgba(255, 215, 0, 0.1) !important;
          }
-         .rank-up-tag {
-            position: absolute;
-            top: -10px;
-            left: 50%;
-            transform: translateX(-50%);
+         .tv-rank-pill {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 900;
+            border: 1px solid rgba(255,255,255,0.1);
+         }
+         .rank-up-badge-mini {
             background: #FFD700;
             color: #2C1810;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 0.8rem;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 0.7rem;
             font-weight: 900;
             display: flex;
             align-items: center;
             gap: 4px;
-            box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
-            z-index: 10;
-            animation: slide-up-rank 0.4s ease-out;
+            animation: bounce-rank 0.4s ease-out;
          }
-         @keyframes slide-up-rank {
-            from { transform: translate(-50%, 20px); opacity: 0; }
-            to { transform: translate(-50%, 0); opacity: 1; }
+         @keyframes bounce-rank {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
          }
       `}</style>
     </div>
