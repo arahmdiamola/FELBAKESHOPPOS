@@ -2,11 +2,13 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSettings } from '../../contexts/SettingsContext';
+import { useToast } from '../../contexts/ToastContext';
+import { useSafetyShield } from '../../hooks/useSafetyShield';
 import { api } from '../../utils/api';
 import SyncStatus from '../shared/SyncStatus';
 import {
   ShoppingBag, LayoutDashboard, Package, ClipboardList,
-  Users, Wallet, Settings, LogOut, CalendarClock, Boxes, Menu, ChevronsLeft, Activity
+  Users, Wallet, Settings, LogOut, CalendarClock, Boxes, Menu, ChevronsLeft, Activity, Shield, RotateCcw
 } from 'lucide-react';
 
 const navItems = [
@@ -28,6 +30,8 @@ const navItems = [
 export default function Sidebar() {
   const { currentUser, logout, activeBranch, switchBranch } = useAuth();
   const { settings } = useSettings();
+  const { addToast } = useToast();
+  const { triggerBackupDownload } = useSafetyShield();
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [branches, setBranches] = useState([]);
@@ -45,6 +49,19 @@ export default function Sidebar() {
 
   const handleBranchChange = (e) => {
     switchBranch(e.target.value);
+  };
+
+  const handleResetTerminal = async () => {
+    if (!confirm("SAFETY SHIELD: This will clear your terminal and fix sync issues. We will download a safety backup for you first. Proceed?")) return;
+    
+    addToast('Securing terminal data...', 'info');
+    const success = await triggerBackupDownload('TERMINAL_RESET');
+    
+    if (success) {
+       addToast('Terminal Secured. Resetting app...', 'success');
+       localStorage.clear();
+       window.location.reload();
+    }
   };
 
   const visibleNavItems = navItems.filter(item => {
@@ -153,8 +170,25 @@ export default function Sidebar() {
       </nav>
 
       <div className="sidebar-footer">
+        {!isCollapsed && (
+          <div className="sidebar-safety-row">
+            <button className="safety-btn" onClick={() => triggerBackupDownload('UNIVERSAL_SECURE')} title="Secure Terminal Now">
+              <Shield size={14} /> <span>Secure Terminal</span>
+            </button>
+            <button className="safety-btn reset" onClick={handleResetTerminal} title="Troubleshoot & Reset App">
+              <RotateCcw size={14} />
+            </button>
+          </div>
+        )}
         {!isCollapsed && <SyncStatus />}
-        {isCollapsed && <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0' }}><SyncStatus mini /></div>}
+        {isCollapsed && (
+          <div className="flex flex-col items-center gap-2 mb-2">
+            <button className="text-white opacity-40 hover:opacity-100" onClick={() => triggerBackupDownload('UNIVERSAL_SECURE')} title="Secure Now">
+              <Shield size={16} />
+            </button>
+            <SyncStatus mini />
+          </div>
+        )}
         
         <div className="sidebar-user" onClick={logout} title={isCollapsed ? "Logout" : ""}>
           <div className="sidebar-user-avatar">
@@ -171,6 +205,44 @@ export default function Sidebar() {
           <LogOut size={16} style={{ color: 'var(--text-sidebar)', opacity: 0.5 }} />
         </div>
       </div>
+
+      <style jsx>{`
+        .sidebar-safety-row {
+          display: flex;
+          gap: 8px;
+          padding: 0 16px;
+          margin-bottom: 8px;
+        }
+        .safety-btn {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          padding: 8px;
+          background: rgba(46, 204, 113, 0.1);
+          border: 1px solid rgba(46, 204, 113, 0.2);
+          border-radius: 8px;
+          color: #2ecc71;
+          font-size: 10px;
+          font-weight: 800;
+          text-transform: uppercase;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .safety-btn:hover {
+          background: rgba(46, 204, 113, 0.2);
+        }
+        .safety-btn.reset {
+          flex: 0 0 32px;
+          background: rgba(231, 76, 60, 0.1);
+          border-color: rgba(231, 76, 60, 0.2);
+          color: #e74c3c;
+        }
+        .safety-btn.reset:hover {
+          background: rgba(231, 76, 60, 0.2);
+        }
+      `}</style>
     </aside>
   );
 }

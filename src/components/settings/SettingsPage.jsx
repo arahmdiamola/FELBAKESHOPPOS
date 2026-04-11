@@ -7,6 +7,7 @@ import Header from '../layout/Header';
 import Modal from '../shared/Modal';
 import { Save, RotateCcw, Store, Receipt, Percent, Database, MapPin, Edit2, Trash2, Plus, AlertTriangle, CheckCircle, Smartphone, Star, TrendingUp, List, History, Upload } from 'lucide-react';
 import BranchForm from './BranchForm';
+import { useSafetyShield } from '../../hooks/useSafetyShield';
 
 export default function SettingsPage() {
   const { currentUser } = useAuth();
@@ -25,7 +26,7 @@ export default function SettingsPage() {
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [selectedBackupFile, setSelectedBackupFile] = useState(null);
-  const [lastBackupTime, setLastBackupTime] = useState(localStorage.getItem('fel_last_backup') || null);
+  const { lastBackupTime, triggerBackupDownload } = useSafetyShield();
   
   const [resetTargets, setResetTargets] = useState({
     transactions: false,
@@ -160,33 +161,7 @@ export default function SettingsPage() {
     }
   };
 
-  const triggerBackupDownload = async (prefix = 'manual') => {
-    try {
-      const data = await api.get('/backup-full');
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      const filename = `fel-pos-${prefix}-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      
-      const now = new Date().toISOString();
-      setLastBackupTime(now);
-      localStorage.setItem('fel_last_backup', now);
-      
-      await api.post('/logs', { action: 'SYSTEM_BACKUP', details: { type: prefix } });
-      return true;
-    } catch (e) {
-      addToast('Backup failed: ' + e.message, 'error');
-      return false;
-    }
-  };
-
-  const handleDownloadBackup = () => {
+   const handleDownloadBackup = () => {
     addToast('Preparing backup...', 'info');
     triggerBackupDownload('manual');
     addToast('Backup downloaded successfully', 'success');
