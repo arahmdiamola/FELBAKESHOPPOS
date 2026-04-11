@@ -8,7 +8,7 @@ import { api } from '../../utils/api';
 import { 
   Maximize, Minimize, TrendingUp, ShoppingBag, 
   MapPin, Activity, Award, ShoppingCart, 
-  WifiOff, AlertTriangle, Zap
+  Wifi, WifiOff, AlertTriangle, Zap
 } from 'lucide-react';
 import { 
   AreaChart, Area, ResponsiveContainer, YAxis, XAxis, Tooltip
@@ -250,23 +250,29 @@ export default function CommandCenter() {
               </div>
 
               <div style={{ 
-                background: branch.isOnline ? '#00ff00' : 'rgba(255,255,255,0.05)',
-                color: branch.isOnline ? '#000' : 'rgba(255,255,255,0.3)',
-                padding: '5px 15px', borderRadius: 10, fontSize: '0.8rem', fontWeight: 900,
-                boxShadow: branch.isOnline ? '0 0 20px rgba(0,255,0,0.4)' : 'none',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 90,
-                border: branch.isOnline ? 'none' : '1px solid rgba(255,255,255,0.1)'
+                background: branch.isOnline ? 'rgba(0, 255, 0, 0.1)' : 'rgba(255, 255, 255, 0.05)',
+                color: branch.isOnline ? '#00ff00' : 'rgba(255, 255, 255, 0.3)',
+                padding: '6px 12px', borderRadius: 12, fontSize: '0.8rem', fontWeight: 900,
+                display: 'flex', alignItems: 'center', gap: 10,
+                border: branch.isOnline ? '1px solid rgba(0, 255, 0, 0.3)' : '1px solid rgba(255, 255, 255, 0.1)',
+                boxShadow: branch.isOnline ? '0 0 15px rgba(0, 255, 0, 0.1)' : 'none',
+                minWidth: 100
               }}>
-                <span style={{ fontSize: '0.7rem' }}>
-                  {branch.isOnline ? `ONLINE${branch.sessionCount > 1 ? ` (${branch.sessionCount})` : ''}` : 'INACTIVE'}
-                </span>
-                {branch.lastSeenSecondsAgo !== null && (
-                  <span style={{ fontSize: '0.6rem', opacity: 0.7, marginTop: 2 }}>
-                    {branch.lastSeenSecondsAgo > 3600 ? `${Math.floor(branch.lastSeenSecondsAgo/3600)}h ago` : 
-                     branch.lastSeenSecondsAgo > 60 ? `${Math.floor(branch.lastSeenSecondsAgo/60)}m ago` : 
-                     `${branch.lastSeenSecondsAgo}s ago`}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {branch.isOnline ? (
+                    <Wifi size={18} className="pulse-fast" />
+                  ) : (
+                    <WifiOff size={18} />
+                  )}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+                  <span style={{ fontSize: '0.9rem', marginBottom: 2 }}>
+                    {branch.isOnline ? (branch.lastSeenSecondsAgo < 1 ? '<1s' : `${branch.lastSeenSecondsAgo}s`) : 'OFF'}
                   </span>
-                )}
+                  <span style={{ fontSize: '0.6rem', opacity: 0.5, letterSpacing: 1 }}>
+                    {branch.isOnline ? 'PING' : 'LAST SEEN'}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -318,6 +324,8 @@ export default function CommandCenter() {
          @keyframes bounce-alert { to { transform: translateY(-4px); } }
          .ranked-up { border-color: #FFD700 !important; background: rgba(255, 215, 0, 0.1) !important; }
          .tv-rank-pill { background: rgba(255,255,255,0.1); color: #fff; padding: 4px 12px; border-radius: 200px; font-size: 0.8rem; font-weight: 900; border: 1px solid rgba(255,255,255,0.1); }
+         .pulse-fast { animation: pulse-wifi 1s infinite; }
+         @keyframes pulse-wifi { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
       `}</style>
     </div>
   );
