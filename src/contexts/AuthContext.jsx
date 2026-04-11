@@ -127,6 +127,8 @@ export function AuthProvider({ children }) {
     setActiveBranch('all');
     localStorage.removeItem('fel_currentUser');
     localStorage.removeItem('fel_active_branch');
+    // Force immediate re-fetch of global user list for next login (Sticky Login Fix)
+    fetchUsers();
   };
 
   const addUser = async (user) => {

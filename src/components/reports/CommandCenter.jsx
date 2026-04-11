@@ -15,10 +15,11 @@ import {
 } from 'recharts';
 
 export default function CommandCenter() {
-  const { allSales, getTodayStats } = useOrders();
+  const { getTodayStats } = useOrders();
   const { products } = useProducts();
   const { settings } = useSettings();
   const [branches, setBranches] = useState([]);
+  const [globalSales, setGlobalSales] = useState([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [justSoldBranch, setJustSoldBranch] = useState(null);
   
@@ -26,33 +27,42 @@ export default function CommandCenter() {
   const prevRanksRef = useRef({});
   const [rankedUpBranches, setRankedUpBranches] = useState({});
 
-  // Fetch branches for names/addresses + polling for heartbeats
+  // Master Background Fetcher: Truly Global Data (ignores user's current branch)
   useEffect(() => {
-    const fetchBranches = () => {
-      api.get('/branches').then(setBranches).catch(console.error);
+    const fetchGlobalData = async () => {
+      try {
+        const [tx, branchesData] = await Promise.all([
+          api.get('/transactions?limit=500', { headers: { 'X-Branch-Id': 'all' } }),
+          api.get('/branches')
+        ]);
+        setGlobalSales(tx || []);
+        setBranches(branchesData || []);
+      } catch (e) {
+        console.error('[Mission Control Master Fetch Error]', e);
+      }
     };
     
-    fetchBranches();
-    const bInterval = setInterval(fetchBranches, 10000); // Poll every 10s for heartbeats
-    return () => clearInterval(bInterval);
+    fetchGlobalData();
+    const interval = setInterval(fetchGlobalData, 10000); // 10s poll
+    return () => clearInterval(interval);
   }, []);
 
   // Detect new sales for visual "Pulse" effect on branch cards
   useEffect(() => {
-    if (allSales.length > 0) {
-      const topSale = allSales[0];
+    if (globalSales.length > 0) {
+      const topSale = globalSales[0];
       setJustSoldBranch(topSale.branchId);
       const timer = setTimeout(() => setJustSoldBranch(null), 3000);
       return () => clearTimeout(timer);
     }
-  }, [allSales.length]);
+  }, [globalSales.length]);
 
   const stats = getTodayStats();
 
   // Identify Top 3 Products Globally for "Stock Panic" monitoring
   const globalTopProducts = useMemo(() => {
     const map = {};
-    allSales.slice(0, 500).forEach(t => {
+    globalSales.slice(0, 500).forEach(t => {
       (t.items || []).forEach(item => {
         map[item.productId] = (map[item.productId] || 0) + item.quantity;
       });
@@ -61,14 +71,14 @@ export default function CommandCenter() {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3)
       .map(entry => entry[0]);
-  }, [allSales]);
+  }, [globalSales]);
 
   // Branch Performance Analysis
   const branchPerformance = useMemo(() => {
     const map = {};
     const today = new Date().toDateString();
 
-    allSales.forEach(t => {
+    globalSales.forEach(t => {
       if (new Date(t.date).toDateString() !== today) return;
       if (!map[t.branchId]) {
         map[t.branchId] = { revenue: 0, orders: 0 };
@@ -122,7 +132,7 @@ export default function CommandCenter() {
     }
 
     return finalData;
-  }, [allSales, branches, products, globalTopProducts]);
+  }, [globalSales, branches, products, globalTopProducts]);
 
   // Global Sales Pulse Data (Hourly) - 24H Coverage
   const pulseMetrics = useMemo(() => {
@@ -132,7 +142,7 @@ export default function CommandCenter() {
     let total = 0;
 
     for (let h = 0; h <= 23; h++) {
-      const hSales = allSales.filter(t => {
+      const hSales = globalSales.filter(t => {
         const d = new Date(t.date);
         return d >= today && d.getHours() === h;
       });
@@ -146,17 +156,17 @@ export default function CommandCenter() {
       });
     }
     return { data, total };
-  }, [allSales]);
+  }, [globalSales]);
 
   // Recent Ticker Items (double for smooth loop)
   const tickerItems = useMemo(() => {
-      const items = allSales.slice(0, 10).map(t => ({
+      const items = globalSales.slice(0, 10).map(t => ({
           branchName: branches.find(b => b.id === t.branchId)?.name || 'Branch',
           total: t.total,
           id: t.id
       }));
       return [...items, ...items];
-  }, [allSales, branches]);
+  }, [globalSales, branches]);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
