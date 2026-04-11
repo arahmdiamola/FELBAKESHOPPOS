@@ -295,7 +295,19 @@ export default function CommandCenter() {
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 {branch.isOnline && <Award size={22} style={{ color: '#FFD700' }} />}
-                <div className="tv-rank-pill">#{branch.rank}</div>
+                <div style={{
+                  background: branch.isOnline ? '#00ff00' : 'rgba(255,255,255,0.05)',
+                  color: branch.isOnline ? '#000' : 'rgba(255,255,255,0.3)',
+                  padding: '5px 15px',
+                  borderRadius: 20,
+                  fontSize: '0.85rem',
+                  fontWeight: 900,
+                  boxShadow: branch.isOnline ? '0 0 20px rgba(0,255,0,0.4)' : 'none',
+                  letterSpacing: 1,
+                  border: branch.isOnline ? 'none' : '1px solid rgba(255,255,255,0.1)'
+                }}>
+                  {branch.isOnline ? 'ONLINE' : 'INACTIVE'}
+                </div>
               </div>
             </div>
           </div>
