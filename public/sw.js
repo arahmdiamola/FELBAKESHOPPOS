@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fel-bakery-pos-v10';
+const CACHE_NAME = 'fel-bakery-pos-v11';
 
 // 1. Install: Cache the core entry point
 self.addEventListener('install', (event) => {
@@ -78,10 +78,14 @@ self.addEventListener('fetch', (event) => {
         
         return networkResponse;
       }).catch((err) => {
+        // --- NAVIGATION FALLBACK --- 
+        // If a page request (navigation) fails, return the cached index.html (the SPA shell)
+        if (request.mode === 'navigate' || (request.method === 'GET' && request.headers.get('accept').includes('text/html'))) {
+          return caches.match('/index.html');
+        }
+        
         console.warn('[SW Fetch Failure]', request.url, err);
-        // On fatal fetch failure, try to serve a generic fallback or just let it fail silently
-        // Avoid throwing an uncaught rejection
-        return new Response('Network error occurred', { status: 408, statusText: 'Network Error' });
+        throw err; // Let the browser handle the network error naturally
       });
     })
   );
