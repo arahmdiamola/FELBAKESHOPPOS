@@ -19,6 +19,12 @@ export default function DashboardPage() {
 
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
+
+  // Update lastUpdated whenever allSales changes (indicates a poll or new sale)
+  useMemo(() => {
+    setLastUpdated(new Date());
+  }, [allSales]);
 
   const handleReprint = (transaction) => {
     setSelectedTransaction(transaction);
@@ -215,8 +221,10 @@ export default function DashboardPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <TrendingUp size={20} style={{ color: 'var(--success)' }} />
               <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>Today's Sales Pulse</h3>
+              <div className="pulse-orb" title="Master Sync Active" />
+              <span className="text-xs text-muted font-normal">Last synced: {lastUpdated.toLocaleTimeString()}</span>
             </div>
-            <span className="badge badge-green">LIVE TRACKING</span>
+            <span className="badge badge-green" style={{ letterSpacing: 1 }}>LIVE TRACKING</span>
           </div>
           <ResponsiveContainer width="100%" height={200}>
             <AreaChart data={todayPulseData}>

@@ -32,7 +32,23 @@ export function OrderProvider({ children }) {
 
   useEffect(() => {
     fetchData();
-  }, [fetchData, currentUser?.id, activeBranch]);
+
+    // --- REAL-TIME BACKGROUND POLLING (10 SECONDS) ---
+    // Only active for high-level roles who need the Live Dashboard
+    const isOwnerOrAdmin = ['system_admin', 'owner'].includes(currentUser?.role);
+    let interval;
+
+    if (currentUser && isOwnerOrAdmin) {
+      console.log('[OrderContext] Starting 10s background polling...');
+      interval = setInterval(() => {
+        fetchData();
+      }, 10000);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [fetchData, currentUser?.id, activeBranch, currentUser?.role]);
 
   const addTransaction = useCallback(async (transaction) => {
     // 1. Optimistic Update: Add to state instantly
