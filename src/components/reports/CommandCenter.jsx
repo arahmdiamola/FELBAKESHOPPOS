@@ -83,14 +83,9 @@ export default function CommandCenter() {
       orders: map[b.id]?.orders || 0,
     })).sort((a, b) => b.revenue - a.revenue);
 
-    // Connectivity & Stock Alert Logic
-    const now = new Date();
     const finalData = currentRanks.map((b, index) => {
-       const lastSeenDate = b.lastSeen ? new Date(b.lastSeen) : null;
-       
        // Handle NULL (Initial sync pending) gracefully
-       const isRecentlyCreated = !b.lastSeen; 
-       const isOffline = !isRecentlyCreated && (now - lastSeenDate > 300000); // 5 mins
+       const isSyncing = !b.lastSeen; 
        
        // Critical Stock Logic: Check if any top product is low at THIS branch
        const branchProducts = products.filter(p => p.branchId === b.id);
@@ -98,8 +93,8 @@ export default function CommandCenter() {
        
        return { 
          ...b, 
-         isOffline, 
-         isSyncing: isRecentlyCreated,
+         // Use server-side isOnline flag, but allow isSyncing to override for new branches
+         isSyncing,
          criticalStock: criticalProducts.length > 0 ? criticalProducts : null,
          rank: index + 1
        };
