@@ -104,9 +104,19 @@ app.get('/api/branches', async (req, res) => {
     
     // Server-side Online Detection (immune to client clock drift)
     const processed = branches.map(b => {
-      const lastSeenDate = b.lastSeen ? new Date(b.lastSeen) : null;
-      const isOnline = lastSeenDate && (now - lastSeenDate < 600000); // 10 mins threshold for stability
-      const lastSeenSecondsAgo = lastSeenDate ? Math.floor((now - lastSeenDate) / 1000) : null;
+      // Handle both camelCase and lowercase versions from different DB adapters
+      const rawLastSeen = b.lastSeen || b.lastseen;
+      const lastSeenDate = rawLastSeen ? new Date(rawLastSeen) : null;
+      
+      let isOnline = false;
+      let lastSeenSecondsAgo = null;
+
+      if (lastSeenDate) {
+        const diffMs = Math.abs(now - lastSeenDate);
+        isOnline = diffMs < 600000; // 10 mins threshold
+        lastSeenSecondsAgo = Math.floor(diffMs / 1000);
+      }
+      
       return { ...b, isOnline, lastSeenSecondsAgo };
     });
     

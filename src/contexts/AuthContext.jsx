@@ -70,17 +70,15 @@ export function AuthProvider({ children }) {
     if (!currentUser || !activeBranch || activeBranch === 'all') return;
 
     const sendPulse = () => {
-      // Fire and forget - don't await or block anything
-      api.post(`/branches/${activeBranch}/pulse`).catch(() => {
-        /* Silently fail if offline or server is down */
-      });
+      // Pass empty object to ensure valid JSON payload
+      api.post(`/branches/${activeBranch}/pulse`, {}).catch(() => {});
     };
 
     // 1. Send immediate pulse on login/branch switch
     sendPulse();
 
-    // 2. Schedule throttled pulses every 2 minutes
-    const interval = setInterval(sendPulse, 120000); 
+    // 2. Schedule throttled pulses every 15 seconds
+    const interval = setInterval(sendPulse, 15000); 
 
     return () => clearInterval(interval);
   }, [currentUser?.id, activeBranch]);

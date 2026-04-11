@@ -299,14 +299,23 @@ export default function CommandCenter() {
                   background: branch.isOnline ? '#00ff00' : 'rgba(255,255,255,0.05)',
                   color: branch.isOnline ? '#000' : 'rgba(255,255,255,0.3)',
                   padding: '5px 15px',
-                  borderRadius: 20,
-                  fontSize: '0.85rem',
+                  borderRadius: 10,
+                  fontSize: '0.8rem',
                   fontWeight: 900,
                   boxShadow: branch.isOnline ? '0 0 20px rgba(0,255,0,0.4)' : 'none',
                   letterSpacing: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  minWidth: 80,
                   border: branch.isOnline ? 'none' : '1px solid rgba(255,255,255,0.1)'
                 }}>
-                  {branch.isOnline ? 'ONLINE' : 'INACTIVE'}
+                  <span style={{ fontSize: '0.75rem' }}>{branch.isOnline ? 'ONLINE' : 'INACTIVE'}</span>
+                  {branch.lastSeenSecondsAgo !== null && (
+                    <span style={{ fontSize: '0.6rem', opacity: 0.7, marginTop: 2 }}>
+                      {branch.lastSeenSecondsAgo > 60 ? `${Math.floor(branch.lastSeenSecondsAgo/60)}m ago` : `${branch.lastSeenSecondsAgo}s ago`}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
