@@ -113,7 +113,7 @@ app.get('/api/branches', async (req, res) => {
 
       if (lastSeenDate) {
         const diffMs = Math.abs(now - lastSeenDate);
-        isOnline = diffMs < 600000; // 10 mins threshold
+        isOnline = diffMs < 120000; // 2 mins threshold (high responsiveness for TV)
         lastSeenSecondsAgo = Math.floor(diffMs / 1000);
       }
       
@@ -131,7 +131,14 @@ app.post('/api/branches/:id/pulse', async (req, res) => {
   try {
     const timestamp = new Date().toISOString();
     await db.run("UPDATE branches SET lastSeen = ? WHERE id = ?", [timestamp, req.params.id]);
-    console.log(`[Pulse] Branch ${req.params.id} signaled at ${timestamp}`);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+app.post('/api/branches/:id/disconnect', async (req, res) => {
+  try {
+    await db.run("UPDATE branches SET lastSeen = NULL WHERE id = ?", [req.params.id]);
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });

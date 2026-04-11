@@ -141,6 +141,11 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
+    // Send immediate disconnect pulse before clearing state
+    if (activeBranch && activeBranch !== 'all') {
+      api.post(`/branches/${activeBranch}/disconnect`, {}).catch(() => {});
+    }
+
     setCurrentUser(null);
     setActiveBranch('all');
     localStorage.removeItem('fel_currentUser');
