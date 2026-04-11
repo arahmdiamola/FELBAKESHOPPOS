@@ -177,45 +177,45 @@ export default function CommandCenter() {
       </button>
 
       {/* Header Section */}
-      <div className="tv-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 30 }}>
+      <div className="tv-header" style={{ padding: '15px 30px', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: 15 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
           {settings.storeLogo ? (
             <img 
               src={settings.storeLogo} 
               alt="Logo" 
               style={{ 
-                width: 120, 
-                height: 120, 
+                width: 60, 
+                height: 60, 
                 background: '#fff', 
-                borderRadius: 24, 
+                borderRadius: 12, 
                 objectFit: 'contain', 
-                padding: 10,
-                boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
+                padding: 4,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
               }} 
             />
           ) : (
-            <div className="sidebar-brand-icon" style={{ width: 100, height: 100, fontSize: '3.5rem' }}>🧁</div>
+            <div className="sidebar-brand-icon" style={{ width: 60, height: 60, fontSize: '2rem' }}>🧁</div>
           )}
           <div>
-            <h1 style={{ fontSize: '4rem', fontWeight: 900, color: '#fff', letterSpacing: '-1px' }}>MISSION CONTROL</h1>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 15, color: 'var(--success)', fontWeight: 800, fontSize: '1.2rem' }}>
-              <div className="pulse-orb" style={{ width: 15, height: 15 }} /> LIVE EMPIRE MONITORING — {settings.storeName}
+            <h1 style={{ fontSize: '2.2rem', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px', marginBottom: 0 }}>MISSION CONTROL</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--success)', fontWeight: 800, fontSize: '0.9rem' }}>
+              <div className="pulse-orb" style={{ width: 10, height: 10 }} /> LIVE EMPIRE MONITORING — {settings.storeName}
             </div>
           </div>
         </div>
 
-        <div className="tv-global-stats" style={{ paddingRight: 40 }}>
-          <div className="tv-revenue-label" style={{ fontSize: '1.5rem' }}>Total Global Revenue Today</div>
-          <div className="tv-main-revenue" style={{ fontSize: '7rem' }}>{formatCurrency(stats.revenue)}</div>
-          <div style={{ fontSize: '1.5rem', opacity: 0.8, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10 }}>
-            <TrendingUp size={28} style={{ color: 'var(--success)' }} />
-            {stats.count.toLocaleString()} TRANSACTIONS PROCESSED TOTAL
+        <div className="tv-global-stats" style={{ paddingRight: 20 }}>
+          <div className="tv-revenue-label" style={{ fontSize: '1rem', opacity: 0.7 }}>Global Revenue Today</div>
+          <div className="tv-main-revenue" style={{ fontSize: '3.8rem', lineHeight: 1 }}>{formatCurrency(stats.revenue)}</div>
+          <div style={{ fontSize: '1rem', opacity: 0.6, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
+            <TrendingUp size={18} style={{ color: 'var(--success)' }} />
+            {stats.count.toLocaleString()} TRANSACTIONS
           </div>
         </div>
       </div>
 
       {/* Empire Grid */}
-      <div className="tv-grid" style={{ padding: '0 20px', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: 30 }}>
+      <div className="tv-grid" style={{ padding: '0 15px', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 15, flex: 1, overflow: 'hidden' }}>
         {branchPerformance.map((branch, index) => (
           <div 
             key={branch.id} 
@@ -227,95 +227,95 @@ export default function CommandCenter() {
             `}
             style={{ 
                opacity: 1, 
-               filter: branch.isOffline ? 'grayscale(0.8) opacity(0.7)' : 'none',
-               padding: 35,
-               borderRadius: 24,
-               minHeight: 220,
-               border: branch.isOffline ? '1px dashed rgba(255,255,255,0.2)' : undefined
+               filter: branch.isOffline ? 'grayscale(0.8) opacity(0.6)' : 'none',
+               padding: 15,
+               borderRadius: 12,
+               minHeight: 130,
+               border: branch.isOffline ? '1px dashed rgba(255,255,255,0.1)' : '1px solid rgba(255,255,255,0.05)'
             }}
           >
-            <div className="tv-rank-badge" style={{ fontSize: '1rem', padding: '6px 14px' }}>RANK #{branch.rank}</div>
+            <div className="tv-rank-badge" style={{ fontSize: '0.7rem', padding: '3px 8px', top: 10, right: 10 }}>RANK #{branch.rank}</div>
             
             {rankedUpBranches[branch.id] && (
-               <div className="rank-up-tag" style={{ fontSize: '1rem', padding: '6px 18px' }}>
-                 <Zap size={18} fill="currentColor" /> RANK UP!
+               <div className="rank-up-tag" style={{ fontSize: '0.7rem', padding: '3px 10px' }}>
+                 <Zap size={12} fill="currentColor" /> UP!
                </div>
             )}
 
-            <div className="tv-branch-name" style={{ fontSize: '2rem', marginBottom: 15 }}>
-              <MapPin size={32} style={{ color: index === 0 ? '#FFD700' : 'var(--accent)' }} />
+            <div className="tv-branch-name" style={{ fontSize: '1.2rem', marginBottom: 8, gap: 8 }}>
+              <MapPin size={18} style={{ color: index === 0 ? '#FFD700' : 'var(--accent)' }} />
               {branch.name}
             </div>
 
             {branch.isOffline ? (
-               <div style={{ color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: 12, fontSize: '1.8rem', fontWeight: 900, margin: '15px 0' }}>
-                 <WifiOff size={32} /> CONNECTION LOST
+               <div style={{ color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: 8, fontSize: '1.1rem', fontWeight: 900, margin: '10px 0' }}>
+                 <WifiOff size={20} /> OFFLINE
                </div>
             ) : branch.isSyncing ? (
-               <div style={{ color: 'var(--info)', display: 'flex', alignItems: 'center', gap: 12, fontSize: '1.8rem', fontWeight: 900, margin: '15px 0' }}>
-                 <Activity size={32} className="spinning" /> PENDING SYNC...
+               <div style={{ color: 'var(--info)', display: 'flex', alignItems: 'center', gap: 8, fontSize: '1.1rem', fontWeight: 900, margin: '10px 0' }}>
+                 <Activity size={20} className="spinning" /> SYNC...
                </div>
             ) : (
                <>
-                 <div className="tv-branch-revenue" style={{ fontSize: '3.5rem' }}>
+                 <div className="tv-branch-revenue" style={{ fontSize: '2.2rem', marginBottom: 2 }}>
                    {formatCurrency(branch.revenue)}
                  </div>
-                 <div className="tv-branch-orders" style={{ fontSize: '1.3rem', opacity: 0.6 }}>
+                 <div className="tv-branch-orders" style={{ fontSize: '0.85rem', opacity: 0.5 }}>
                    {branch.orders} Orders • Avg {formatCurrency(branch.orders > 0 ? branch.revenue/branch.orders : 0)}
                  </div>
                </>
             )}
             
-            <div style={{ marginTop: 25, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               {!branch.isOffline && !branch.isSyncing ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '1.1rem', color: 'var(--success)', fontWeight: 800 }}>
-                  <Activity size={20} /> LIVE ACTIVITY
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', color: 'var(--success)', fontWeight: 800 }}>
+                  <Activity size={14} /> LIVE
                 </div>
               ) : (
-                <div style={{ fontSize: '1rem', opacity: 0.5 }}>Network Monitoring</div>
+                <div style={{ fontSize: '0.75rem', opacity: 0.4 }}>MONITOR</div>
               )}
 
               {branch.criticalStock && !branch.isOffline && (
-                 <div className="stock-warning-badge" style={{ fontSize: '1rem', padding: '8px 16px' }}>
-                   <AlertTriangle size={18} /> STOCK ALERT: {branch.criticalStock[0].name}
+                 <div className="stock-warning-badge" style={{ fontSize: '0.7rem', padding: '4px 8px' }}>
+                   STOCK: {branch.criticalStock[0].name.slice(0,10)}..
                  </div>
               )}
 
-              {index === 0 && !branch.isOffline && !branch.isSyncing && <Award size={32} style={{ color: '#FFD700' }} />}
+              {index === 0 && !branch.isOffline && !branch.isSyncing && <Award size={20} style={{ color: '#FFD700' }} />}
             </div>
           </div>
         ))}
       </div>
 
       {/* Global Sales Pulse Chart */}
-      <div style={{ background: 'rgba(0,0,0,0.3)', padding: 40, borderRadius: 32, border: '1px solid rgba(255,255,255,0.08)', margin: '0 20px' }}>
-        <div style={{ display: 'flex', gap: 15, alignItems: 'center', marginBottom: 25, textTransform: 'uppercase', letterSpacing: 4, fontSize: '1.2rem', fontWeight: 800, opacity: 0.8 }}>
-            <Activity size={24} style={{ color: 'var(--accent)' }} /> Global Empire Pulse (Hourly Performance)
+      <div style={{ background: 'rgba(0,0,0,0.3)', padding: '15px 30px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.05)', margin: '10px 15px' }}>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 2, fontSize: '0.8rem', fontWeight: 800, opacity: 0.6 }}>
+            <Activity size={16} style={{ color: 'var(--accent)' }} /> Empire Pulse (Hourly)
         </div>
-        <ResponsiveContainer width="100%" height={240}>
+        <ResponsiveContainer width="100%" height={90}>
             <AreaChart data={pulseData}>
                 <defs>
                     <linearGradient id="tvPulse" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#D4763C" stopOpacity={0.6} />
+                        <stop offset="5%" stopColor="#D4763C" stopOpacity={0.4} />
                         <stop offset="95%" stopColor="#D4763C" stopOpacity={0} />
                     </linearGradient>
                 </defs>
-                <XAxis dataKey="hour" stroke="rgba(255,255,255,0.3)" fontSize={14} tickLine={false} axisLine={false} />
+                <XAxis dataKey="hour" hide />
                 <YAxis hide domain={[0, 'auto']} />
-                <Area type="monotone" dataKey="revenue" stroke="#D4763C" strokeWidth={6} fill="url(#tvPulse)" />
+                <Area type="monotone" dataKey="revenue" stroke="#D4763C" strokeWidth={3} fill="url(#tvPulse)" />
             </AreaChart>
         </ResponsiveContainer>
       </div>
 
       {/* Ticker Bar */}
-      <div className="tv-ticker-bar" style={{ height: 80, borderRadius: 40, margin: '10px 20px 0' }}>
-        <div className="tv-ticker-content" style={{ gap: 80, fontSize: '1.4rem' }}>
+      <div className="tv-ticker-bar" style={{ height: 40, borderRadius: 20, margin: '5px 15px 15px' }}>
+        <div className="tv-ticker-content" style={{ gap: 50, fontSize: '1rem' }}>
           {tickerItems.map((item, i) => (
             <div key={`${item.id}-${i}`} className="tv-ticker-item">
-              <ShoppingCart size={24} style={{ color: 'var(--accent)' }} />
-              <span style={{ letterSpacing: 1 }}>{item.branchName.toUpperCase()}</span>
-              <span style={{ color: '#4CAF50', fontWeight: 900 }}>{formatCurrency(item.total)}</span>
-              <span style={{ opacity: 0.3 }}>|</span>
+              <ShoppingCart size={16} style={{ color: 'var(--accent)' }} />
+              <span style={{ letterSpacing: 0.5 }}>{item.branchName.toUpperCase()}</span>
+              <span style={{ color: '#4CAF50', fontWeight: 800 }}>{formatCurrency(item.total)}</span>
+              <span style={{ opacity: 0.2 }}>|</span>
             </div>
           ))}
         </div>
