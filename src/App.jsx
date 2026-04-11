@@ -17,11 +17,25 @@ import ToastContainer from './components/shared/ToastContainer';
 
 function AppRoutes() {
   const { currentUser } = useAuth();
+  const location = useLocation();
 
   if (!currentUser) {
     return <LoginScreen />;
   }
 
+  // --- STANDALONE LAYOUT (TV DASHBOARD) ---
+  if (location.pathname === '/command-center') {
+    return (
+      <>
+        <Routes>
+          <Route path="/command-center" element={<CommandCenter />} />
+        </Routes>
+        <ToastContainer />
+      </>
+    );
+  }
+
+  // --- STANDARD POS LAYOUT WITH SIDEBAR ---
   return (
     <div className="app-layout">
       <Sidebar />
@@ -37,6 +51,7 @@ function AppRoutes() {
           <Route path="/users" element={<UsersPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/reports" element={<ReportsPage />} />
+          {/* We keep this here too for completeness, but it will be handled by the branch above */}
           <Route path="/command-center" element={<CommandCenter />} />
           <Route path="*" element={<Navigate to="/pos" replace />} />
         </Routes>

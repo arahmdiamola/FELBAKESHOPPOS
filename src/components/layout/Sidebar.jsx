@@ -136,6 +136,8 @@ export default function Sidebar() {
               to={item.to}
               className={`sidebar-link ${isActive ? 'active' : ''}`}
               title={isCollapsed ? item.label : ''}
+              target={item.to === '/command-center' ? '_blank' : undefined}
+              rel={item.to === '/command-center' ? 'noopener noreferrer' : undefined}
             >
               <Icon size={18} />
               <span>{item.label}</span>
