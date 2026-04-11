@@ -151,6 +151,59 @@ export default function SettingsPage() {
     }
   };
 
+  const handleDownloadBackup = async () => {
+    try {
+      addToast('Preparing backup...', 'info');
+      const data = await api.get('/backup-full');
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `fel-pos-backup-${new Date().toISOString().slice(0,10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      addToast('Backup downloaded successfully', 'success');
+      
+      await api.post('/logs', { action: 'SYSTEM_BACKUP', details: { type: 'Full JSON' } });
+    } catch (e) {
+      addToast('Backup failed: ' + e.message, 'error');
+    }
+  };
+
+  const getActionColor = (action) => {
+    if (action.includes('SALE')) return { bg: 'rgba(46, 204, 113, 0.1)', text: '#27ae60' };
+    if (action.includes('PRODUCT') || action.includes('EXPENSE')) return { bg: 'rgba(52, 152, 219, 0.1)', text: '#2980b9' };
+    if (action.includes('SYSTEM') || action.includes('RESTORE') || action.includes('RESET')) return { bg: 'rgba(231, 76, 60, 0.1)', text: '#c0392b' };
+    if (action.includes('SETTINGS')) return { bg: 'rgba(155, 89, 182, 0.1)', text: '#8e44ad' };
+    return { bg: 'rgba(149, 165, 166, 0.1)', text: '#7f8c8d' };
+  };
+
+  const formatLogDetails = (log) => {
+    if (!log.details) return 'No details';
+    try {
+      const d = typeof log.details === 'string' ? JSON.parse(log.details) : log.details;
+      
+      switch(log.action) {
+        case 'SALE_COMPLETED':
+          return `Receipt #${d.receiptNumber || 'N/A'} • Total: ${new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(d.total || 0)}`;
+        case 'PRODUCT_UPDATED':
+          return `Stock update: ${d.name || 'Product'} now at ${d.stock || 0}`;
+        case 'EXPENSE_RECORDED':
+          return `${d.category || 'Expense'}: ${new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(d.amount || 0)}`;
+        case 'SETTINGS_UPDATED':
+          return `Modified: ${d.updatedKeys?.join(', ') || 'Global settings'}`;
+        case 'SYSTEM_RESTORE':
+          return `Restored system from backup (TS: ${d.backupTimestamp})`;
+        default:
+          return typeof d === 'object' ? JSON.stringify(d) : String(d);
+      }
+    } catch (e) {
+      return String(log.details);
+    }
+  };
+
   return (
     <>
       <Header title="Settings" subtitle="Configure your bakeshop" actions={
@@ -384,6 +437,19 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between" style={{ padding: 16, background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
                   <div>
                     <div className="font-bold flex items-center gap-2">
+                       <Download size={18} className="text-success" />
+                       Database Backup
+                    </div>
+                    <div className="text-sm text-muted mt-1">Export your entire empire's data to a .json file for safe-keeping.</div>
+                  </div>
+                  <button className="btn btn-secondary" onClick={handleDownloadBackup}>
+                    Download Full Backup
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between" style={{ padding: 16, background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+                  <div>
+                    <div className="font-bold flex items-center gap-2">
                        <Upload size={18} className="text-blue-500" />
                        System Restore
                     </div>
@@ -442,22 +508,38 @@ export default function SettingsPage() {
                       <tr><td colSpan="5" className="text-center p-10 text-muted">No logs recorded yet.</td></tr>
                     ) : (
                       systemLogs.map(log => (
-                        <tr key={log.id} className="border-b">
-                          <td className="p-3 text-xs text-muted">{new Date(log.timestamp).toLocaleString()}</td>
+                        <tr key={log.id} className="border-b hover:bg-gray-50 transition-colors">
+                          <td className="p-3 text-[11px] text-muted whitespace-nowrap">
+                            {new Date(log.timestamp).toLocaleDateString()}<br/>
+                            {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </td>
                           <td className="p-3">
-                            <div className="font-bold">{log.userName}</div>
-                            <div className="text-xs text-muted">{log.userId?.slice(0,8)}...</div>
+                            <div className="font-bold text-gray-800">{log.userName || 'System'}</div>
+                            <div className="text-[10px] text-muted font-mono">{log.userId?.slice(0,8)}</div>
                           </td>
                           <td className="p-3">
                             <span style={{ 
-                              padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', 
-                              backgroundColor: 'rgba(52, 152, 219, 0.1)', color: '#3498db' 
+                              padding: '4px 10px', borderRadius: '12px', fontSize: '10px', fontWeight: '900', 
+                              backgroundColor: getActionColor(log.action).bg, color: getActionColor(log.action).text,
+                              textTransform: 'uppercase', letterSpacing: '0.5px'
                             }}>
-                              {log.action}
+                              {log.action.replace(/_/g, ' ')}
                             </span>
                           </td>
                           <td className="p-3">
-                            <div className="text-xs font-mono" style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            <div className="text-[12px] text-gray-700 leading-snug">
+                               {formatLogDetails(log)}
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <div className="flex items-center gap-2">
+                               <MapPin size={12} className="text-muted" />
+                               <div className="text-[12px] font-semibold">
+                                 {log.branchName || 'Global / System'}
+                               </div>
+                            </div>
+                          </td>
+                        </tr>
                               {log.details}
                             </div>
                           </td>

@@ -632,11 +632,18 @@ app.get('/api/logs', async (req, res) => {
     const userRole = req.headers['x-user-role'];
 
     let logs;
+    const query = `
+      SELECT l.*, b.name as branchName 
+      FROM system_logs l 
+      LEFT JOIN branches b ON l.branchId = b.id 
+      ${userRole === 'system_admin' ? '' : 'WHERE l.branchId = ?'} 
+      ORDER BY l.timestamp DESC LIMIT ?
+    `;
+
     if (userRole === 'system_admin') {
-      logs = await db.all("SELECT * FROM system_logs ORDER BY timestamp DESC LIMIT ?", [limit]);
+      logs = await db.all(query, [limit]);
     } else {
-      // Owners/Managers see their branch logs only
-      logs = await db.all("SELECT * FROM system_logs WHERE branchId = ? ORDER BY timestamp DESC LIMIT ?", [branchId, limit]);
+      logs = await db.all(query, [branchId, limit]);
     }
     res.json(logs);
   } catch (err) {

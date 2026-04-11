@@ -8,6 +8,7 @@ function getHeaders() {
     const user = JSON.parse(localStorage.getItem('fel_currentUser'));
     if (user) {
       headers['X-User-Id'] = user.id;
+      headers['X-User-Name'] = user.name || 'Unknown';
       headers['X-User-Role'] = user.role;
       if (user.branchId) headers['X-Branch-Id'] = user.branchId;
       const activeBranch = localStorage.getItem('fel_active_branch');
