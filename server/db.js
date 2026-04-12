@@ -11,7 +11,7 @@ async function ensureColumnRenamed(db, table, oldColNames, newColName) {
       AND table_schema = 'public'
     `, [table]);
     
-    const existingCols = result.map(r => r.column_name);
+    const existingCols = result.map(r => r.columnName);
     
     // 2. If newColName (snake_case) already exists, skip
     if (existingCols.includes(newColName)) return;
