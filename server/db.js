@@ -218,6 +218,7 @@ export async function initDb() {
 
     // 2. Intelligent Migration (Cross-Referencing information_schema)
     const migrationQueue = [
+      { table: 'branches', variants: ['lastSeen', 'lastseen'], target: 'last_seen' },
       { table: 'users', variants: ['branchId', 'branchid'], target: 'branch_id' },
       { table: 'products', variants: ['branchId', 'branchid'], target: 'branch_id' },
       { table: 'products', variants: ['categoryId', 'categoryid'], target: 'category_id' },
@@ -230,7 +231,7 @@ export async function initDb() {
       { table: 'transactions', variants: ['amountPaid', 'amountpaid'], target: 'amount_paid' },
       { table: 'transactions', variants: ['customerId', 'customerid'], target: 'customer_id' },
       { table: 'transactions', variants: ['customerName', 'customername'], target: 'customer_name' },
-      { table: 'transactions', variants: ['cashierId', 'cashierid'], target: 'customer_id' },
+      { table: 'transactions', variants: ['cashierId', 'cashierid'], target: 'cashier_id' },
       { table: 'transactions', variants: ['cashierName', 'cashiername'], target: 'cashier_name' },
       { table: 'transaction_items', variants: ['transactionId', 'transactionid'], target: 'transaction_id' },
       { table: 'transaction_items', variants: ['productId', 'productid'], target: 'product_id' },
@@ -251,7 +252,8 @@ export async function initDb() {
       { table: 'production_logs', variants: ['userId', 'userid'], target: 'user_id' },
       { table: 'production_log_items', variants: ['productionLogId', 'productionlogid'], target: 'production_log_id' },
       { table: 'branch_sessions', variants: ['branchId', 'branchid'], target: 'branch_id' },
-      { table: 'branch_sessions', variants: ['userId', 'userid'], target: 'user_id' }
+      { table: 'branch_sessions', variants: ['userId', 'userid'], target: 'user_id' },
+      { table: 'branch_sessions', variants: ['lastSeen', 'lastseen'], target: 'last_seen' }
     ];
 
     console.log("Processing Schema Transitions...");
