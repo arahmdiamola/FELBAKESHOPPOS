@@ -7,7 +7,11 @@ import Header from '../layout/Header';
 import Modal from '../shared/Modal';
 import { Search, Wheat, Plus, Edit3, Trash2, AlertTriangle, ArrowUpDown, Scale, Star } from 'lucide-react';
 
-const BAKING_EMOJIS = ['🌾', '🥣', '🥚', '🥛', '🧈', '🧂', '🍞', '🥖', '🥐', '🥯', '🥞', '🥥', '🍫', '🌰', '🍯', '🥄', '🍶', '🍎', '🍋', '🫐', '🍓', '🍌', '🥔', '📦'];
+const BAKING_EMOJIS = [
+  '🌾', '🧪', '🍚', '🧉', '🍶', '🧂', '🧊', '🥣', '🥢', '🥄', '🔪', 
+  '🥚', '🥛', '🧈', '🧀', '🥥', '🍫', '🌰', '🍯', '🍯', '🥃', '🍊', 
+  '🍋', '🍎', '🫐', '🍓', '🍌', '🥔', '📦', '🥡', '🧴', '🛁'
+];
 
 export default function RawMaterialsPage() {
   const { currentUser } = useAuth();
@@ -17,7 +21,7 @@ export default function RawMaterialsPage() {
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ name: '', stock: 0, unit: 'kg', reorderPoint: 0, emoji: '📦' });
+  const [form, setForm] = useState({ name: '', stock: 0, unit: 'kg', reorderPoint: 0, emoji: '📦', image: null });
   const [isLoading, setIsLoading] = useState(true);
 
   const isAdmin = ['admin', 'system_admin', 'manager'].includes(currentUser?.role);
@@ -54,8 +58,18 @@ export default function RawMaterialsPage() {
 
   const openEdit = (m) => {
     setEditing(m.id);
-    setForm({ name: m.name, stock: m.stock, unit: m.unit, reorderPoint: m.reorderPoint, emoji: m.emoji });
+    setForm({ name: m.name, stock: m.stock, unit: m.unit, reorderPoint: m.reorderPoint, emoji: m.emoji, image: m.image });
     setShowForm(true);
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 1024 * 1024) return addToast('Image too large (max 1MB)', 'error');
+      const reader = new FileReader();
+      reader.onloadend = () => setForm({ ...form, image: reader.result });
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSave = async () => {
@@ -136,7 +150,11 @@ export default function RawMaterialsPage() {
                 return (
                   <tr key={m.id} className="animate-slide-up" style={{ animationDelay: `${index * 0.05}s` }}>
                     <td className="luxury-td-emoji">
-                      <div className="luxury-emoji-badge">{m.emoji}</div>
+                      {m.image ? (
+                        <div className="luxury-image-badge" style={{ backgroundImage: `url(${m.image})` }} />
+                      ) : (
+                        <div className="luxury-emoji-badge">{m.emoji}</div>
+                      )}
                     </td>
                     <td className="luxury-td-name">
                        <div className="name-main">{m.name}</div>
@@ -195,10 +213,28 @@ export default function RawMaterialsPage() {
       <Modal 
         isOpen={showForm} 
         onClose={() => setShowForm(false)} 
-        title={editing ? 'Edit Material' : 'Add New Material'}
-        footer={<button className="btn btn-primary" onClick={handleSave}>Save Material</button>}
+        title={editing ? `Edit ${form.name}` : 'New Material'}
+        footer={<button className="luxury-add-btn" style={{ width: '100%' }} onClick={handleSave}>Save Material Integrity</button>}
       >
-        <div className="form-grid">
+        <div className="luxury-form-wrap">
+          <div className="image-upload-zone">
+            {form.image ? (
+              <div className="image-preview-lux" style={{ backgroundImage: `url(${form.image})` }}>
+                <button className="remove-image-btn" onClick={() => setForm({ ...form, image: null })}>
+                   <Trash2 size={12} />
+                </button>
+              </div>
+            ) : (
+              <label className="upload-placeholder-lux">
+                <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+                <Plus size={24} className="mb-2" />
+                <span>Upload Material Photo</span>
+                <p className="text-[10px] opacity-60 mt-1">Snap a photo of the sack/box</p>
+              </label>
+            )}
+          </div>
+
+          <div className="form-grid mt-6">
           <div className="input-group full-width">
             <label>Select Icon</label>
             <div className="emoji-grid">
@@ -404,6 +440,66 @@ export default function RawMaterialsPage() {
         .action-btn-circle.edit:hover { background: var(--mocha); color: white; transform: rotate(15deg); }
         .action-btn-circle.delete { background: transparent; color: #D1D1D1; }
         .action-btn-circle.delete:hover { background: #fee2e2; color: #ef4444; }
+
+        .luxury-image-badge {
+           width: 50px;
+           height: 50px;
+           border-radius: 18px;
+           background-size: cover;
+           background-position: center;
+           box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+           border: 2px solid white;
+        }
+
+        .luxury-form-wrap {
+           display: flex;
+           flex-direction: column;
+           gap: 12px;
+        }
+        .image-upload-zone {
+           height: 180px;
+           background: #FDFBF7;
+           border: 2px dashed #E5E1DA;
+           border-radius: 24px;
+           overflow: hidden;
+           position: relative;
+        }
+        .upload-placeholder-lux {
+           width: 100%;
+           height: 100%;
+           display: flex;
+           flex-direction: column;
+           align-items: center;
+           justify-content: center;
+           cursor: pointer;
+           color: #8B837E;
+           font-weight: 800;
+           font-size: 0.8rem;
+           transition: all 0.2s;
+        }
+        .upload-placeholder-lux:hover { background: white; color: var(--mocha); }
+        .image-preview-lux {
+           width: 100%;
+           height: 100%;
+           background-size: cover;
+           background-position: center;
+        }
+        .remove-image-btn {
+           position: absolute;
+           top: 12px;
+           right: 12px;
+           background: rgba(0,0,0,0.5);
+           color: white;
+           border: none;
+           width: 24px;
+           height: 24px;
+           border-radius: 50%;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           cursor: pointer;
+           backdrop-filter: blur(4px);
+        }
 
         .emoji-grid {
           display: grid;

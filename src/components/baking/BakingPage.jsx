@@ -107,7 +107,8 @@ export default function BakingPage() {
         materialName: selectedMaterial.name, 
         quantityUsed: qty, 
         unit: selectedMaterial.unit,
-        emoji: selectedMaterial.emoji
+        emoji: selectedMaterial.emoji,
+        image: selectedMaterial.image
       }];
     });
     
@@ -186,28 +187,32 @@ export default function BakingPage() {
           <div className="card-body" style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 16 }}>
               {filteredMaterials.map(m => (
-                <button 
-                  key={m.id}
-                  className="card hover-scale material-card"
-                  onClick={() => addToBatch(m)}
-                  style={{ 
-                    padding: '24px 12px', textAlign: 'center', cursor: 'pointer',
-                    background: 'var(--card-bg)', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', position: 'relative',
-                    border: '1px solid var(--border-light)', overflow: 'hidden'
-                  }}
-                >
-                  <div className="material-emoji">{m.emoji}</div>
-                  <div style={{ fontWeight: 800, fontSize: 'var(--font-xs)', color: 'var(--text-main)', marginBottom: 4 }}>{m.name}</div>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: m.stock <= m.reorderPoint ? 'var(--danger)' : 'var(--text-muted)' }}>
-                    {m.stock} {m.unit}
-                  </div>
-                  {activeBatch.some(item => item.materialId === m.id) && (
-                    <div className="batch-check">
-                      <Check size={14} strokeWidth={3} />
+                  <button 
+                    key={m.id}
+                    className="card hover-scale material-card"
+                    onClick={() => addToBatch(m)}
+                    style={{ 
+                      padding: '24px 12px', textAlign: 'center', cursor: 'pointer',
+                      background: 'var(--card-bg)', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', position: 'relative',
+                      border: '1px solid var(--border-light)', overflow: 'hidden'
+                    }}
+                  >
+                    {m.image ? (
+                      <div className="material-image-lux" style={{ backgroundImage: `url(${m.image})` }} />
+                    ) : (
+                      <div className="material-emoji">{m.emoji}</div>
+                    )}
+                    <div style={{ fontWeight: 800, fontSize: 'var(--font-xs)', color: 'var(--text-mocha)', marginBottom: 4, zIndex: 2, position: 'relative' }}>{m.name}</div>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: m.stock <= m.reorderPoint ? 'var(--danger)' : 'var(--sage)', zIndex: 2, position: 'relative' }}>
+                      {m.stock} {m.unit}
                     </div>
-                  )}
-                  {m.stock <= m.reorderPoint && <div className="low-stock-dot" />}
-                </button>
+                    {activeBatch.some(item => item.materialId === m.id) && (
+                      <div className="batch-check">
+                        <Check size={14} strokeWidth={3} />
+                      </div>
+                    )}
+                    {m.stock <= m.reorderPoint && <div className="low-stock-dot" />}
+                  </button>
               ))}
             </div>
 
@@ -276,7 +281,11 @@ export default function BakingPage() {
                     className="ingredient-luxury-card animate-slide-up"
                     style={{ animationDelay: `${index * 0.05}s` }}
                   >
-                    <div className="luxury-emoji-box">{item.emoji}</div>
+                    {item.image ? (
+                       <div className="luxury-image-box-sidebar" style={{ backgroundImage: `url(${item.image})` }} />
+                    ) : (
+                       <div className="luxury-emoji-box">{item.emoji}</div>
+                    )}
                     <div className="flex-1">
                       <div className="luxury-material-name">{item.materialName}</div>
                       <div className="luxury-material-qty">{item.quantityUsed} {item.unit}</div>
@@ -498,6 +507,27 @@ export default function BakingPage() {
            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
            border: 1px solid rgba(255, 255, 255, 0.5);
         }
+        .material-image-lux {
+           height: 80px;
+           width: 100%;
+           background-size: cover;
+           background-position: center;
+           margin-bottom: 12px;
+           border-radius: 12px;
+           box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+           position: relative;
+           z-index: 2;
+        }
+
+        .luxury-image-box-sidebar {
+           width: 44px;
+           height: 44px;
+           background-size: cover;
+           background-position: center;
+           border-radius: 14px;
+           box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
         .luxury-emoji-box {
           width: 44px;
           height: 44px;
