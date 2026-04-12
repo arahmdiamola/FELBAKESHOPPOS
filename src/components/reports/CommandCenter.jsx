@@ -254,7 +254,7 @@ export default function CommandCenter({ isPublic = false }) {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                <h1 className="tv-main-title">
-                 {isPublic ? 'MISSION CONTROL' : 'OWNER\'S WAR ROOM'}
+                 {isPublic ? 'MISSION CONTROL' : 'EXECUTIVE DASHBOARD'}
                </h1>
                {isPublic && <span className="demo-badge">PUBLIC DEMO</span>}
                {!isPublic && <span className="secure-badge"><Zap size={14} /> SECURE LINK</span>}
