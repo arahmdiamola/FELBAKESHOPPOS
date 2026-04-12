@@ -26,6 +26,7 @@ export default function BakingPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [activeBatches, setActiveBatches] = useState([]);
   const [selectedBatch, setSelectedBatch] = useState(null);
+  const [now, setNow] = useState(new Date());
   
   const [showQtyModal, setShowQtyModal] = useState(false);
   const [showProductModal, setShowProductModal] = useState(false);
@@ -37,6 +38,9 @@ export default function BakingPage() {
     fetchMaterials();
     fetchHistory();
     fetchActiveBatches();
+
+    const interval = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(interval);
   }, []);
 
   const fetchMaterials = async () => {
@@ -256,48 +260,72 @@ export default function BakingPage() {
 
             {/* Live Oven Subsection */}
             {activeBatches.length > 0 && (
-              <div className="mt-12 p-6 glass-oven animate-pulse-slow">
-                <h4 className="text-sm font-black uppercase tracking-widest text-mocha mb-6 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+              <div className="mt-12 p-8 glass-oven animate-pulse-slow relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-orange-500 to-transparent opacity-50" />
+                <h4 className="text-sm font-black uppercase text-mocha mb-8 flex items-center justify-between relative z-10">
+                  <div className="flex items-center gap-3">
                     <div className="oven-dot" /> 🥧 In the Oven (Live)
                   </div>
-                  <span className="text-[10px] bg-mocha-light px-2 py-1 rounded-full">{activeBatches.length} active</span>
+                  <span className="text-[10px] bg-mocha-light/80 backdrop-blur-sm border border-mocha/10 px-3 py-1.5 rounded-full font-black tracking-tighter">
+                    {activeBatches.length} BATCHES ACTIVE
+                  </span>
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {activeBatches.map(batch => (
-                    <div key={batch.id} className="batch-live-card">
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <p className="font-black text-mocha text-sm">{batch.productName || 'Batch Production'}</p>
-                          <p className="text-[11px] font-black uppercase text-accent mt-1">
-                            Estimated: {batch.estimatedYield || 0} {batch.unit || 'pcs'}
-                          </p>
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 relative z-10">
+                  {activeBatches.map(batch => {
+                    const product = products.find(p => p.id === batch.productId);
+                    const startTime = new Date(batch.date);
+                    const diffMs = Math.max(0, now - startTime);
+                    const mins = Math.floor(diffMs / 60000);
+                    const secs = Math.floor((diffMs % 60000) / 1000);
+
+                    return (
+                      <div key={batch.id} className="batch-live-card group">
+                        <div className="flex gap-4 items-start mb-6">
+                          <div className="w-16 h-16 bg-cream rounded-2xl flex items-center justify-center text-3xl shadow-inner border border-mocha/5 group-hover:scale-110 transition-transform">
+                            {product?.emoji || '🥧'}
+                          </div>
+                          <div className="flex-1">
+                            <h5 className="font-black text-mocha text-base leading-tight">
+                              {batch.productName || 'Batch Production'}
+                            </h5>
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2">
+                               <span className="text-[10px] font-black uppercase tracking-wider text-accent bg-accent/10 px-2 py-0.5 rounded">
+                                 Target: {batch.estimatedYield || 0} {batch.unit || 'pcs'}
+                               </span>
+                               <div className="flex items-center gap-1.5 text-[10px] font-bold text-sage">
+                                 <RotateCcw size={10} className="animate-spin-slow" />
+                                 {mins}m {secs}s in heat
+                               </div>
+                            </div>
+                          </div>
+                          <div className="live-timer-lux">
+                             {startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </div>
                         </div>
-                        <div className="live-timer-lux">
-                           {new Date(batch.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        
+                        <div className="flex gap-3">
+                          <button 
+                            className="flex-1 btn-lux-green py-4 text-[11px] font-black uppercase tracking-widest shadow-lg shadow-sage/20 hover:shadow-sage/40"
+                            onClick={() => {
+                              setSelectedBatch(batch);
+                              setKeypadMode('production');
+                              setTempQty((batch.estimatedYield || 0).toString());
+                              setShowQtyModal(true);
+                            }}
+                          >
+                            Finish & Log
+                          </button>
+                          <button 
+                            className="px-5 btn-lux-ruin shadow-lg shadow-red-500/5 hover:shadow-red-500/20"
+                            onClick={() => handleVoidBatch(batch.id)}
+                            title="Abort Batch"
+                          >
+                            <Trash2 size={18} />
+                          </button>
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        <button 
-                          className="flex-1 btn-lux-green py-3 text-xs font-black uppercase tracking-widest"
-                          onClick={() => {
-                            setSelectedBatch(batch);
-                            setKeypadMode('production');
-                            setTempQty((batch.estimatedYield || 0).toString());
-                            setShowQtyModal(true);
-                          }}
-                        >
-                          Finish
-                        </button>
-                        <button 
-                          className="px-4 btn-lux-ruin"
-                          onClick={() => handleVoidBatch(batch.id)}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -833,9 +861,10 @@ export default function BakingPage() {
         .lux-confirm-btn:hover { transform: translateY(-3px); box-shadow: 0 15px 35px rgba(230, 141, 80, 0.3); }
         .lux-confirm-btn:active { transform: translateY(0); }
         .glass-oven {
-          background: rgba(255, 120, 0, 0.05);
-          border: 1px dashed rgba(212, 118, 60, 0.3);
-          border-radius: 24px;
+          background: linear-gradient(135deg, rgba(255, 120, 0, 0.03) 0%, rgba(212, 118, 60, 0.08) 100%);
+          border: 1px solid rgba(212, 118, 60, 0.15);
+          box-shadow: inset 0 0 40px rgba(255, 100, 0, 0.05);
+          border-radius: 36px;
         }
         .oven-dot {
           width: 8px;
@@ -855,11 +884,17 @@ export default function BakingPage() {
         }
         
         .batch-live-card {
+           background: rgba(255, 255, 255, 0.9);
+           padding: 24px;
+           border-radius: 28px;
+           box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+           border: 1px solid white;
+           transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .batch-live-card:hover {
+           transform: translateY(-5px);
+           box-shadow: 0 20px 40px rgba(0,0,0,0.08);
            background: white;
-           padding: 20px;
-           border-radius: 20px;
-           box-shadow: 0 4px 15px rgba(0,0,0,0.02);
-           border: 1px solid rgba(0,0,0,0.03);
         }
         .live-timer-lux {
            font-size: 0.7rem;
