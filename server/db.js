@@ -280,6 +280,20 @@ export async function initDb() {
       try { await db.run(sql); } catch (e) { }
     }
 
+    // 3.4 Cleanup Duplicates in branch_sessions (Required for PK safety in Postgres)
+    try {
+      console.log("[Migration] Cleaning duplicate sessions...");
+      // Standard Postgres duplicate deletion using ctid
+      await db.run(`
+        DELETE FROM branch_sessions a USING branch_sessions b 
+        WHERE a.ctid < b.ctid 
+        AND a.branch_id = b.branch_id 
+        AND a.user_id = b.user_id
+      `);
+    } catch (e) {
+      console.warn("[Migration] Duplicate cleanup failed or table empty:", e.message);
+    }
+
     // 3.5 Force Primary Key on branch_sessions (Required for ON CONFLICT in Postgres)
     try {
       const hasPk = await db.get(`

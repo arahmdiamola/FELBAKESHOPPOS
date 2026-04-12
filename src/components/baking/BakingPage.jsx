@@ -228,7 +228,7 @@ export default function BakingPage() {
           
           {/* Section 1: Ingredients Selection */}
           <div className="card-elegant">
-            <div className="p-6 flex items-center justify-between border-b border-mocha/5">
+            <div className="card-header-elegant">
               <h3 className="card-title-elegant">1. Select Ingredients</h3>
               <div className="search-bar-elegant">
                 <Search size={16} />
@@ -240,8 +240,8 @@ export default function BakingPage() {
               </div>
             </div>
             
-            <div className="p-6">
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 16 }}>
+            <div className="card-content-elegant">
+              <div className="materials-grid-elegant">
                 {filteredMaterials.map(m => (
                     <button 
                       key={m.id}
@@ -274,16 +274,16 @@ export default function BakingPage() {
 
           {/* Section 2: Oven Monitor */}
           {activeBatches.length > 0 && (
-            <div className="card-elegant overflow-hidden">
+            <div className="card-elegant oven-monitor-container">
               <div className="glass-oven-header">
-                  <div className="flex items-center gap-3">
-                    <div className="oven-dot" /> <span className="font-black text-xs uppercase tracking-widest text-[#D4763C]">Studio Oven Monitor</span>
+                  <div className="oven-header-left">
+                    <div className="oven-dot" /> <span className="oven-label-main">Studio Oven Monitor</span>
                   </div>
-                  <span className="text-[10px] font-black uppercase text-mocha opacity-50">{activeBatches.length} Batches Active</span>
+                  <span className="oven-label-sub">{activeBatches.length} Batches Active</span>
               </div>
               
-              <div className="p-8 bg-gradient-to-br from-orange-50/50 to-transparent">
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <div className="oven-content-grid">
+                <div className="batches-grid">
                   {activeBatches.map(batch => {
                     const product = products.find(p => p.id === batch.productId);
                     const startTime = new Date(batch.date);
@@ -292,16 +292,16 @@ export default function BakingPage() {
                     const secs = Math.floor((diffMs % 60000) / 1000);
 
                     return (
-                      <div key={batch.id} className="oven-batch-card shadow-xl shadow-orange-900/5">
-                        <div className="flex gap-4 items-center mb-6">
+                      <div key={batch.id} className="oven-batch-card">
+                        <div className="batch-header-box">
                           <div className="oven-product-emoji">
                             {product?.emoji || '🥧'}
                           </div>
-                          <div className="flex-1">
+                          <div className="batch-core-info">
                             <h5 className="batch-title-lux">{batch.productName || 'Batch'}</h5>
                             <div className="batch-meta-row">
                                <span className="batch-yield-tag">Target: {batch.estimatedYield || 0} {batch.unit || 'pcs'}</span>
-                               <span className="batch-timer-tag animate-pulse">
+                               <span className="batch-timer-tag pulse-animation">
                                  <ChefHat size={12} /> {mins}m {secs}s
                                </span>
                             </div>
@@ -311,7 +311,7 @@ export default function BakingPage() {
                           </div>
                         </div>
                         
-                        <div className="flex gap-3">
+                        <div className="batch-action-row">
                           <button 
                             className="finish-btn-elegant flex-1"
                             onClick={() => {
@@ -341,8 +341,8 @@ export default function BakingPage() {
 
           {/* Section 3: History & Waste Log */}
           <div className="card-elegant">
-            <div className="px-6 pt-6 flex items-center justify-between border-b border-mocha/5">
-              <div className="flex gap-6">
+            <div className="history-tabs-header">
+              <div className="tabs-container-lux">
                 <button 
                   className={`history-tab ${historyTab === 'success' ? 'active' : ''}`}
                   onClick={() => setHistoryTab('success')}
@@ -358,7 +358,7 @@ export default function BakingPage() {
               </div>
             </div>
             
-            <div className="p-0">
+            <div className="card-content-elegant no-padding">
                {history.length === 0 ? (
                  <div className="p-12 text-center opacity-30 italic text-sm">No recent records found in this category</div>
                ) : (
@@ -368,8 +368,8 @@ export default function BakingPage() {
                         <div className="history-icon-box">
                            {products.find(p => p.id === log.productId)?.emoji || '📌'}
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
+                        <div className="history-info-box">
+                          <div className="history-header-row">
                              <span className="history-name">{log.productName || 'Batch'}</span>
                              <span className={`history-status-badge ${log.status}`}>
                                {log.status === 'ruined' ? 'WASTE' : 'SUCCESS'}
@@ -381,7 +381,7 @@ export default function BakingPage() {
                              ) : (
                                <span>Produced {log.quantityProduced} {log.unit || 'pcs'}</span>
                              )}
-                             <span className="mx-2">•</span>
+                             <span className="meta-separator">•</span>
                              <span>{new Date(log.date).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                           </div>
                         </div>
@@ -396,37 +396,37 @@ export default function BakingPage() {
         {/* Right Side: Sidebar */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           {/* Batch Sidebar */}
-          <div className="card-elegant flex-1 flex flex-col overflow-hidden">
-            <div className="p-6 flex items-center justify-between border-b border-mocha/5">
-              <div className="flex items-center gap-3">
+          <div className="card-elegant side-log-container">
+            <div className="card-header-elegant">
+              <div className="header-label-box">
                 <ChefHat size={20} className="text-mocha" />
                 <h3 className="card-title-elegant">Studio Log</h3>
               </div>
               {activeBatch.length > 0 && (
-                <button onClick={clearBatch} className="text-[10px] font-black uppercase text-red-500 hover:opacity-70 transition-opacity">
+                <button onClick={clearBatch} className="clear-batch-btn">
                   Clear All
                 </button>
               )}
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="side-log-content">
               {activeBatch.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center opacity-20 py-20">
                   <Scale size={48} strokeWidth={1} />
                   <p className="mt-4 text-sm font-bold">Select ingredients to prep batch</p>
                 </div>
               ) : (
-                <div className="flex flex-col gap-3">
+                <div className="sidebar-list-gap">
                   {activeBatch.map((item, index) => (
                     <div key={item.materialId} className="sidebar-ingredient-card animate-slide-up" style={{ animationDelay: `${index * 0.05}s` }}>
-                      <div className="w-10 h-10 bg-mocha-light rounded-xl flex items-center justify-center text-xl">
+                      <div className="ingredient-icon-box">
                         {item.emoji || '📦'}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[11px] font-black text-mocha truncate">{item.materialName}</div>
-                        <div className="text-[10px] font-bold text-sage">{item.quantityUsed} {item.unit}</div>
+                      <div className="ingredient-info-box">
+                        <div className="ingredient-name-lux">{item.materialName}</div>
+                        <div className="ingredient-qty-lux">{item.quantityUsed} {item.unit}</div>
                       </div>
-                      <button className="w-8 h-8 rounded-lg bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-sm" onClick={() => removeFromBatch(item.materialId)}>
+                      <button className="ingredient-remove-btn" onClick={() => removeFromBatch(item.materialId)}>
                         <Trash2 size={14} />
                       </button>
                     </div>
@@ -435,39 +435,39 @@ export default function BakingPage() {
               )}
             </div>
 
-            <div className="p-6 bg-cream/50 border-t border-mocha/5">
-              <div className="mb-6 space-y-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-mocha/40">Target Product</label>
+            <div className="side-log-footer">
+              <div className="footer-inputs-box">
+                <div className="input-group-lux">
+                  <label className="input-label-lux">Target Product</label>
                   {!targetProduct ? (
-                    <button className="w-full py-4 border-2 border-dashed border-mocha/10 rounded-2xl text-[11px] font-bold text-mocha/40 hover:border-mocha/30 hover:text-mocha/60 transition-all flex items-center justify-center gap-2" onClick={() => setShowProductModal(true)}>
+                    <button className="choose-product-btn-placeholder" onClick={() => setShowProductModal(true)}>
                       <Plus size={16} /> Choose Product
                     </button>
                   ) : (
-                    <div className="flex items-center gap-3 p-3 bg-mocha rounded-2xl text-white shadow-lg">
-                      <span className="text-2xl">{targetProduct.emoji}</span>
-                      <div className="flex-1">
-                        <div className="text-[11px] font-black">{targetProduct.name}</div>
-                        <div className="text-[9px] opacity-60 font-bold uppercase tracking-tighter">{targetProduct.unit || 'pcs'} target</div>
+                    <div className="selected-product-box">
+                      <span className="product-visual-lux">{targetProduct.emoji}</span>
+                      <div className="product-details-lux">
+                        <div className="product-name-lux">{targetProduct.name}</div>
+                        <div className="product-unit-lux">{targetProduct.unit || 'pcs'} target</div>
                       </div>
-                      <button onClick={() => setTargetProduct(null)} className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors">
+                      <button onClick={() => setTargetProduct(null)} className="product-reset-btn">
                         <RotateCcw size={14} />
                       </button>
                     </div>
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-mocha/40">Expected Yield</label>
-                  <div className="flex items-center bg-white rounded-2xl p-1 border border-mocha/5 shadow-inner" onClick={openProductionKeypad}>
-                     <button className="w-12 h-12 rounded-xl text-mocha hover:bg-mocha-light transition-colors" onClick={(e) => { e.stopPropagation(); setQuantityToProduce(Math.max(1, quantityToProduce - 1)); }}>
+                <div className="input-group-lux">
+                  <label className="input-label-lux">Expected Yield</label>
+                  <div className="yield-stepper-box" onClick={openProductionKeypad}>
+                     <button className="stepper-btn" onClick={(e) => { e.stopPropagation(); setQuantityToProduce(Math.max(1, quantityToProduce - 1)); }}>
                        <Minus size={18} />
                      </button>
-                     <div className="flex-1 text-center">
-                        <span className="text-xl font-black text-mocha leading-none">{quantityToProduce}</span>
-                        <span className="text-[9px] block font-bold text-mocha/30 uppercase">{targetProduct?.unit || 'pcs'}</span>
+                     <div className="stepper-display">
+                        <span className="stepper-val">{quantityToProduce}</span>
+                        <span className="stepper-unit">{targetProduct?.unit || 'pcs'}</span>
                      </div>
-                     <button className="w-12 h-12 rounded-xl text-mocha hover:bg-mocha-light transition-colors" onClick={(e) => { e.stopPropagation(); setQuantityToProduce(quantityToProduce + 1); }}>
+                     <button className="stepper-btn" onClick={(e) => { e.stopPropagation(); setQuantityToProduce(quantityToProduce + 1); }}>
                        <Plus size={18} />
                      </button>
                   </div>
@@ -475,7 +475,7 @@ export default function BakingPage() {
               </div>
 
               <button 
-                className={`w-full py-5 rounded-3xl font-black uppercase tracking-widest text-xs shadow-xl transition-all ${activeBatch.length === 0 || !targetProduct || isSaving ? 'bg-mocha/10 text-mocha/30 cursor-not-allowed' : 'bg-sage text-white shadow-sage/20 hover:shadow-sage/40 hover:-translate-y-1'}`}
+                className={`place-in-oven-btn ${activeBatch.length === 0 || !targetProduct || isSaving ? 'disabled' : ''}`}
                 disabled={activeBatch.length === 0 || !targetProduct || isSaving}
                 onClick={handleStartBatch}
               >
@@ -485,25 +485,25 @@ export default function BakingPage() {
           </div>
 
           {/* Alert Widget */}
-          <div className="card-elegant overflow-hidden bg-red-50/50 border-red-100/50">
-             <div className="p-4 bg-red-500 text-white flex items-center justify-between">
-                <div className="flex items-center gap-2">
+          <div className="alert-widget-elegant">
+             <div className="alert-header-lux">
+                <div className="header-label-box">
                    <Info size={16} />
-                   <span className="text-[10px] font-bold uppercase tracking-widest">Spoilage Alerts</span>
+                   <span className="alert-label-main">Spoilage Alerts</span>
                 </div>
-                {alerts.length > 0 && <span className="animate-ping w-2 h-2 bg-white rounded-full" />}
+                {alerts.length > 0 && <span className="alert-ping-dot" />}
              </div>
-             <div className="p-4 flex flex-col gap-3">
+             <div className="alert-content-box">
                 {alerts.length === 0 ? (
-                   <p className="text-[10px] italic text-red-400 text-center py-4">No recent production losses</p>
+                   <p className="no-alerts-placeholder">No recent production losses</p>
                 ) : (
                    alerts.slice(0, 3).map(alert => (
-                      <div key={alert.id} className="p-3 bg-white border border-red-100 rounded-xl shadow-sm animate-shake">
-                         <div className="flex items-center justify-between mb-1">
-                            <span className="text-[10px] font-black text-mocha truncate">{alert.productName}</span>
-                            <span className="text-[8px] font-bold text-red-500 uppercase">Ruined</span>
+                      <div key={alert.id} className="spoilage-card-lux animate-shake">
+                         <div className="spoilage-card-top">
+                            <span className="spoilage-card-title truncate">{alert.productName}</span>
+                            <span className="spoilage-card-status">Ruined</span>
                          </div>
-                         <p className="text-[9px] font-bold text-red-400 capitalize truncate">Reason: {alert.notes || 'Unknown'}</p>
+                         <p className="spoilage-card-reason capitalize truncate">Reason: {alert.notes || 'Unknown'}</p>
                       </div>
                    ))
                 )}
@@ -581,6 +581,18 @@ export default function BakingPage() {
           box-shadow: 0 10px 40px rgba(74, 55, 40, 0.03);
           display: flex;
           flex-direction: column;
+          overflow: hidden;
+        }
+        .card-header-elegant {
+          padding: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          border-bottom: 1px solid rgba(74, 55, 40, 0.05);
+        }
+        .card-content-elegant {
+          padding: 24px;
+          flex: 1;
         }
         .card-title-elegant {
           color: var(--mocha);
@@ -588,6 +600,7 @@ export default function BakingPage() {
           font-weight: 900;
           text-transform: uppercase;
           letter-spacing: 0.1em;
+          margin: 0;
         }
         .search-bar-elegant {
           background: #F8F5F2;
@@ -598,9 +611,16 @@ export default function BakingPage() {
           gap: 12px;
           color: #A0938A;
           border: 1px solid rgba(0,0,0,0.02);
+          width: 200px;
         }
         .search-bar-elegant input { border: none; background: transparent; font-size: 0.8rem; font-weight: 700; width: 100%; outline: none; }
         
+        .materials-grid-elegant {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+          gap: 16px;
+        }
+
         .material-card-elegant {
           background: #FDFBF7;
           border-radius: 24px;
@@ -638,22 +658,33 @@ export default function BakingPage() {
           border: 2px solid white;
         }
 
+        /* Oven Monitor Styles */
+        .oven-monitor-container { background: linear-gradient(to bottom right, #fff, #FDFBF7); }
         .glass-oven-header {
-           background: rgba(255, 120, 0, 0.05);
+           background: rgba(212, 118, 60, 0.05);
            padding: 16px 32px;
-           border-bottom: 1px solid rgba(255, 120, 0, 0.1);
+           border-bottom: 1px solid rgba(212, 118, 60, 0.1);
            display: flex;
            justify-content: space-between;
            align-items: center;
         }
+        .oven-header-left { display: flex; align-items: center; gap: 12px; }
+        .oven-dot { width: 8px; height: 8px; background: #D4763C; border-radius: 50%; animation: pulse-live 1.5s infinite; }
+        .oven-label-main { font-weight: 900; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.2em; color: #D4763C; }
+        .oven-label-sub { font-size: 10px; font-weight: 900; text-transform: uppercase; color: var(--mocha); opacity: 0.5; }
+        
+        .oven-content-grid { padding: 32px; background: radial-gradient(circle at top right, rgba(212, 118, 60, 0.03), transparent); }
+        .batches-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
+        
         .oven-batch-card {
            background: white;
            border-radius: 28px;
            padding: 24px;
            border: 1px solid rgba(0,0,0,0.03);
            transition: all 0.3s;
+           box-shadow: 0 10px 30px rgba(212, 118, 60, 0.05);
         }
-        .oven-batch-card:hover { transform: translateY(-3px); }
+        .batch-header-box { display: flex; gap: 16px; align-items: center; margin-bottom: 24px; }
         .oven-product-emoji {
            width: 56px;
            height: 56px;
@@ -665,12 +696,14 @@ export default function BakingPage() {
            font-size: 1.8rem;
            box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);
         }
+        .batch-core-info { flex: 1; }
         .batch-title-lux { font-size: 1rem; font-weight: 900; color: var(--mocha); margin-bottom: 4px; }
-        .batch-meta-row { display: flex; gap: 8px; flex-wrap: wrap; }
-        .batch-yield-tag { font-size: 10px; font-black uppercase tracking-tight text-accent bg-accent/10 px-2 py-0.5 rounded-lg; }
-        .batch-timer-tag { font-size: 10px; font-black uppercase text-sage bg-sage/10 px-2 py-0.5 rounded-lg flex items-center gap-1.5; }
-        .batch-time-tag { font-size: 10px; font-black text-mocha/30; }
-
+        .batch-meta-row { display: flex; gap: 8px; }
+        .batch-yield-tag { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: -0.02em; color: var(--accent); background: rgba(var(--accent-rgb), 0.1); padding: 2px 8px; border-radius: 8px; }
+        .batch-timer-tag { font-size: 10px; font-weight: 900; text-transform: uppercase; color: var(--sage); background: rgba(var(--sage-rgb), 0.1); padding: 2px 8px; border-radius: 8px; display: flex; align-items: center; gap: 6px; }
+        .batch-time-tag { font-size: 10px; font-weight: 900; color: var(--mocha); opacity: 0.3; margin-left: auto; }
+        
+        .batch-action-row { display: flex; gap: 12px; }
         .finish-btn-elegant { 
            background: var(--sage); 
            color: white; 
@@ -681,6 +714,7 @@ export default function BakingPage() {
            font-weight: 900; 
            text-transform: uppercase; 
            letter-spacing: 0.1em; 
+           flex: 1;
            cursor: pointer;
            transition: all 0.2s;
         }
@@ -699,18 +733,25 @@ export default function BakingPage() {
         }
         .void-btn-elegant:hover { background: #EF4444; color: white; }
 
+        .history-tabs-header { padding: 0 24px; border-bottom: 1px solid rgba(74, 55, 40, 0.05); }
+        .tabs-container-lux { display: flex; gap: 24px; }
         .history-tab {
-           padding: 20px 0;
+           padding: 24px 0;
            font-size: 0.7rem;
            font-weight: 900;
            text-transform: uppercase;
            letter-spacing: 0.1em;
            color: #A0938A;
            border-bottom: 3px solid transparent;
+           background: none;
+           border-left: none;
+           border-right: none;
+           border-top: none;
            cursor: pointer;
            transition: all 0.2s;
         }
         .history-tab.active { color: var(--mocha); border-bottom-color: var(--mocha); }
+        .history-list { display: flex; flex-direction: column; }
         .history-item {
            padding: 20px 24px;
            display: flex;
@@ -736,6 +777,14 @@ export default function BakingPage() {
         .history-status-badge.ruined { background: #FEE2E2; color: #991B1B; }
         .history-meta { font-size: 0.7rem; font-weight: 600; color: #A0938A; margin-top: 2px; }
 
+        /* Sidebar Log Styles */
+        .side-log-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .header-label-box { display: flex; align-items: center; gap: 12px; }
+        .clear-batch-btn { background: none; border: none; font-size: 10px; font-weight: 900; text-transform: uppercase; color: #ef4444; cursor: pointer; opacity: 0.8; }
+        .clear-batch-btn:hover { opacity: 1; }
+        
+        .side-log-content { flex: 1; overflow-y: auto; padding: 24px; }
+        .sidebar-list-gap { display: flex; flex-direction: column; gap: 12px; }
         .sidebar-ingredient-card {
            background: white;
            padding: 12px;
@@ -744,7 +793,64 @@ export default function BakingPage() {
            align-items: center;
            gap: 12px;
            border: 1px solid rgba(0,0,0,0.02);
-           box-shadow: 0 4px 10px rgba(0,0,0,0.01);
+           box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+        }
+        .ingredient-icon-box { width: 40px; height: 40px; background: #F8F5F2; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+        .ingredient-info-box { flex: 1; min-width: 0; }
+        .ingredient-name-lux { font-size: 11px; font-weight: 900; color: var(--mocha); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ingredient-qty-lux { font-size: 10px; font-weight: 800; color: var(--sage); }
+        .ingredient-remove-btn { width: 32px; height: 32px; border-radius: 10px; background: #FFF5F5; border: none; color: #ef4444; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
+        .ingredient-remove-btn:hover { background: #ef4444; color: white; }
+
+        .side-log-footer { padding: 24px; background: rgba(253, 251, 247, 0.5); border-top: 1px solid rgba(74, 55, 40, 0.05); }
+        .footer-inputs-box { margin-bottom: 24px; display: flex; flex-direction: column; gap: 16px; }
+        .input-group-lux { display: flex; flex-direction: column; gap: 8px; }
+        .input-label-lux { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(74, 55, 40, 0.4); }
+        
+        .choose-product-btn-placeholder { width: 100%; padding: 16px; border: 2px dashed rgba(74, 55, 40, 0.1); border-radius: 20px; background: none; font-size: 11px; font-weight: 800; color: rgba(74, 55, 40, 0.4); cursor: pointer; transition: all 0.2s; border-radius: 20px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .choose-product-btn-placeholder:hover { border-color: rgba(74, 55, 40, 0.3); color: rgba(74, 55, 40, 0.6); }
+        
+        .selected-product-box { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--mocha); border-radius: 20px; color: white; box-shadow: 0 10px 20px rgba(74, 55, 40, 0.2); }
+        .product-visual-lux { font-size: 1.5rem; }
+        .product-details-lux { flex: 1; }
+        .product-name-lux { font-size: 11px; font-weight: 900; }
+        .product-unit-lux { font-size: 9px; font-weight: 800; text-transform: uppercase; opacity: 0.6; }
+        .product-reset-btn { width: 32px; height: 32px; border: none; background: rgba(255,255,255,0.1); border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s; }
+        .product-reset-btn:hover { background: rgba(255,255,255,0.2); }
+
+        .yield-stepper-box { display: flex; align-items: center; background: white; border-radius: 20px; border: 1px solid rgba(74, 55, 40, 0.05); padding: 4px; box-shadow: inset 0 2px 8px rgba(0,0,0,0.02); }
+        .stepper-btn { width: 48px; height: 48px; border: none; background: none; color: var(--mocha); border-radius: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+        .stepper-btn:hover { background: #F8F5F2; }
+        .stepper-display { flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; }
+        .stepper-val { font-size: 1.2rem; font-weight: 900; color: var(--mocha); line-height: 1; }
+        .stepper-unit { font-size: 9px; font-weight: 800; text-transform: uppercase; color: rgba(74, 55, 40, 0.3); }
+        
+        .place-in-oven-btn { width: 100%; padding: 20px; background: var(--sage); color: white; border: none; border-radius: 24px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.15em; font-size: 12px; cursor: pointer; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 10px 25px rgba(116, 151, 57, 0.2); }
+        .place-in-oven-btn:hover { transform: translateY(-3px); box-shadow: 0 15px 35px rgba(116, 151, 57, 0.3); }
+        .place-in-oven-btn.disabled { background: rgba(74, 55, 40, 0.05); color: rgba(74, 55, 40, 0.2); box-shadow: none; cursor: not-allowed; transform: none; }
+        
+        /* Alert Widget */
+        .alert-widget-elegant { border-radius: 32px; overflow: hidden; background: rgba(239, 68, 68, 0.02); border: 1px solid rgba(239, 68, 68, 0.08); }
+        .alert-header-lux { padding: 16px 20px; background: #ef4444; color: white; display: flex; align-items: center; justify-content: space-between; }
+        .alert-label-main { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; }
+        .alert-ping-dot { width: 8px; height: 8px; background: white; border-radius: 50%; animation: pulse-live 1.2s infinite; }
+        .alert-content-box { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+        .spoilage-card-lux { padding: 12px; background: white; border: 1px solid rgba(239, 68, 68, 0.1); border-radius: 18px; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
+        .spoilage-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+        .spoilage-card-title { font-size: 10px; font-weight: 900; color: var(--mocha); }
+        .spoilage-card-status { font-size: 8px; font-weight: 900; color: #ef4444; text-transform: uppercase; }
+        .spoilage-card-reason { font-size: 9px; font-weight: 800; color: #A0938A; }
+        
+        .card-content-elegant.no-padding { padding: 0; }
+        .history-info-box { flex: 1; }
+        .history-header-row { display: flex; align-items: center; justify-content: space-between; }
+        .meta-separator { margin: 0 8px; }
+
+        .pulse-animation { animation: pulse-opacity 1.5s infinite; }
+        @keyframes pulse-opacity {
+          0% { opacity: 1; }
+          50% { opacity: 0.5; }
+          100% { opacity: 1; }
         }
         
         .animate-spin-slow { animation: spin 4s linear infinite; }
@@ -756,6 +862,11 @@ export default function BakingPage() {
           20%, 80% { transform: translate3d(2px, 0, 0); }
           30%, 50%, 70% { transform: translate3d(-3px, 0, 0); }
           40%, 60% { transform: translate3d(3px, 0, 0); }
+        }
+        @keyframes pulse-live {
+          0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7); }
+          70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(255, 255, 255, 0); }
+          100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
         }
       `}</style>
     </>

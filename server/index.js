@@ -1,4 +1,4 @@
-import express from 'express';
+﻿import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -152,7 +152,7 @@ app.post('/api/branches/:id/pulse', async (req, res) => {
     // 2. Update specific session if userId provided
     if (userId) {
        await db.run(
-         "INSERT INTO branch_sessions (branch_id, user_id, last_seen) VALUES (?, ?, ?) ON CONFLICT(branch_id, user_id) DO UPDATE SET last_seen = excluded.last_seen",
+         "INSERT INTO branch_sessions (branch_id, user_id, last_seen) VALUES (?, ?, ?) ON CONFLICT(branch_id, user_id) DO UPDATE SET last_seen = EXCLUDED.last_seen",
          [branchId, userId, timestamp]
        );
     }
@@ -380,7 +380,7 @@ app.post('/api/raw-materials', async (req, res) => {
 
     await db.run(
       "INSERT INTO raw_materials (id, branch_id, name, stock, unit, reorder_point, emoji) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [id, branchId, name, stock || 0, unit || 'kg', reorderPoint || 0, emoji || '📦']
+      [id, branchId, name, stock || 0, unit || 'kg', reorderPoint || 0, emoji || 'ðŸ“¦']
     );
     res.json({ success: true });
   } catch (err) {
