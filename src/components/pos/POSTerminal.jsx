@@ -13,6 +13,7 @@ import PaymentModal from './PaymentModal';
 import ReceiptPreview from './ReceiptPreview';
 import Modal from '../shared/Modal';
 import ProcessingOverlay from '../shared/ProcessingOverlay';
+import CashierDashboard from './CashierDashboard';
 
 export default function POSTerminal() {
   const { products, categories, deductStock } = useProducts();
@@ -40,6 +41,7 @@ export default function POSTerminal() {
   const [isFlashSale, setIsFlashSale] = useState(false);
   const [showSuccessCheckout, setShowSuccessCheckout] = useState(false);
   const [successTransaction, setSuccessTransaction] = useState(null);
+  const [showDashboard, setShowDashboard] = useState(false);
 
   const customerOrderCount = useMemo(() => {
     if (!selectedCustomer) return 0;
@@ -451,6 +453,13 @@ export default function POSTerminal() {
             <button className="btn btn-secondary btn-sm" onClick={() => setShowNotes(true)}>
               <StickyNote size={14} />
             </button>
+            <button 
+              className="btn btn-secondary btn-sm" 
+              onClick={() => setShowDashboard(true)}
+              style={{ background: 'rgba(212, 118, 60, 0.1)', color: 'var(--accent)', border: '1px solid var(--accent)' }}
+            >
+              <Zap size={14} fill="currentColor" /> Cockpit
+            </button>
           </div>
         </div>
       </div>
@@ -559,6 +568,15 @@ export default function POSTerminal() {
           </div>
         )}
       </Modal>
+
+      {showDashboard && (
+        <CashierDashboard 
+          activeBranch={activeBranch}
+          settings={settings}
+          products={products}
+          onClose={() => setShowDashboard(false)}
+        />
+      )}
     </div>
   );
 }
