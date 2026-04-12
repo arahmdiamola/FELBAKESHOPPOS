@@ -26,7 +26,9 @@ export default function BakingPage() {
   const [isSaving, setIsSaving] = useState(false);
   
   const [showQtyModal, setShowQtyModal] = useState(false);
+  const [showProductModal, setShowProductModal] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState(null);
+  const [keypadMode, setKeypadMode] = useState('material'); // 'material' or 'production'
   const [tempQty, setTempQty] = useState('');
 
   useEffect(() => {
@@ -47,7 +49,7 @@ export default function BakingPage() {
 
   const fetchHistory = async () => {
     try {
-      const data = await api.get('/api/production/logs');
+      const data = await api.get('/production/logs');
       setHistory(data);
     } catch (err) {}
   };
@@ -59,7 +61,15 @@ export default function BakingPage() {
 
   const addToBatch = (material) => {
     setSelectedMaterial(material);
+    setKeypadMode('material');
     setTempQty('');
+    setShowQtyModal(true);
+  };
+
+  const openProductionKeypad = () => {
+    if (!targetProduct) return addToast('Please select a product first', 'info');
+    setKeypadMode('production');
+    setTempQty(quantityToProduce.toString());
     setShowQtyModal(true);
   };
 
@@ -67,7 +77,13 @@ export default function BakingPage() {
     const qty = parseFloat(tempQty);
     if (!qty || qty <= 0) return addToast('Please enter a valid quantity', 'error');
 
-    // Stock Guard
+    if (keypadMode === 'production') {
+      setQuantityToProduce(qty);
+      setShowQtyModal(false);
+      return;
+    }
+
+    // Material logic
     if (qty > selectedMaterial.stock) {
       return addToast(`Insufficient stock! Only ${selectedMaterial.stock} ${selectedMaterial.unit} available.`, 'error');
     }
@@ -120,7 +136,7 @@ export default function BakingPage() {
         notes: `Baking session for ${targetProduct.name}`
       };
 
-      await api.post('/api/production/log', payload);
+      await api.post('/production/log', payload);
       
       addToast(`Success! Logged production of ${quantityToProduce} ${targetProduct.name}`, 'success');
       
@@ -268,57 +284,73 @@ export default function BakingPage() {
             )}
           </div>
 
-          <div style={{ padding: 16, borderTop: '2px dashed var(--border-light)', background: 'var(--card-bg)' }}>
-            <div className="input-group mb-4">
-              <label className="text-xs font-bold uppercase tracking-wider text-muted mb-2">1. What are you baking?</label>
-              <select 
-                className="select" 
-                value={targetProduct?.id || ''} 
-                onChange={e => setTargetProduct(products.find(p => p.id === e.target.value))}
-                style={{ fontWeight: 800 }}
-              >
-                <option value="">-- Choose Product --</option>
-                {[...products].sort((a, b) => (a.name || '').localeCompare(b.name || '')).map(p => (
-                  <option key={p.id} value={p.id}>{p.emoji} {p.name}</option>
-                ))}
-              </select>
+          <div style={{ padding: 24, paddingBottom: 32, borderTop: '2px dashed var(--border-light)', background: 'white' }}>
+            <div className="input-group mb-6">
+              <label className="text-xs font-black uppercase tracking-widest text-muted mb-3 block">1. What are you baking?</label>
+              
+              {!targetProduct ? (
+                <button 
+                  className="product-picker-btn"
+                  onClick={() => setShowProductModal(true)}
+                >
+                  <Plus size={20} />
+                  <span>Choose Product</span>
+                </button>
+              ) : (
+                <div className="selected-product-card animate-scale-in">
+                  <div className="flex items-center gap-4">
+                    <span className="selected-emoji">{targetProduct.emoji}</span>
+                    <div className="flex-1">
+                       <div className="font-black text-sm text-gray-800">{targetProduct.name}</div>
+                       <div className="text-[10px] font-bold text-muted uppercase tracking-tighter">Unit: {targetProduct.unit || 'pcs'}</div>
+                    </div>
+                    <button onClick={() => setTargetProduct(null)} className="text-red-400 hover:text-red-600 transition-colors">
+                       <RotateCcw size={14} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div className="input-group mb-6">
-              <label className="text-xs font-bold uppercase tracking-wider text-muted mb-2">2. Quantity Produced ({targetProduct?.unit || 'pcs'})</label>
-              <div className="flex items-center gap-4 bg-gray-50 p-2 rounded-xl">
+            <div className="input-group mb-8">
+              <label className="text-xs font-black uppercase tracking-widest text-muted mb-3 block">2. Quantity Produced</label>
+              <div className="qty-control-wrapper shadow-inner">
                  <button 
-                   className="btn btn-secondary btn-sm p-2" 
+                   className="qty-btn minus" 
                    onClick={() => setQuantityToProduce(Math.max(1, quantityToProduce - 1))}
-                   style={{ height: 40, width: 40 }}
                  >
-                   <Minus size={20} />
+                   <Minus size={22} />
                  </button>
-                 <input 
-                   type="number" 
-                   className="text-center bg-transparent border-none font-black text-2xl w-full" 
-                   value={quantityToProduce}
-                   onChange={e => setQuantityToProduce(parseFloat(e.target.value) || 0)}
-                 />
+                 <div className="qty-display" onClick={openProductionKeypad} style={{ cursor: 'pointer' }}>
+                    <input 
+                      type="number" 
+                      className="qty-input" 
+                      value={quantityToProduce}
+                      readOnly
+                    />
+                    <span className="qty-unit">{targetProduct?.unit || 'pcs'} (Tap to edit)</span>
+                 </div>
                  <button 
-                   className="btn btn-secondary btn-sm p-2" 
+                   className="qty-btn plus" 
                    onClick={() => setQuantityToProduce(quantityToProduce + 1)}
-                   style={{ height: 40, width: 40 }}
                  >
-                   <Plus size={20} />
+                   <Plus size={22} />
                  </button>
               </div>
             </div>
 
             <button 
-              className={`btn btn-primary w-full py-4 text-xl font-black uppercase tracking-widest shadow-lg ${isSaving ? 'loading' : ''}`}
+              className={`finish-baking-btn ${isSaving ? 'loading' : ''}`}
               disabled={activeBatch.length === 0 || !targetProduct || isSaving}
               onClick={handleFinishBaking}
-              style={{ display: 'flex', gap: 12, justifyContent: 'center', height: 'auto' }}
             >
-              {isSaving ? 'Logging Batch...' : (
+              {isSaving ? 'Logging...' : (
                 <>
-                  <Save size={24} /> Finish Baking
+                  <PackageCheck size={24} /> 
+                  <div className="flex flex-col items-start leading-none">
+                    <span className="text-lg font-black uppercase tracking-widest">Finish Baking</span>
+                    <span className="text-[10px] opacity-70 font-bold tracking-tight">Sync Inventory & Product Stock</span>
+                  </div>
                 </>
               )}
             </button>
@@ -326,15 +358,38 @@ export default function BakingPage() {
         </div>
       </div>
 
+      {/* Product Selection Modal */}
+      <Modal
+        isOpen={showProductModal}
+        onClose={() => setShowProductModal(false)}
+        title="Choose Production Target"
+      >
+        <div style={{ padding: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 12 }}>
+            {[...products].sort((a, b) => (a.name || '').localeCompare(b.name || '')).map(p => (
+              <button 
+                key={p.id}
+                className="card hover-scale material-card"
+                onClick={() => { setTargetProduct(p); setShowProductModal(false); }}
+                style={{ padding: '20px 10px', textAlign: 'center', cursor: 'pointer', background: 'var(--bg-main)' }}
+              >
+                <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>{p.emoji}</div>
+                <div style={{ fontWeight: 800, fontSize: '0.7rem', color: 'var(--text-main)' }}>{p.name}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </Modal>
+
       {/* Touch-Friendly Quantity Modal */}
       <Modal 
         isOpen={showQtyModal} 
         onClose={() => setShowQtyModal(false)}
-        title={`Add ${selectedMaterial?.name}`}
+        title={keypadMode === 'production' ? `Production Qty: ${targetProduct?.name}` : `Add ${selectedMaterial?.name}`}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div style={{ textAlign: 'center', fontSize: '3rem', background: 'var(--bg-main)', padding: 20, borderRadius: 16, fontWeight: 900, color: 'var(--accent)' }}>
-            {tempQty || '0'} <span style={{ fontSize: 'var(--font-md)', color: 'var(--text-muted)' }}>{selectedMaterial?.unit}</span>
+            {tempQty || '0'} <span style={{ fontSize: 'var(--font-md)', color: 'var(--text-muted)' }}>{keypadMode === 'production' ? targetProduct?.unit : selectedMaterial?.unit}</span>
           </div>
           
           {/* Numeric Keypad Simulation */}
@@ -362,7 +417,7 @@ export default function BakingPage() {
             className="btn btn-primary w-full py-4 text-lg font-bold"
             onClick={confirmAdd}
           >
-            Add to Batch
+            {keypadMode === 'production' ? 'Update Production Qty' : 'Add to Batch'}
           </button>
         </div>
       </Modal>
@@ -453,6 +508,118 @@ export default function BakingPage() {
         .num-btn:active {
            background: var(--border-light);
            transform: translateY(2px);
+        }
+        .product-picker-btn {
+           width: 100%;
+           padding: 20px;
+           border: 2px dashed var(--border-light);
+           background: var(--bg-main);
+           color: var(--text-muted);
+           border-radius: 16px;
+           display: flex;
+           flex-direction: column;
+           align-items: center;
+           gap: 8px;
+           transition: all 0.2s;
+           font-weight: 800;
+           font-size: 0.8rem;
+        }
+        .product-picker-btn:hover {
+           border-color: var(--accent);
+           background: white;
+           color: var(--accent);
+        }
+        .selected-product-card {
+           background: var(--bg-main);
+           padding: 16px;
+           border-radius: 20px;
+           border: 2px solid var(--accent);
+           box-shadow: 0 4px 15px rgba(212,118,60,0.1);
+        }
+        .selected-emoji {
+           font-size: 2rem;
+           filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+        }
+        .qty-control-wrapper {
+           background: var(--bg-main);
+           padding: 8px;
+           border-radius: 20px;
+           display: flex;
+           align-items: center;
+           gap: 12px;
+        }
+        .qty-btn {
+           width: 50px;
+           height: 50px;
+           border-radius: 16px;
+           border: none;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           transition: all 0.2s;
+           cursor: pointer;
+        }
+        .qty-btn.minus { color: var(--danger); background: #fee2e2; }
+        .qty-btn.plus { color: var(--success); background: #dcfce7; }
+        .qty-btn:active { transform: scale(0.9); }
+        .qty-display {
+           flex: 1;
+           display: flex;
+           flex-direction: column;
+           align-items: center;
+           justify-content: center;
+           gap: 1px;
+        }
+        .qty-input {
+           width: 100%;
+           text-align: center;
+           font-weight: 900;
+           font-size: 2rem;
+           background: transparent;
+           border: none;
+           color: var(--text-main);
+           outline: none;
+           height: 40px;
+        }
+        .qty-unit {
+           font-size: 0.6rem;
+           font-weight: 800;
+           color: var(--text-muted);
+           text-transform: uppercase;
+           letter-spacing: 0.1em;
+        }
+        .finish-baking-btn {
+           width: 100%;
+           background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+           color: white;
+           padding: 24px;
+           border-radius: 20px;
+           border: none;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           gap: 16px;
+           box-shadow: 0 10px 20px rgba(16,185,129,0.25);
+           transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+           cursor: pointer;
+        }
+        .finish-baking-btn:hover {
+           transform: translateY(-4px);
+           box-shadow: 0 15px 30px rgba(16,185,129,0.35);
+        }
+        .finish-baking-btn:disabled {
+           background: var(--bg-main);
+           color: var(--text-muted);
+           box-shadow: none;
+           cursor: not-allowed;
+           transform: none;
+        }
+        @keyframes scaleIn {
+           from { transform: scale(0.8); opacity: 0; }
+           to { transform: scale(1); opacity: 1; }
+        }
+        .animate-scale-in {
+           animation: scaleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
       `}</style>
     </>
