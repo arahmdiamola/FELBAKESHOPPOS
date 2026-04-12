@@ -248,7 +248,7 @@ export default function CommandCenter() {
         {branchPerformance.map((branch, index) => (
           <div 
             key={branch.id} 
-            className={`tv-branch-card ${justSoldBranch === branch.id ? 'just-sold' : ''} ${branch.isOnline ? 'card-online-neon' : ''} ${branch.criticalStock ? 'panic-stock' : ''} ${rankedUpBranches[branch.id] ? 'ranked-up' : ''}`}
+            className={`tv-branch-card ${justSoldBranch === branch.id ? 'just-sold' : ''} ${branch.isOnline ? 'card-online-neon' : ''} ${rankedUpBranches[branch.id] ? 'ranked-up' : ''}`}
             style={{ padding: 15, borderRadius: 12, minHeight: 130, border: !branch.isOnline ? '1px dashed rgba(255,255,255,0.1)' : '1px solid #00ff00' }}
           >
             <div className="tv-rank-badge" style={{ fontSize: '0.7rem', padding: '3px 8px', top: 10, right: 10 }}>RANK #{branch.rank}</div>
