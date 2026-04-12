@@ -286,6 +286,7 @@ export default function RawMaterialsPage() {
             />
             <span className="text-xs text-muted">Warn me when stock drops below this level</span>
           </div>
+          </div>
         </div>
       </Modal>
       <style>{`
