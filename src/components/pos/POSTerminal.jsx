@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Search, ShoppingCart, X, Trash2, Pause, Play, Receipt, User, Percent, StickyNote, CheckCircle, Star } from 'lucide-react';
+import { Search, ShoppingCart, X, Trash2, Pause, Play, Receipt, User, Percent, StickyNote, CheckCircle, Star, Zap } from 'lucide-react';
 import { useProducts } from '../../contexts/ProductContext';
 import { useCustomers } from '../../contexts/CustomerContext';
 import { useOrders } from '../../contexts/OrderContext';
