@@ -1,14 +1,35 @@
 import { pgAdapter } from './pg-adapter.js';
 import { v4 as uuidv4 } from 'uuid';
 
-async function renameColumn(db, table, oldCol, newCol) {
+async function ensureColumnRenamed(db, table, oldColNames, newColName) {
   try {
-    // Attempt lowercase (standard PG behavior if not quoted)
-    await db.run(`ALTER TABLE ${table} RENAME COLUMN IF EXISTS ${oldCol.toLowerCase()} TO "${newCol}"`);
-    // Attempt quoted CamelCase
-    await db.run(`ALTER TABLE ${table} RENAME COLUMN IF EXISTS "${oldCol}" TO "${newCol}"`);
+    // 1. Get all columns for this table
+    const result = await db.all(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = $1 
+      AND table_schema = 'public'
+    `, [table]);
+    
+    const existingCols = result.map(r => r.column_name);
+    
+    // 2. If newColName (snake_case) already exists, skip
+    if (existingCols.includes(newColName)) return;
+
+    // 3. Check for any variants of the old name
+    for (const oldCol of oldColNames) {
+      // Check both quoted exact match and unquoted lowercase
+      const variant = existingCols.find(c => c === oldCol || c === oldCol.toLowerCase());
+      if (variant) {
+        // Quote the variant if it has uppercase letters
+        const actualRef = /[A-Z]/.test(variant) ? `"${variant}"` : variant;
+        console.log(`[Migration] Transitioning ${table}.${variant} -> ${newColName}...`);
+        await db.run(`ALTER TABLE ${table} RENAME COLUMN ${actualRef} TO "${newColName}"`);
+        return;
+      }
+    }
   } catch (e) {
-    console.error(`[Migration Error] Failed to rename ${table}.${oldCol} -> ${newCol}:`, e.message);
+    console.error(`[Migration Error] Fault in ${table} rename logic:`, e.message);
   }
 }
 
@@ -16,9 +37,9 @@ export async function initDb() {
   const db = pgAdapter;
 
   try {
-    console.log("Starting Database Initialization...");
+    console.log("Starting Managed Database Initialization...");
 
-    // 1. Core Tables
+    // 1. Infrastructure Tables (Always created in snake_case)
     await db.exec(`
       CREATE TABLE IF NOT EXISTS branches (
         id TEXT PRIMARY KEY,
@@ -195,49 +216,85 @@ export async function initDb() {
       );
     `);
 
-    // 2. Column Renaming Migration (camelCase -> snake_case)
-    const migrationDef = [
-      { table: 'users', cols: { 'branchId': 'branch_id' } },
-      { table: 'products', cols: { 'branchId': 'branch_id', 'categoryId': 'category_id', 'costPrice': 'cost_price', 'reorderPoint': 'reorder_point', 'isTopSelling': 'is_top_selling' } },
-      { table: 'transactions', cols: { 'branchId': 'branch_id', 'receiptNumber': 'receipt_number', 'paymentMethod': 'payment_method', 'amountPaid': 'amount_paid', 'customerId': 'customer_id', 'customerName': 'customer_name', 'cashierId': 'cashier_id', 'cashierName': 'cashier_name' } },
-      { table: 'transaction_items', cols: { 'transactionId': 'transaction_id', 'productId': 'product_id' } },
-      { table: 'customers', cols: { 'branchId': 'branch_id', 'totalSpent': 'total_spent' } },
-      { table: 'expenses', cols: { 'branchId': 'branch_id', 'addedBy': 'added_by' } },
-      { table: 'preorders', cols: { 'branchId': 'branch_id', 'customerName': 'customer_name', 'customerPhone': 'customer_phone', 'totalPrice': 'total_price', 'dueDate': 'due_date', 'createdAt': 'created_at' } },
-      { table: 'system_logs', cols: { 'userId': 'user_id', 'userName': 'user_name', 'branchId': 'branch_id' } },
-      { table: 'raw_materials', cols: { 'branchId': 'branch_id', 'reorderPoint': 'reorder_point', 'costPrice': 'cost_price' } },
-      { table: 'production_logs', cols: { 'branchId': 'branch_id', 'userId': 'user_id', 'userName': 'user_name', 'productId': 'product_id', 'productName': 'product_name', 'quantityProduced': 'quantity_produced', 'estimatedYield': 'estimated_yield' } },
-      { table: 'production_log_items', cols: { 'productionLogId': 'production_log_id', 'materialId': 'material_id', 'materialName': 'material_name', 'quantityUsed': 'quantity_used', 'costPrice': 'cost_price' } },
-      { table: 'branch_sessions', cols: { 'branchId': 'branch_id', 'userId': 'user_id', 'lastSeen': 'last_seen' } }
+    // 2. Intelligent Migration (Cross-Referencing information_schema)
+    const migrationQueue = [
+      { table: 'users', variants: ['branchId', 'branchid'], target: 'branch_id' },
+      { table: 'products', variants: ['branchId', 'branchid'], target: 'branch_id' },
+      { table: 'products', variants: ['categoryId', 'categoryid'], target: 'category_id' },
+      { table: 'products', variants: ['costPrice', 'costprice'], target: 'cost_price' },
+      { table: 'products', variants: ['reorderPoint', 'reorderpoint'], target: 'reorder_point' },
+      { table: 'products', variants: ['isTopSelling', 'istopselling'], target: 'is_top_selling' },
+      { table: 'transactions', variants: ['branchId', 'branchid'], target: 'branch_id' },
+      { table: 'transactions', variants: ['receiptNumber', 'receiptnumber'], target: 'receipt_number' },
+      { table: 'transactions', variants: ['paymentMethod', 'paymentmethod'], target: 'payment_method' },
+      { table: 'transactions', variants: ['amountPaid', 'amountpaid'], target: 'amount_paid' },
+      { table: 'transactions', variants: ['customerId', 'customerid'], target: 'customer_id' },
+      { table: 'transactions', variants: ['customerName', 'customername'], target: 'customer_name' },
+      { table: 'transactions', variants: ['cashierId', 'cashierid'], target: 'customer_id' },
+      { table: 'transactions', variants: ['cashierName', 'cashiername'], target: 'cashier_name' },
+      { table: 'transaction_items', variants: ['transactionId', 'transactionid'], target: 'transaction_id' },
+      { table: 'transaction_items', variants: ['productId', 'productid'], target: 'product_id' },
+      { table: 'customers', variants: ['branchId', 'branchid'], target: 'branch_id' },
+      { table: 'customers', variants: ['totalSpent', 'totalspent'], target: 'total_spent' },
+      { table: 'expenses', variants: ['branchId', 'branchid'], target: 'branch_id' },
+      { table: 'expenses', variants: ['addedBy', 'addedby'], target: 'added_by' },
+      { table: 'preorders', variants: ['branchId', 'branchid'], target: 'branch_id' },
+      { table: 'preorders', variants: ['customerName', 'customername'], target: 'customer_name' },
+      { table: 'preorders', variants: ['customerPhone', 'customerphone'], target: 'customer_phone' },
+      { table: 'preorders', variants: ['totalPrice', 'totalprice'], target: 'total_price' },
+      { table: 'preorders', variants: ['dueDate', 'duedate'], target: 'due_date' },
+      { table: 'preorders', variants: ['createdAt', 'createdat'], target: 'created_at' },
+      { table: 'system_logs', variants: ['userId', 'userid'], target: 'user_id' },
+      { table: 'system_logs', variants: ['branchId', 'branchid'], target: 'branch_id' },
+      { table: 'raw_materials', variants: ['branchId', 'branchid'], target: 'branch_id' },
+      { table: 'production_logs', variants: ['branchId', 'branchid'], target: 'branch_id' },
+      { table: 'production_logs', variants: ['userId', 'userid'], target: 'user_id' },
+      { table: 'production_log_items', variants: ['productionLogId', 'productionlogid'], target: 'production_log_id' },
+      { table: 'branch_sessions', variants: ['branchId', 'branchid'], target: 'branch_id' },
+      { table: 'branch_sessions', variants: ['userId', 'userid'], target: 'user_id' }
     ];
 
-    console.log("Running Column Renaming Migrations...");
-    for (const m of migrationDef) {
-      for (const [oldCol, newCol] of Object.entries(m.cols)) {
-        await renameColumn(db, m.table, oldCol, newCol);
-      }
+    console.log("Processing Schema Transitions...");
+    for (const m of migrationQueue) {
+      await ensureColumnRenamed(db, m.table, m.variants, m.target);
     }
 
-    // 3. Optional: Add missing columns if they don't exist
-    const migrations = [
+    // 3. Guaranteed Column Addition (If transition missed anything)
+    const fallbackAdditions = [
       "ALTER TABLE users ADD COLUMN IF NOT EXISTS image TEXT",
       "ALTER TABLE products ADD COLUMN IF NOT EXISTS image TEXT",
-      "ALTER TABLE products ADD COLUMN IF NOT EXISTS is_top_selling INTEGER DEFAULT 0",
       "ALTER TABLE products ADD COLUMN IF NOT EXISTS cost_price REAL DEFAULT 0",
+      "ALTER TABLE products ADD COLUMN IF NOT EXISTS is_top_selling INTEGER DEFAULT 0",
       "ALTER TABLE preorders ADD COLUMN IF NOT EXISTS quantity REAL DEFAULT 1",
-      "ALTER TABLE branches ADD COLUMN IF NOT EXISTS last_seen TEXT",
-      "ALTER TABLE raw_materials ADD COLUMN IF NOT EXISTS image TEXT",
       "ALTER TABLE raw_materials ADD COLUMN IF NOT EXISTS cost_price REAL DEFAULT 0",
       "ALTER TABLE production_logs ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'completed'",
-      "ALTER TABLE production_logs ADD COLUMN IF NOT EXISTS estimated_yield REAL DEFAULT 0",
-      "ALTER TABLE production_log_items ADD COLUMN IF NOT EXISTS cost_price REAL DEFAULT 0"
+      "ALTER TABLE production_logs ADD COLUMN IF NOT EXISTS estimated_yield REAL DEFAULT 0"
     ];
 
-    for (const sql of migrations) {
-      try { await db.run(sql); } catch (e) {}
+    for (const sql of fallbackAdditions) {
+      try { await db.run(sql); } catch (e) { }
     }
 
-    // 4. System Admin Guarantee
+    // 4. Verification Check: Critical Columns Must Exist
+    const checkColumns = [
+      { t: 'transactions', c: 'branch_id' },
+      { t: 'system_logs', c: 'branch_id' },
+      { t: 'branch_sessions', c: 'branch_id' }
+    ];
+
+    for (const check of checkColumns) {
+       const hasCol = await db.get(`
+         SELECT column_name 
+         FROM information_schema.columns 
+         WHERE table_name = $1 AND column_name = $2
+       `, [check.t, check.c]);
+       if (!hasCol) {
+         console.warn(`[Warning] Critical column ${check.t}.${check.c} is STILL MISSING. Attempting emergency ADD.`);
+         await db.run(`ALTER TABLE ${check.t} ADD COLUMN "${check.c}" TEXT`);
+       }
+    }
+
+    // 5. System Admin Guarantee
     const devExists = await db.get("SELECT id FROM users WHERE id = 'dev-001'");
     if (!devExists) {
       await db.run(
@@ -246,46 +303,15 @@ export async function initDb() {
       );
     }
 
-    // 5. Fresh Database Seeding (Optional)
-    const branchCountResult = await db.get("SELECT COUNT(*) as count FROM branches");
-    if (parseInt(branchCountResult?.count || '0') === 0) {
-      console.log("Empty Database! Seeding defaults...");
-      
-      const bId = uuidv4();
-      await db.run("INSERT INTO branches (id, name, address) VALUES (?, ?, ?)", [bId, 'Main Branch', 'City Center']);
-      
-      const cId = uuidv4();
-      await db.run("INSERT INTO categories (id, name, emoji) VALUES (?, ?, ?)", [cId, 'Breads', '🍞']);
-      
-      await db.run(
-        "INSERT INTO products (id, branch_id, name, category_id, price, cost_price, stock, reorder_point, emoji) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        [uuidv4(), bId, 'Classic Sourdough', cId, 180, 90, 50, 10, '🍞']
-      );
-
-      const defaultSettings = [
-        ['storeName', 'FEL Bakeshop'],
-        ['storeLogo', '/logo.png'],
-        ['storeAddress', 'Brgy. San Jose, Quezon City'],
-        ['storePhone', '0917-123-4567'],
-        ['receiptFooter', 'Thank you for choosing FEL Bakeshop! 🧁'],
-        ['branchGoal', '25000']
-      ];
-      for (const [key, value] of defaultSettings) {
-        await db.run("INSERT INTO settings (key, value) VALUES (?, ?)", [key, value]);
-      }
-    }
-
-    // 6. Basic Performance Indexes (Ensuring columns exist first)
-    console.log("Creating Performance Indexes...");
+    // 6. Basic Performance Indexes (With safety catch)
     try {
       await db.exec(`
         CREATE INDEX IF NOT EXISTS idx_transactions_branch_date ON transactions(branch_id, date);
         CREATE INDEX IF NOT EXISTS idx_logs_branch_time ON system_logs(branch_id, timestamp);
         CREATE INDEX IF NOT EXISTS idx_sessions_branch ON branch_sessions(branch_id);
       `);
-    } catch (indexError) {
-      console.error("[Index Error] Failed to create indexes. This usually means a column rename failed:", indexError.message);
-      // We don't throw here to allow the server to at least start without indexes if necessary
+    } catch (e) {
+      console.warn("[Index Catch]", e.message);
     }
 
     console.log("Database perfectly connected and synced!");

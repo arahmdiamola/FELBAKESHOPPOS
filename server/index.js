@@ -243,7 +243,7 @@ app.post('/api/users', async (req, res) => {
   try {
     await db.run(
       "INSERT INTO users (id, name, role, pin, branch_id, image) VALUES (?, ?, ?, ?, ?, ?)",
-      [id, name, role, pin, branch_id || null, image]
+      [id, name, role, pin, branchId || null, image]
     );
     res.json({ id });
   } catch (err) {
@@ -255,7 +255,7 @@ app.put('/api/users/:id', async (req, res) => {
   try {
     await db.run(
       "UPDATE users SET name = ?, role = ?, branch_id = ?, image = ? WHERE id = ?",
-      [name, role, branch_id || null, image, req.params.id]
+      [name, role, branchId || null, image, req.params.id]
     );
     res.json({ success: true });
   } catch (err) {
@@ -554,7 +554,7 @@ app.post('/api/transactions', async (req, res) => {
   try {
     await db.transaction(async (tx) => {
       await tx.run(
-        "INSERT INTO transactions (id, branch_id, receipt_number, subtotal, discount, tax, total, payment_method, amount_paid, change, customer_id, customer_name, cashier_id, cashier_name, date, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO transactions (id, branch_id, receipt_number, subtotal, discount, tax, total, payment_method, amount_paid, \"change\", customer_id, customer_name, cashier_id, cashier_name, date, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [t.id, branchId, t.receiptNumber, t.subtotal, t.discount, t.tax, t.total, t.paymentMethod, t.amountPaid, t.change, t.customerId, t.customerName, t.cashierId, t.cashierName, t.date, t.status, t.notes]
       );
 
@@ -615,7 +615,7 @@ app.put('/api/customers/:id/balance', async (req, res) => {
 });
 app.put('/api/customers/:id/visit', async (req, res) => {
   const { amount } = req.body;
-  await db.run("UPDATE customers SET visits = visits + 1, totalSpent = totalSpent + ? WHERE id = ?", [amount, req.params.id]);
+  await db.run("UPDATE customers SET visits = visits + 1, total_spent = total_spent + ? WHERE id = ?", [amount, req.params.id]);
   res.json({ success: true });
 });
 app.delete('/api/customers/:id', async (req, res) => {
