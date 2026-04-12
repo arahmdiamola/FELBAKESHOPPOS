@@ -53,6 +53,11 @@ export const pgAdapter = {
     const { rows } = await pool.query(pgSql, params);
     return rows.map(row => camelize(row));
   },
+  allRaw: async (sql, params = []) => {
+    const pgSql = preparePostgresSql(sql);
+    const { rows } = await pool.query(pgSql, params);
+    return rows;
+  },
   get: async (sql, params = []) => {
     const pgSql = preparePostgresSql(sql);
     const { rows } = await pool.query(pgSql, params);

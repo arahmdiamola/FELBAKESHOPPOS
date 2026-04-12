@@ -4,14 +4,15 @@ import { v4 as uuidv4 } from 'uuid';
 async function ensureColumnRenamed(db, table, oldColNames, newColName) {
   try {
     // 1. Get all columns for this table
-    const result = await db.all(`
+    const result = await db.allRaw(`
       SELECT column_name 
       FROM information_schema.columns 
       WHERE table_name = $1 
       AND table_schema = 'public'
     `, [table]);
     
-    const existingCols = result.map(r => r.columnName);
+    // Postgres returns column_name lowercase
+    const existingCols = result.map(r => r.column_name);
     
     // 2. If newColName (snake_case) already exists, skip
     if (existingCols.includes(newColName)) return;
@@ -251,9 +252,9 @@ export async function initDb() {
       { table: 'production_logs', variants: ['branchId', 'branchid'], target: 'branch_id' },
       { table: 'production_logs', variants: ['userId', 'userid'], target: 'user_id' },
       { table: 'production_log_items', variants: ['productionLogId', 'productionlogid'], target: 'production_log_id' },
-      { table: 'branch_sessions', variants: ['branchId', 'branchid'], target: 'branch_id' },
-      { table: 'branch_sessions', variants: ['userId', 'userid'], target: 'user_id' },
-      { table: 'branch_sessions', variants: ['lastSeen', 'lastseen'], target: 'last_seen' }
+      { table: 'branch_sessions', variants: ['branchId', 'branchid', '"branchId"'], target: 'branch_id' },
+      { table: 'branch_sessions', variants: ['userId', 'userid', '"userId"'], target: 'user_id' },
+      { table: 'branch_sessions', variants: ['lastSeen', 'lastseen', '"lastSeen"'], target: 'last_seen' }
     ];
 
     console.log("Processing Schema Transitions...");

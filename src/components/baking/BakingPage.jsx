@@ -511,7 +511,6 @@ export default function BakingPage() {
           </div>
         </div>
       </div>
-      </div>
 
       {/* Product Selection Modal */}
       <Modal
@@ -574,7 +573,7 @@ export default function BakingPage() {
         </div>
       </Modal>
 
-      <        /* Overhaul Styles */
+      <style jsx>{`
         .card-elegant {
           background: white;
           border-radius: 32px;

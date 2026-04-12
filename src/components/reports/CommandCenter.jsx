@@ -42,8 +42,6 @@ export default function CommandCenter({ isPublic = false }) {
     return () => clearInterval(slideInterval);
   }, []);
 
-  // Master Background Fetcher... (keep existing fetchGlobalData)
-
   // Master Background Fetcher: Truly Global Data
   useEffect(() => {
     const fetchGlobalData = async () => {
@@ -82,7 +80,7 @@ export default function CommandCenter({ isPublic = false }) {
     fetchGlobalData();
     const interval = setInterval(fetchGlobalData, 10000);
     return () => clearInterval(interval);
-  }, [isPublic]);
+  }, [isPublic, refetch]);
 
   // Calculations for Loss
   const lossStats = useMemo(() => {
@@ -145,7 +143,7 @@ export default function CommandCenter({ isPublic = false }) {
     })).sort((a, b) => b.revenue - a.revenue);
 
     const finalData = currentRanks.map((b, index) => {
-       const isSyncing = (b.lastSeenSecondsAgo === null); 
+       const isSyncing = (b.last_seen_seconds_ago === null); 
        const criticalProducts = globalLowStock.filter(p => p.branchId === b.id);
        const batchesInOven = activeProduction.filter(p => p.branchId === b.id);
        
@@ -235,7 +233,7 @@ export default function CommandCenter({ isPublic = false }) {
   };
 
   return (
-    <div className={`tv-background ${isPublic ? 'public-mode' : 'owner-mode'}`}>
+    <div className={`tv-background ${isPublic ? 'public-mode' : 'owner-mode'}`} style={{ fontFamily: '"Outfit", sans-serif' }}>
       <button className="fullscreen-btn" onClick={toggleFullscreen}>
         {isFullscreen ? <Minimize size={24} /> : <Maximize size={24} />}
       </button>
@@ -250,27 +248,27 @@ export default function CommandCenter({ isPublic = false }) {
               className="header-logo"
             />
           ) : (
-            <div className="sidebar-brand-icon" style={{ width: 60, height: 60, fontSize: '2rem' }}>🧁</div>
+            <div className="sidebar-brand-icon" style={{ width: 70, height: 70, fontSize: '2.5rem' }}>🧁</div>
           )}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-               <h1 style={{ fontSize: '2.2rem', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px', marginBottom: 0 }}>
+               <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: '#fff', letterSpacing: '-1px', marginBottom: 0 }}>
                  {isPublic ? 'MISSION CONTROL' : 'OWNER\'S WAR ROOM'}
                </h1>
                {isPublic && <span className="demo-badge">PUBLIC DEMO</span>}
                {!isPublic && <span className="secure-badge"><Zap size={14} /> SECURE LINK</span>}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--success)', fontWeight: 800, fontSize: '0.9rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--success)', fontWeight: 800, fontSize: '0.9rem', opacity: 0.8, marginTop: 5 }}>
               <div className="pulse-orb" style={{ width: 10, height: 10 }} /> LIVE EMPIRE MONITORING — {settings.storeName}
             </div>
           </div>
         </div>
 
         <div className="tv-global-stats">
-          <div className="tv-revenue-label" style={{ fontSize: '1rem', opacity: 0.7 }}>Global Revenue Today</div>
-          <div className="tv-main-revenue" style={{ fontSize: '3.8rem', lineHeight: 1 }}>{formatCurrency(pulseMetrics.total)}</div>
-          <div style={{ fontSize: '1rem', opacity: 0.6, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
-            <TrendingUp size={18} style={{ color: 'var(--success)' }} />
+          <div className="tv-revenue-label" style={{ fontSize: '0.85rem', opacity: 0.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', marginBottom: 5 }}>Global Revenue Today</div>
+          <div className="tv-main-revenue" style={{ fontSize: '4.5rem', lineHeight: 0.9, fontWeight: 900, letterSpacing: '-3px' }}>{formatCurrency(pulseMetrics.total)}</div>
+          <div style={{ fontSize: '0.9rem', opacity: 0.4, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
+            <TrendingUp size={16} style={{ color: 'var(--success)' }} />
             {globalSales.length.toLocaleString()} TRANSACTIONS
           </div>
         </div>
@@ -310,8 +308,8 @@ export default function CommandCenter({ isPublic = false }) {
                   {branch.orders} Orders • Avg {formatCurrency(branch.orders > 0 ? branch.revenue/branch.orders : 0)}
                 </div>
                 
-                <div style={{ marginTop: 15, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ marginTop: 25, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     {branch.activeBatches > 0 && (
                        <div className="oven-indicator-badge">
                          🥧 {branch.activeBatches} IN OVEN
@@ -437,6 +435,12 @@ export default function CommandCenter({ isPublic = false }) {
               </div>
               <ResponsiveContainer width="100%" height={150}>
                   <AreaChart data={pulseMetrics.data}>
+                      <defs>
+                        <linearGradient id="tvPulse" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#D4763C" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#D4763C" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
                       <XAxis dataKey="hourLabel" axisLine={false} tickLine={false} tick={{ fill: '#fff', fontSize: 10, opacity: 0.4 }} interval={3} />
                       <YAxis hide domain={[0, 'auto']} />
                       <Tooltip contentStyle={{ background: '#2C1810', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8 }} itemStyle={{ color: '#fff' }} />
@@ -472,98 +476,99 @@ export default function CommandCenter({ isPublic = false }) {
       </div>
 
        <style jsx>{`
-         .tv-background { background: #050505; min-height: 100vh; color: #fff; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; padding: 10px; overflow-x: hidden; position: relative; }
-         .public-mode { background: radial-gradient(circle at top right, #1a1a2e, #050505); }
-         .owner-mode { background: radial-gradient(circle at top right, #1a0a0a, #050505); }
+          .tv-background { background: #050505; min-height: 100vh; color: #fff; font-family: 'Outfit', sans-serif; display: flex; flex-direction: column; padding: 10px; overflow-x: hidden; position: relative; }
+          .public-mode { background: radial-gradient(circle at top right, #1a1a2e, #050505); }
+          .owner-mode { background: radial-gradient(circle at top right, #140808, #050505); }
 
-         .tv-header { padding: 15px 30px; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; z-index: 10; }
-         .header-logo { width: 60px; height: 60px; background: #fff; border-radius: 12px; object-fit: contain; padding: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
-         
-         .tv-slide-nav { position: absolute; top: 120px; right: 30px; display: flex; gap: 10px; z-index: 100; }
-         .tv-slide-nav button { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 0.7rem; font-weight: 800; transition: all 0.3s; }
-         .tv-slide-nav button.active { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 15px var(--accent); }
+          .tv-header { padding: 25px 40px; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; z-index: 10; }
+          .header-logo { width: 70px; height: 70px; background: #fff; border-radius: 16px; object-fit: contain; padding: 6px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+          
+          .tv-slide-nav { position: absolute; top: 140px; right: 40px; display: flex; gap: 12px; z-index: 100; }
+          .tv-slide-nav button { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); color: #fff; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 0.8rem; font-weight: 800; transition: all 0.3s; }
+          .tv-slide-nav button.active { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 20px rgba(212, 118, 60, 0.4); }
 
-         .tv-viewport { flex: 1; position: relative; width: 100%; overflow: hidden; margin-top: 10px; }
-         .tv-slide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1); padding: 0 15px; display: flex; flex-direction: column; }
-         .tv-slide.active { opacity: 1; transform: translateX(0); visibility: visible; }
-         .tv-slide.inactive { opacity: 0; transform: translateX(50px); visibility: hidden; }
+          .tv-viewport { flex: 1; position: relative; width: 100%; overflow: hidden; margin-top: 10px; }
+          .tv-slide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transition: all 1s cubic-bezier(0.23, 1, 0.32, 1); padding: 0 30px; display: flex; flex-direction: column; }
+          .tv-slide.active { opacity: 1; transform: translateX(0); visibility: visible; }
+          .tv-slide.inactive { opacity: 0; transform: translateX(100px); visibility: hidden; }
 
-         .slide-label { font-size: 0.9rem; font-weight: 900; color: rgba(255,255,255,0.4); display: flex; align-items: center; gap: 12px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 3px; border-left: 4px solid var(--accent); padding-left: 15px; }
+          .slide-label { font-size: 0.8rem; font-weight: 900; color: rgba(255,255,255,0.3); display: flex; align-items: center; gap: 12px; margin-bottom: 25px; text-transform: uppercase; letter-spacing: 4px; border-left: 4px solid var(--accent); padding-left: 20px; }
 
-         .demo-badge { background: #3b82f6; color: #fff; padding: 4px 10px; border-radius: 6px; font-weight: 900; font-size: 0.7rem; }
-         .secure-badge { background: #ef4444; color: #fff; padding: 4px 10px; border-radius: 6px; font-weight: 900; font-size: 0.7rem; display: flex; align-items: center; gap: 4px; animation: glow-red 2s infinite; }
-         @keyframes glow-red { 0%, 100% { box-shadow: 0 0 5px rgba(239, 68, 68, 0.5); } 50% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.8); } }
+          .demo-badge { background: #3b82f6; color: #fff; padding: 4px 10px; border-radius: 6px; font-weight: 900; font-size: 0.7rem; }
+          .secure-badge { background: #ef4444; color: #fff; padding: 4px 10px; border-radius: 6px; font-weight: 900; font-size: 0.7rem; display: flex; align-items: center; gap: 4px; animation: glow-red 2s infinite; }
+          @keyframes glow-red { 0%, 100% { box-shadow: 0 0 5px rgba(239, 68, 68, 0.5); } 50% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.8); } }
 
-         .owner-audit-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 15px; }
-         .audit-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 15px; }
-         .feed-panel { border-left: 4px solid var(--accent); }
-         .loss-panel { border-left: 4px solid #ef4444; }
-         .card-title { font-size: 0.8rem; font-weight: 800; color: rgba(255,255,255,0.4); display: flex; align-items: center; gap: 10px; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
-         
-         .audit-list { height: 220px; overflow-y: auto; font-family: 'JetBrains Mono', 'Monaco', monospace; font-size: 0.8rem; }
-         .audit-item { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.03); align-items: baseline; }
-         .audit-time { color: rgba(255,255,255,0.3); white-space: nowrap; font-size: 0.7rem; }
-         .audit-branch { color: var(--info); font-weight: 800; white-space: nowrap; font-size: 0.75rem; min-width: 80px; }
-         .audit-msg { color: #fff; opacity: 0.9; line-height: 1.4; }
-         .danger-text { color: #fe6b6b; font-weight: 600; }
+          .owner-audit-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 20px; }
+          .audit-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 24px; padding: 25px; backdrop-filter: blur(10px); }
+          .feed-panel { border-left: 1px solid rgba(212, 118, 60, 0.2); }
+          .loss-panel { border-left: 1px solid rgba(239, 68, 68, 0.2); }
+          .card-title { font-size: 0.75rem; font-weight: 800; color: rgba(255,255,255,0.3); display: flex; align-items: center; gap: 10px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; }
+          
+          .audit-list { height: 250px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; scrollbar-width: none; }
+          .audit-item { display: flex; gap: 15px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.03); align-items: baseline; }
+          .audit-time { color: rgba(255,255,255,0.2); white-space: nowrap; font-size: 0.7rem; font-weight: 700; }
+          .audit-branch { color: var(--info); font-weight: 800; white-space: nowrap; font-size: 0.75rem; min-width: 90px; }
+          .audit-msg { color: #fff; opacity: 0.8; line-height: 1.5; }
+          .danger-text { color: #fe6b6b; font-weight: 700; }
 
-         .loss-metrics { display: flex; gap: 10px; }
-         .loss-box { flex: 1; padding: 15px; border-radius: 12px; display: flex; flex-direction: column; }
-         .loss-box.sunk { background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.1); }
-         .loss-box.potential { background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.1); }
-         .loss-box .label { font-size: 0.65rem; font-weight: 900; opacity: 0.5; color: #fff; }
-         .loss-box .value { font-size: 1.6rem; font-weight: 900; color: #fff; margin: 4px 0; letter-spacing: -0.5px; }
-         .loss-box .desc { font-size: 0.6rem; opacity: 0.3; text-transform: uppercase; font-weight: 700; }
+          .loss-metrics { display: flex; gap: 15px; }
+          .loss-box { flex: 1; padding: 20px; border-radius: 16px; display: flex; flex-direction: column; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.04); }
+          .loss-box.sunk { border-top: 3px solid #ef4444; }
+          .loss-box.potential { border-top: 3px solid #f59e0b; }
+          .loss-box .label { font-size: 0.6rem; font-weight: 900; opacity: 0.4; color: #fff; text-transform: uppercase; letter-spacing: 1px; }
+          .loss-box .value { font-size: 1.8rem; font-weight: 900; color: #fff; margin: 6px 0; letter-spacing: -1px; }
+          .loss-box .desc { font-size: 0.6rem; opacity: 0.2; text-transform: uppercase; font-weight: 800; }
 
-         .ruined-list { font-size: 0.75rem; color: rgba(255,255,255,0.6); display: flex; flex-direction: column; gap: 8px; }
-         .ruined-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid rgba(255,255,255,0.03); }
+          .ruined-list { font-size: 0.8rem; color: rgba(255,255,255,0.5); display: flex; flex-direction: column; gap: 10px; }
+          .ruined-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px solid rgba(255,255,255,0.03); }
 
-         .tv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px; }
-         .tv-branch-card { padding: 25px; border-radius: 20px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); position: relative; overflow: hidden; transition: all 0.3s; }
-         .card-online-neon { border-color: rgba(0, 255, 0, 0.2); box-shadow: inset 0 0 20px rgba(0,255,0,0.02); }
-         .ranked-up { animation: rank-pulse 2s cubic-bezier(0.4, 0, 0.2, 1); }
-         @keyframes rank-pulse { 0% { box-shadow: 0 0 0 0 rgba(212, 118, 60, 0.4); } 70% { box-shadow: 0 0 0 20px rgba(212, 118, 60, 0); } 100% { box-shadow: 0 0 0 0 rgba(212, 118, 60, 0); } }
+          .tv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 25px; }
+          .tv-branch-card { padding: 30px; border-radius: 28px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); position: relative; overflow: hidden; transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1); backdrop-filter: blur(12px); }
+          .tv-branch-card:hover { transform: translateY(-5px); background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); }
+          .card-online-neon { border-color: rgba(0, 255, 0, 0.15); box-shadow: 0 10px 40px rgba(0,0,0,0.3), inset 0 0 20px rgba(0,255,0,0.01); }
+          .ranked-up { animation: rank-pulse 2s cubic-bezier(0.4, 0, 0.2, 1); }
+          @keyframes rank-pulse { 0% { box-shadow: 0 0 0 0 rgba(212, 118, 60, 0.4); } 70% { box-shadow: 0 0 0 20px rgba(212, 118, 60, 0); } 100% { box-shadow: 0 0 0 0 rgba(212, 118, 60, 0); } }
 
-         .tv-rank-badge { position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.05); padding: 4px 12px; border-radius: 8px; font-size: 0.7rem; font-weight: 900; color: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.1); }
-         .tv-branch-name { font-size: 1.4rem; font-weight: 800; display: flex; align-items: center; gap: 10px; margin-bottom: 8px; color: #fff; }
-         .tv-branch-revenue { font-size: 3.2rem; font-weight: 900; margin-bottom: 4px; letter-spacing: -1.5px; }
-         .tv-branch-orders { font-size: 0.85rem; opacity: 0.4; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; }
+          .tv-rank-badge { position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.03); padding: 5px 14px; border-radius: 10px; font-size: 0.65rem; font-weight: 900; color: rgba(255,255,255,0.3); border: 1px solid rgba(255,255,255,0.05); text-transform: uppercase; letter-spacing: 1px; }
+          .tv-branch-name { font-size: 1.2rem; font-weight: 800; display: flex; align-items: center; gap: 10px; margin-bottom: 12px; color: #fff; opacity: 0.5; text-transform: uppercase; letter-spacing: 1px; }
+          .tv-branch-revenue { font-size: 4rem; font-weight: 900; margin-bottom: 8px; letter-spacing: -3px; line-height: 0.9; }
+          .tv-branch-orders { font-size: 0.8rem; opacity: 0.3; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; }
 
-         .status-pill { padding: 10px 15px; border-radius: 14px; font-size: 0.8rem; font-weight: 900; display: flex; align-items: center; gap: 12px; }
-         .status-pill.online { background: rgba(0, 255, 0, 0.05); color: #00ff00; border: 1px solid rgba(0, 255, 0, 0.1); }
-         .status-pill.offline { background: rgba(239, 68, 68, 0.05); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.1); }
+          .status-pill { padding: 12px 18px; border-radius: 16px; font-size: 0.85rem; font-weight: 900; display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); }
+          .status-pill.online { color: #00ff00; border-color: rgba(0, 255, 0, 0.2); }
+          .status-pill.offline { color: #ef4444; border-color: rgba(239, 68, 68, 0.2); }
 
-         .tv-inventory-alert-bar { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 16px; padding: 15px 25px; display: flex; align-items: center; gap: 20px; }
-         .alert-badge { background: #ef4444; color: #fff; padding: 8px 15px; border-radius: 10px; font-weight: 900; font-size: 0.8rem; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3); }
-         .alert-content { display: flex; gap: 30px; overflow-x: auto; flex: 1; padding: 5px 0; scrollbar-width: none; }
-         .alert-item { display: flex; align-items: center; gap: 10px; white-space: nowrap; font-size: 0.9rem; }
-         .alert-item .name { font-weight: 800; }
-         .alert-item .branch { opacity: 0.5; font-size: 0.8rem; }
-         .alert-item .level { color: #ef4444; font-weight: 900; }
+          .tv-inventory-alert-bar { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 20px; padding: 15px 30px; display: flex; align-items: center; gap: 20px; }
+          .alert-badge { background: #ef4444; color: #fff; padding: 10px 15px; border-radius: 12px; font-weight: 900; font-size: 0.8rem; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3); }
+          .alert-content { display: flex; gap: 30px; overflow-x: auto; flex: 1; padding: 5px 0; scrollbar-width: none; }
+          .alert-item { display: flex; align-items: center; gap: 10px; white-space: nowrap; font-size: 0.95rem; }
+          .alert-item .name { font-weight: 800; }
+          .alert-item .branch { opacity: 0.5; font-size: 0.8rem; }
+          .alert-item .level { color: #ef4444; font-weight: 900; }
 
-         .tv-hourly-section { background: rgba(255,255,255,0.01); padding: 25px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.03); }
-         .tv-ticker-bar { height: 50px; background: rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; z-index: 20; position: fixed; bottom: 0; left: 0; width: 100%; }
-         .tv-ticker-content { display: flex; gap: 80px; animation: ticker 60s linear infinite; padding-left: 20px; }
-         @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-         .tv-ticker-item { display: flex; align-items: center; gap: 12px; white-space: nowrap; font-size: 0.95rem; font-weight: 700; letter-spacing: 0.5px; }
+          .tv-hourly-section { background: rgba(255,255,255,0.01); padding: 30px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.03); }
+          .tv-ticker-bar { height: 60px; background: rgba(0,0,0,0.8); border-top: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; z-index: 20; position: fixed; bottom: 0; left: 0; width: 100%; backdrop-filter: blur(10px); }
+          .tv-ticker-content { display: flex; gap: 80px; animation: ticker 60s linear infinite; padding-left: 20px; }
+          @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+          .tv-ticker-item { display: flex; align-items: center; gap: 15px; white-space: nowrap; font-size: 1rem; font-weight: 700; letter-spacing: 0.5px; }
 
-         .oven-indicator-badge { background: rgba(245, 158, 11, 0.1); color: #f59e0b; padding: 8px 15px; border-radius: 10px; font-size: 0.75rem; font-weight: 900; border: 1px solid rgba(245, 158, 11, 0.2); }
-         .stock-warning-badge { background: rgba(239, 68, 68, 0.15); color: #ef4444; padding: 8px 15px; border-radius: 10px; font-size: 0.75rem; font-weight: 900; border: 1px solid rgba(239, 68, 68, 0.3); }
+          .oven-indicator-badge { background: rgba(245, 158, 11, 0.1); color: #f59e0b; padding: 8px 15px; border-radius: 12px; font-size: 0.75rem; font-weight: 900; border: 1px solid rgba(245, 158, 11, 0.2); }
+          .stock-warning-badge { background: rgba(239, 68, 68, 0.15); color: #ef4444; padding: 8px 15px; border-radius: 12px; font-size: 0.75rem; font-weight: 900; border: 1px solid rgba(239, 68, 68, 0.3); }
 
-         .fullscreen-btn { position: fixed; top: 30px; right: 30px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 1000; transition: all 0.2s; }
-         .fullscreen-btn:hover { background: rgba(255,255,255,0.1); transform: scale(1.1); }
+          .fullscreen-btn { position: fixed; top: 40px; right: 40px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); color: #fff; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 1000; transition: all 0.3s; }
+          .fullscreen-btn:hover { background: rgba(255,255,255,0.1); transform: scale(1.1); border-color: rgba(255,255,255,0.2); }
 
-         @media (max-width: 1024px) {
-           .owner-audit-grid { grid-template-columns: 1fr; }
-         }
+          @media (max-width: 1024px) {
+            .owner-audit-grid { grid-template-columns: 1fr; }
+          }
 
-         @media (max-width: 768px) {
-           .tv-header { flex-direction: column; align-items: flex-start; gap: 20px; padding: 20px; }
-           .tv-global-stats { width: 100%; text-align: left; }
-           .tv-main-revenue { font-size: 3.2rem; }
-           .tv-grid { grid-template-columns: 1fr; }
-           .tv-header h1 { font-size: 1.6rem !important; }
-         }
+          @media (max-width: 768px) {
+            .tv-header { flex-direction: column; align-items: flex-start; gap: 20px; padding: 25px; }
+            .tv-global-stats { width: 100%; text-align: left; }
+            .tv-main-revenue { font-size: 3.5rem; }
+            .tv-grid { grid-template-columns: 1fr; }
+            .tv-header h1 { font-size: 1.8rem !important; }
+          }
        `}</style>
     </div>
   );

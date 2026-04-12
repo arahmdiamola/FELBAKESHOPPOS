@@ -107,11 +107,6 @@ export default function RawMaterialsPage() {
       <Header 
         title="Raw Materials Inventory" 
         subtitle="Manage ingredients and supplies"
-        actions={isAdmin && (
-          <button className="btn btn-primary" onClick={openAdd}>
-            <Plus size={16} /> Add Material
-          </button>
-        )}
       />
 
       <div className="pos-glass-layout animate-fade-in">
