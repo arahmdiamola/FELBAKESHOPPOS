@@ -224,12 +224,18 @@ app.post('/api/branches/:id/heartbeat', async (req, res) => {
 
 // --- USERS ---
 app.get('/api/users', async (req, res) => {
-  if (!req.headers['x-user-role'] || req.headers['x-user-role'] === 'system_admin') {
-    return res.json(users);
+  try {
+    const userRole = req.headers['x-user-role'];
+    if (!userRole || userRole === 'system_admin') {
+      const allUsers = await db.all("SELECT * FROM users");
+      return res.json(allUsers);
+    }
+    const { query, params } = getBranchFilter(req);
+    const filteredUsers = await db.all(`SELECT * FROM users WHERE ${query}`, params);
+    res.json(filteredUsers);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-  const { query, params } = getBranchFilter(req);
-  const users = await db.all(`SELECT * FROM users WHERE ${query}`, params);
-  res.json(users);
 });
 app.post('/api/users', async (req, res) => {
   const { id, name, role, pin, branchId, image } = req.body;
