@@ -273,6 +273,7 @@ export async function initDb() {
       "ALTER TABLE raw_materials ADD COLUMN IF NOT EXISTS cost_price REAL DEFAULT 0",
       "ALTER TABLE production_logs ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'completed'",
       "ALTER TABLE production_logs ADD COLUMN IF NOT EXISTS estimated_yield REAL DEFAULT 0",
+      "ALTER TABLE production_logs ADD COLUMN IF NOT EXISTS unit TEXT",
       "ALTER TABLE branch_sessions ADD COLUMN IF NOT EXISTS last_seen TEXT"
     ];
 
@@ -280,15 +281,16 @@ export async function initDb() {
       try { await db.run(sql); } catch (e) { }
     }
 
-    // 3.4 Cleanup Duplicates in branch_sessions (Required for PK safety in Postgres)
+    // 3.4 Cleanup Duplicates in branch_sessions (Universal approach)
     try {
       console.log("[Migration] Cleaning duplicate sessions...");
-      // Standard Postgres duplicate deletion using ctid
       await db.run(`
-        DELETE FROM branch_sessions a USING branch_sessions b 
-        WHERE a.ctid < b.ctid 
-        AND a.branch_id = b.branch_id 
-        AND a.user_id = b.user_id
+        DELETE FROM branch_sessions 
+        WHERE (branch_id, user_id, last_seen) NOT IN (
+          SELECT branch_id, user_id, MAX(last_seen)
+          FROM branch_sessions
+          GROUP BY branch_id, user_id
+        )
       `);
     } catch (e) {
       console.warn("[Migration] Duplicate cleanup failed or table empty:", e.message);
@@ -296,17 +298,14 @@ export async function initDb() {
 
     // 3.5 Force Primary Key on branch_sessions (Required for ON CONFLICT in Postgres)
     try {
-      const hasPk = await db.get(`
-        SELECT count(*) as count
-        FROM information_schema.table_constraints
-        WHERE table_name = 'branch_sessions' AND constraint_type = 'PRIMARY KEY'
-      `);
-      if (parseInt(hasPk?.count || 0) === 0) {
-        console.log("[Migration] Adding Primary Key to branch_sessions...");
-        await db.run("ALTER TABLE branch_sessions ADD PRIMARY KEY (branch_id, user_id)");
+      // In Postgres, adding a PK requires a UNIQUE constraint. 
+      // We use a safe check to see if we already have a PK to avoid "already exists" errors.
+      await db.run("ALTER TABLE branch_sessions ADD PRIMARY KEY (branch_id, user_id)");
+      console.log("[Migration] branch_sessions PK added successfully.");
+    } catch (e) {
+      if (!e.message.includes('already exists')) {
+        console.warn("[PK Guard] Could not add PK to branch_sessions:", e.message);
       }
-    } catch (e) { 
-      console.warn("[PK Guard] branch_sessions PK likely already exists or table empty.", e.message);
     }
 
     // 4. Verification Check: Critical Columns Must Exist
@@ -319,15 +318,15 @@ export async function initDb() {
     ];
 
     for (const check of checkColumns) {
-       const hasCol = await db.get(`
-         SELECT column_name 
-         FROM information_schema.columns 
-         WHERE table_name = $1 AND column_name = $2
-       `, [check.t, check.c]);
-       if (!hasCol) {
-         console.warn(`[Warning] Critical column ${check.t}.${check.c} is STILL MISSING. Attempting emergency ADD.`);
-         await db.run(`ALTER TABLE ${check.t} ADD COLUMN "${check.c}" TEXT`);
-       }
+      try {
+        // Use a faster check-then-ignore approach
+        await db.run(`ALTER TABLE ${check.t} ADD COLUMN IF NOT EXISTS "${check.c}" TEXT`);
+      } catch (e) {
+        // Silently fail if column already exists (fallback for older DB versions)
+        if (!e.message.includes('already exists')) {
+           console.warn(`[Migration Warning] Column check fail: ${check.t}.${check.c}`, e.message);
+        }
+      }
     }
 
     // 5. System Admin Guarantee

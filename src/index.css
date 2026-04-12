@@ -61,6 +61,12 @@ body {
   --info: #5B9BD5;
   --info-light: #E3F2FD;
 
+  /* Studio Branding */
+  --mocha: #4A3728;
+  --mocha-light: #D4C0B5;
+  --sage: #4CAF50;
+  --sage-light: #E8F5E9;
+
   /* Text */
   --text-primary: #2C1810;
   --text-secondary: #7A5C4F;

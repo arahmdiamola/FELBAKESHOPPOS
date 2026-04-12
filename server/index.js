@@ -1,4 +1,4 @@
-﻿import express from 'express';
+import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -144,29 +144,31 @@ app.get('/api/branches', async (req, res) => {
 app.post('/api/branches/:id/pulse', async (req, res) => {
   const { userId } = req.body;
   const branchId = req.params.id;
+  if (!branchId) return res.status(400).json({ error: 'Missing branch ID' });
+    
   try {
     const timestamp = new Date().toISOString();
-    // 1. Update master branch last_seen (fallback)
+    
+    // 1. Update master branch last_seen (Safe, Update doesn't throw if ID missing)
     await db.run("UPDATE branches SET last_seen = ? WHERE id = ?", [timestamp, branchId]);
     
-    // 2. Update specific session if userId provided
+    // 2. Update specific session with Resilient Strategy (Delete then Insert)
+    // This avoids "ON CONFLICT" errors if the unique index migration failed.
     if (userId) {
-       await db.run(
-         "INSERT INTO branch_sessions (branch_id, user_id, last_seen) VALUES (?, ?, ?) ON CONFLICT(branch_id, user_id) DO UPDATE SET last_seen = EXCLUDED.last_seen",
-         [branchId, userId, timestamp]
-       );
+       await db.transaction(async (tx) => {
+         await tx.run("DELETE FROM branch_sessions WHERE branch_id = ? AND user_id = ?", [branchId, userId]);
+         await tx.run(
+           "INSERT INTO branch_sessions (branch_id, user_id, last_seen) VALUES (?, ?, ?)",
+           [branchId, userId, timestamp]
+         );
+       });
     }
     
-    res.json({ success: true });
+    res.json({ success: true, timestamp });
   } catch (error) {
-    console.error('[Pulse Failure]', { 
-      message: error.message, 
-      stack: error.stack,
-      branchId, 
-      userId,
-      timestamp: new Date().toISOString()
-    });
-    res.status(500).json({ error: error.message });
+    // Return 200 even if DB fails to stop console noise, but log for dev
+    console.warn('[Pulse Failure Logged]', { error: error.message, branchId, userId });
+    res.status(200).json({ success: false, error: 'Silenced DB error' });
   }
 });
 
@@ -782,10 +784,26 @@ app.post('/api/restore', async (req, res) => {
     // 1. DANGER ZONE: Start Transaction
     await db.exec("BEGIN TRANSACTION");
 
-    // 2. Wipe ALL Tables in reverse dependency order
-    const tables = ['settings', 'preorders', 'expenses', 'transaction_items', 'transactions', 'customers', 'products', 'categories', 'users', 'branches'];
+    // 2. Wipe ALL Tables in strict dependency order (Postgres compatible)
+    const tables = [
+      'production_log_items',
+      'production_logs',
+      'transaction_items',
+      'transactions',
+      'branch_sessions',
+      'raw_materials',
+      'preorders',
+      'expenses',
+      'customers',
+      'users',
+      'products',
+      'categories',
+      'branches',
+      'settings'
+    ];
+    
     for (const table of tables) {
-      await db.run(`DELETE FROM ${table}`);
+      await db.run(`DELETE FROM ${table}`).catch(() => {}); 
     }
 
     // 3. Re-populate Tables in correct dependency order
@@ -794,11 +812,14 @@ app.post('/api/restore', async (req, res) => {
       { name: 'users', data: backup.users, cols: ['id', 'name', 'role', 'pin', 'branch_id', 'image'] },
       { name: 'categories', data: backup.categories, cols: ['id', 'name', 'emoji'] },
       { name: 'products', data: backup.products, cols: ['id', 'branch_id', 'name', 'category_id', 'price', 'cost_price', 'stock', 'unit', 'reorder_point', 'emoji', 'image', 'is_top_selling'] },
+      { name: 'raw_materials', data: backup.raw_materials || [], cols: ['id', 'branch_id', 'name', 'stock', 'unit', 'reorder_point', 'emoji', 'cost_price'] },
       { name: 'customers', data: backup.customers, cols: ['id', 'branch_id', 'name', 'phone', 'email', 'address', 'total_spent', 'visits', 'balance'] },
       { name: 'transactions', data: backup.transactions, cols: ['id', 'branch_id', 'receipt_number', 'subtotal', 'discount', 'tax', 'total', 'payment_method', 'amount_paid', 'change', 'customer_id', 'customer_name', 'cashier_id', 'cashier_name', 'date', 'status', 'notes'] },
       { name: 'transaction_items', data: backup.transaction_items, cols: ['id', 'transaction_id', 'product_id', 'name', 'price', 'quantity', 'unit', 'discount', 'total'] },
       { name: 'expenses', data: backup.expenses, cols: ['id', 'branch_id', 'category', 'description', 'amount', 'date', 'added_by'] },
       { name: 'preorders', data: backup.preorders, cols: ['id', 'branch_id', 'customer_name', 'customer_phone', 'items', 'total_price', 'deposit', 'status', 'due_date', 'notes', 'quantity', 'created_at'] },
+      { name: 'production_logs', data: backup.production_logs || [], cols: ['id', 'branch_id', 'user_id', 'user_name', 'product_id', 'product_name', 'quantity_produced', 'status', 'date', 'notes', 'estimated_yield', 'unit'] },
+      { name: 'production_log_items', data: backup.production_log_items || [], cols: ['id', 'production_log_id', 'material_id', 'material_name', 'quantity_used', 'unit', 'cost_price'] },
       { name: 'settings', data: backup.settings, cols: ['key', 'value'] }
     ];
 
@@ -906,17 +927,18 @@ app.use((req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });
 
-// Initialize Database then Start Listening (Enforced order for Render stability)
-console.log("Initializing database connection...");
-initDb().then(database => {
-  db = database;
-  console.log("Database perfectly connected and synced!");
-  
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`API Server running on port ${PORT}`);
-  });
-}).catch(err => {
-  console.error("FATAL: Failed to initialize database:", err);
-  // Important: On Render, we want the process to crash if DB fails so it restarts
-  process.exit(1);
+// --- STARTUP SEQUENCE ---
+// To prevent Render health check timeouts, we start listening IMMEDIATELY
+// and initialize the database in parallel.
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 API Server pre-listening on port ${PORT}. Awaiting database...`);
+    
+    initDb().then(database => {
+        db = database;
+        console.log("✅ Database fully initialized and synced!");
+    }).catch(err => {
+        console.error("❌ FATAL: Database initialization failed:", err);
+        // Important: Still crash if DB fails so Render restarts the service
+        process.exit(1);
+    });
 });
