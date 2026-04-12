@@ -21,25 +21,23 @@ function AppRoutes() {
   const { currentUser } = useAuth();
   const location = useLocation();
 
-  if (!currentUser) {
-    return <LoginScreen />;
-  }
-
-  // --- STANDALONE LAYOUT (TV DASHBOARD) ---
-  if (location.pathname === '/command-center') {
-    if (!['system_admin', 'owner'].includes(currentUser.role)) {
-      return <Navigate to="/pos" replace />;
-    }
-    
+  // --- PUBLIC OVERRIDE (FOR DEMO) ---
+  if (location.pathname === '/demo') {
     return (
       <>
         <Routes>
-          <Route path="/command-center" element={<CommandCenter />} />
+          <Route path="/demo" element={<CommandCenter isPublic={true} />} />
         </Routes>
         <ToastContainer />
       </>
     );
   }
+
+  if (!currentUser) {
+    return <LoginScreen />;
+  }
+
+
 
   // --- STANDARD POS LAYOUT WITH SIDEBAR ---
   return (
@@ -60,7 +58,7 @@ function AppRoutes() {
           <Route path="/baking" element={<BakingPage />} />
           <Route path="/raw-materials" element={<RawMaterialsPage />} />
           {/* We keep this here too for completeness, but it will be handled by the branch above */}
-          <Route path="/command-center" element={<CommandCenter />} />
+          <Route path="/command-center" element={<CommandCenter isPublic={false} />} />
           <Route path="*" element={<Navigate to={currentUser.role === 'baker' ? '/baking' : '/pos'} replace />} />
         </Routes>
       </div>

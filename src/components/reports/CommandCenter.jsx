@@ -1,44 +1,67 @@
-import { useMemo, useState, useEffect, useRef } from 'react';
-import { useOrders } from '../../contexts/OrderContext';
-import { useAuth } from '../../contexts/AuthContext';
-import { useSettings } from '../../contexts/SettingsContext';
-import { useProducts } from '../../contexts/ProductContext';
-import { formatCurrency } from '../../utils/formatters';
-import { api } from '../../utils/api';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
-  Maximize, Minimize, TrendingUp, ShoppingBag, 
-  MapPin, Activity, Award, ShoppingCart, 
-  Wifi, WifiOff, AlertTriangle, Zap
+  TrendingUp, TrendingDown, ShoppingCart, Users, Award, 
+  MapPin, Wifi, WifiOff, Activity, AlertTriangle, Zap,
+  ShoppingBag, Minimize, Maximize, Clock, Shield,
+  ChevronRight, ArrowRight, Pizza
 } from 'lucide-react';
 import { 
-  AreaChart, Area, ResponsiveContainer, YAxis, XAxis, Tooltip
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, 
+  ResponsiveContainer, BarChart, Bar, Cell 
 } from 'recharts';
+import { formatCurrency } from '../../utils/formatters';
+import { api } from '../../utils/api';
+import { useOrders } from '../../contexts/OrderContext';
+import { useProducts } from '../../contexts/ProductContext';
+import { useSettings } from '../../contexts/SettingsContext';
+import { useAuth } from '../../contexts/AuthContext';
 
-export default function CommandCenter() {
+export default function CommandCenter({ isPublic = false }) {
   const { getTodayStats } = useOrders();
   const { products, getLowStockProducts, refetch } = useProducts();
   const { settings } = useSettings();
+  const { currentUser } = useAuth();
   const [branches, setBranches] = useState([]);
   const [globalSales, setGlobalSales] = useState([]);
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [ruinedProduction, setRuinedProduction] = useState([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [justSoldBranch, setJustSoldBranch] = useState(null);
+  const [activeProduction, setActiveProduction] = useState([]);
   
   // Achievement System
   const prevRanksRef = useRef({});
   const [rankedUpBranches, setRankedUpBranches] = useState({});
 
-  // Master Background Fetcher: Truly Global Data (ignores user's current branch)
+  // Master Background Fetcher: Truly Global Data
   useEffect(() => {
     const fetchGlobalData = async () => {
       try {
-        const [tx, branchesData] = await Promise.all([
-          api.get('/transactions?limit=500', { headers: { 'X-Branch-Id': 'all' } }),
-          api.get('/branches')
+        const headers = { 
+          'X-Branch-Id': 'all',
+          'X-User-Role': 'system_admin' // Force full access for dashboard
+        };
+
+        const [tx, branchesData, prodData] = await Promise.all([
+          api.get('/transactions?limit=500', { headers }),
+          api.get('/branches', { headers }),
+          api.get('/production/logs?status=in_oven', { headers })
         ]);
+
         setGlobalSales(tx || []);
         setBranches(branchesData || []);
+        setActiveProduction(prodData || []);
         
-        // Background refresh products to ensure low-stock alerts are "live"
+        // Secure-only fetching
+        if (!isPublic) {
+          const [logs, ruinedData] = await Promise.all([
+            api.get('/logs?limit=50', { headers }),
+            api.get('/production/logs?status=ruined', { headers })
+          ]);
+          setAuditLogs(logs || []);
+          setRuinedProduction(ruinedData || []);
+        }
+
         await refetch();
       } catch (e) {
         console.error('[Mission Control Master Fetch Error]', e);
@@ -46,11 +69,32 @@ export default function CommandCenter() {
     };
     
     fetchGlobalData();
-    const interval = setInterval(fetchGlobalData, 10000); // 10s poll
+    const interval = setInterval(fetchGlobalData, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isPublic]);
 
-  // Detect new sales for visual "Pulse" effect on branch cards
+  // Calculations for Loss
+  const lossStats = useMemo(() => {
+    if (isPublic) return null;
+    
+    let totalSunkCost = 0;
+    let totalPotentialLoss = 0;
+
+    ruinedProduction.forEach(log => {
+      // Sunk Cost: Sum of material costs
+      const materialCost = log.items?.reduce((sum, item) => sum + (item.costPrice || 0) * item.quantityUsed, 0) || 0;
+      totalSunkCost += materialCost;
+
+      // Potential Loss: Retail price * quantity
+      const product = products.find(p => p.id === log.productId);
+      const retailPrice = product?.price || 0;
+      totalPotentialLoss += retailPrice * (log.quantityProduced || log.estimatedYield || 0);
+    });
+
+    return { totalSunkCost, totalPotentialLoss };
+  }, [ruinedProduction, products, isPublic]);
+
+  // Detect new sales
   useEffect(() => {
     if (globalSales.length > 0) {
       const topSale = globalSales[0];
@@ -91,14 +135,14 @@ export default function CommandCenter() {
 
     const finalData = currentRanks.map((b, index) => {
        const isSyncing = (b.lastSeenSecondsAgo === null); 
-       
-       // Use unified low-stock logic instead of hardcoded < 5 rule
        const criticalProducts = globalLowStock.filter(p => p.branchId === b.id);
+       const batchesInOven = activeProduction.filter(p => p.branchId === b.id);
        
        return { 
          ...b, 
          isSyncing,
          criticalStock: criticalProducts.length > 0 ? criticalProducts : null,
+         activeBatches: batchesInOven.length,
          rank: index + 1
        };
     });
@@ -125,9 +169,9 @@ export default function CommandCenter() {
     }
 
     return finalData;
-  }, [globalSales, branches, products]);
+  }, [globalSales, branches, globalLowStock, activeProduction]);
 
-  // Global Sales Pulse Data (Hourly)
+  // Hourly Activity
   const pulseMetrics = useMemo(() => {
     const data = [];
     const today = new Date();
@@ -173,51 +217,55 @@ export default function CommandCenter() {
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
-      setIsFullscreen(true);
+      document.documentElement.requestFullscreen().then(() => setIsFullscreen(true));
     } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-        setIsFullscreen(false);
-      }
+      document.exitFullscreen().then(() => setIsFullscreen(false));
     }
   };
 
   return (
-    <div className="tv-background">
+    <div className={`tv-background ${isPublic ? 'public-mode' : 'owner-mode'}`}>
       <button className="fullscreen-btn" onClick={toggleFullscreen}>
         {isFullscreen ? <Minimize size={24} /> : <Maximize size={24} />}
       </button>
 
-      <div className="tv-header" style={{ padding: '15px 30px', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: 15 }}>
+      {/* HEADER SECTION */}
+      <div className="tv-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
           {settings.storeLogo ? (
             <img 
               src={settings.storeLogo} 
               alt="Logo" 
-              style={{ width: 60, height: 60, background: '#fff', borderRadius: 12, objectFit: 'contain', padding: 4, boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }} 
+              className="header-logo"
             />
           ) : (
             <div className="sidebar-brand-icon" style={{ width: 60, height: 60, fontSize: '2rem' }}>🧁</div>
           )}
           <div>
-            <h1 style={{ fontSize: '2.2rem', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px', marginBottom: 0 }}>MISSION CONTROL</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+               <h1 style={{ fontSize: '2.2rem', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px', marginBottom: 0 }}>
+                 {isPublic ? 'MISSION CONTROL' : 'OWNER\'S WAR ROOM'}
+               </h1>
+               {isPublic && <span className="demo-badge">PUBLIC DEMO</span>}
+               {!isPublic && <span className="secure-badge"><Zap size={14} /> SECURE LINK</span>}
+            </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--success)', fontWeight: 800, fontSize: '0.9rem' }}>
               <div className="pulse-orb" style={{ width: 10, height: 10 }} /> LIVE EMPIRE MONITORING — {settings.storeName}
             </div>
           </div>
         </div>
 
-        <div className="tv-global-stats" style={{ paddingRight: 20 }}>
+        <div className="tv-global-stats">
           <div className="tv-revenue-label" style={{ fontSize: '1rem', opacity: 0.7 }}>Global Revenue Today</div>
-          <div className="tv-main-revenue" style={{ fontSize: '3.8rem', lineHeight: 1 }}>{formatCurrency(stats.revenue)}</div>
+          <div className="tv-main-revenue" style={{ fontSize: '3.8rem', lineHeight: 1 }}>{formatCurrency(pulseMetrics.total)}</div>
           <div style={{ fontSize: '1rem', opacity: 0.6, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
             <TrendingUp size={18} style={{ color: 'var(--success)' }} />
-            {stats.count.toLocaleString()} TRANSACTIONS
+            {globalSales.length.toLocaleString()} TRANSACTIONS
           </div>
         </div>
       </div>
 
+      {/* INVENTORY ALERTS */}
       {globalLowStock.length > 0 && (
         <div className="tv-inventory-alert-bar">
           <div className="alert-badge"><AlertTriangle size={20} /> INVENTORY WAR ROOM</div>
@@ -230,66 +278,110 @@ export default function CommandCenter() {
                  <span className="level">STOCK: {p.stock}</span>
                </div>
              ))}
-             {globalLowStock.length > 8 && (
-               <div className="alert-more">+{globalLowStock.length - 8} MORE CRITICAL</div>
-             )}
           </div>
         </div>
       )}
 
-      <div className="tv-grid" style={{ padding: '0 15px', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 15, flex: 1, overflow: 'hidden' }}>
+      {/* OWNER ONLY AUDIT FEED & LOSS TRACKER */}
+      {!isPublic && (
+        <div className="owner-audit-grid">
+           <div className="audit-card feed-panel">
+              <div className="card-title">
+                 <Activity size={18} color="var(--accent)" /> LIVE AUDIT FEED
+              </div>
+              <div className="audit-list">
+                 {auditLogs.slice(0, 15).map(log => (
+                   <div key={log.id} className="audit-item">
+                      <div className="audit-time">{new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                      <div className="audit-branch">{log.branchName}</div>
+                      <div className="audit-msg">
+                        <strong style={{ color: 'var(--accent)' }}>{log.userName}</strong>
+                        <span style={{ margin: '0 8px', opacity: 0.5 }}>•</span>
+                        {log.action === 'PRODUCTION_SPOILAGE' ? (
+                           <span className="danger-text">VOIDED BATCH: {log.details?.product} ({log.details?.reason})</span>
+                        ) : log.action}
+                      </div>
+                   </div>
+                 ))}
+                 {auditLogs.length === 0 && <div style={{ opacity: 0.3, padding: 20 }}>No system activity detected...</div>}
+              </div>
+           </div>
+
+           <div className="audit-card loss-panel">
+              <div className="card-title">
+                 <AlertTriangle size={18} color="#ef4444" /> RECENT PRODUCTION LOSS
+              </div>
+              <div className="loss-metrics">
+                 <div className="loss-box sunk">
+                    <span className="label">SUNK COST</span>
+                    <span className="value">{formatCurrency(lossStats?.totalSunkCost || 0)}</span>
+                    <span className="desc">Materials Lost</span>
+                 </div>
+                 <div className="loss-box potential">
+                    <span className="label">REVENUE VOID</span>
+                    <span className="value">{formatCurrency(lossStats?.totalPotentialLoss || 0)}</span>
+                    <span className="desc">Potential Sales</span>
+                 </div>
+              </div>
+              <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: '15px 0' }} />
+              <div className="ruined-list">
+                {ruinedProduction.slice(0, 5).map(p => (
+                  <div key={p.id} className="ruined-item">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                       <span style={{ opacity: 0.5 }}>{new Date(p.date).toLocaleDateString()}</span>
+                       <span style={{ fontWeight: 700 }}>{p.productName}</span>
+                    </div>
+                    <span style={{ color: '#ef4444', fontWeight: 900 }}>
+                      - {formatCurrency((p.quantityProduced || p.estimatedYield) * (products.find(prod => prod.id === p.productId)?.price || 0))}
+                    </span>
+                  </div>
+                ))}
+                {ruinedProduction.length === 0 && <div style={{ opacity: 0.2, fontSize: '0.8rem' }}>No recent spoilage logs.</div>}
+              </div>
+           </div>
+        </div>
+      )}
+
+      {/* BRANCH GRID */}
+      <div className="tv-grid">
         {branchPerformance.map((branch, index) => (
           <div 
             key={branch.id} 
             className={`tv-branch-card ${justSoldBranch === branch.id ? 'just-sold' : ''} ${branch.isOnline ? 'card-online-neon' : ''} ${rankedUpBranches[branch.id] ? 'ranked-up' : ''}`}
-            style={{ padding: 15, borderRadius: 12, minHeight: 130, border: !branch.isOnline ? '1px dashed rgba(255,255,255,0.1)' : '1px solid #00ff00' }}
           >
-            <div className="tv-rank-badge" style={{ fontSize: '0.7rem', padding: '3px 8px', top: 10, right: 10 }}>RANK #{branch.rank}</div>
+            <div className="tv-rank-badge">RANK #{branch.rank}</div>
             
-            <div className="tv-branch-name" style={{ fontSize: '1.2rem', marginBottom: 5, gap: 10, display: 'flex', alignItems: 'center' }}>
+            <div className="tv-branch-name">
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <MapPin size={18} style={{ color: index === 0 ? '#FFD700' : 'var(--accent)' }} />
                 {branch.name}
-                {branch.isOnline && <Award size={18} style={{ color: '#FFD700', marginLeft: 4 }} />}
               </div>
             </div>
 
-            <div className="tv-branch-revenue" style={{ fontSize: '2.4rem', fontWeight: 900, marginBottom: 2 }}>
+            <div className="tv-branch-revenue">
               {formatCurrency(branch.revenue)}
             </div>
-            <div className="tv-branch-orders" style={{ fontSize: '0.9rem', opacity: 0.5, fontWeight: 600 }}>
+            <div className="tv-branch-orders">
               {branch.orders} Orders • Avg {formatCurrency(branch.orders > 0 ? branch.revenue/branch.orders : 0)}
             </div>
             
             <div style={{ marginTop: 15, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {branch.isSyncing && (
-                  <div style={{ color: 'var(--info)', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 800 }}>
-                    <Activity size={14} className="spinning" /> SYNCING
-                  </div>
+                {branch.activeBatches > 0 && (
+                   <div className="oven-indicator-badge">
+                     🥧 {branch.activeBatches} IN OVEN
+                   </div>
                 )}
                 {branch.criticalStock && (
-                  <div className="stock-warning-badge" style={{ fontSize: '0.7rem', padding: '3px 8px' }}>
-                    STOCK!
+                  <div className="stock-warning-badge">
+                    LOW STOCK
                   </div>
                 )}
               </div>
 
-              <div style={{ 
-                background: branch.isOnline ? 'rgba(0, 255, 0, 0.1)' : 'rgba(255, 255, 255, 0.05)',
-                color: branch.isOnline ? '#00ff00' : 'rgba(255, 255, 255, 0.3)',
-                padding: '6px 12px', borderRadius: 12, fontSize: '0.8rem', fontWeight: 900,
-                display: 'flex', alignItems: 'center', gap: 10,
-                border: branch.isOnline ? '1px solid rgba(0, 255, 0, 0.3)' : '1px solid rgba(255, 255, 255, 0.1)',
-                boxShadow: branch.isOnline ? '0 0 15px rgba(0, 255, 0, 0.1)' : 'none',
-                minWidth: 100
-              }}>
+              <div className={`status-pill ${branch.isOnline ? 'online' : 'offline'}`}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {branch.isOnline ? (
-                    <Wifi size={18} className="pulse-fast" />
-                  ) : (
-                    <WifiOff size={18} />
-                  )}
+                  {branch.isOnline ? <Wifi size={18} className="pulse-fast" /> : <WifiOff size={18} />}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
                   <span style={{ fontSize: '0.9rem', marginBottom: 2 }}>
@@ -305,13 +397,20 @@ export default function CommandCenter() {
         ))}
       </div>
 
-      <div style={{ background: 'rgba(0,0,0,0.3)', padding: '15px 30px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.05)', margin: '10px 15px' }}>
+      {isPublic && (
+        <div className="demo-disclaimer">
+           RESTRICTED VIEW: Administrative oversight and loss audits are disabled for this session.
+        </div>
+      )}
+
+      {/* HOURLY PERFORMANCE */}
+      <div className="tv-hourly-section">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', textTransform: 'uppercase', letterSpacing: 2, fontSize: '0.8rem', fontWeight: 800, opacity: 0.6 }}>
               <Activity size={16} style={{ color: 'var(--accent)' }} /> Global Daily Sales Activity
           </div>
-          <div style={{ color: 'var(--success)', fontWeight: 900, fontSize: '1rem', textShadow: '0 0 10px rgba(0,255,0,0.3)' }}>
-             TOTAL Today: <span style={{ fontSize: '1.2rem' }}>{formatCurrency(pulseMetrics.total)}</span>
+          <div style={{ color: 'var(--success)', fontWeight: 900, fontSize: '1rem' }}>
+             TODAY: <span style={{ fontSize: '1.2rem' }}>{formatCurrency(pulseMetrics.total)}</span>
           </div>
         </div>
         <ResponsiveContainer width="100%" height={100}>
@@ -330,15 +429,15 @@ export default function CommandCenter() {
         </ResponsiveContainer>
       </div>
 
-       <div className="tv-ticker-bar" style={{ height: 40, borderRadius: 20, margin: '5px 15px 15px' }}>
-        <div className="tv-ticker-content" style={{ gap: 50, fontSize: '1rem' }}>
+       <div className="tv-ticker-bar">
+        <div className="tv-ticker-content">
           {tickerItems.map((item, i) => (
             <div key={`${item.id}-${i}`} className="tv-ticker-item">
               {item.type === 'alert' ? (
                 <>
-                  <AlertTriangle size={16} style={{ color: 'var(--danger)' }} />
-                  <span style={{ color: 'var(--danger)', fontWeight: 800 }}>LOW STOCK: {item.itemName.toUpperCase()}</span>
-                  <span style={{ opacity: 0.6 }}>@ {item.branchName.toUpperCase()}</span>
+                  <AlertTriangle size={16} style={{ color: '#ef4444' }} />
+                  <span style={{ color: '#ef4444', fontWeight: 800 }}>LOW STOCK: {item.itemName.toUpperCase()}</span>
+                  <span style={{ opacity: 0.6 }}>@{item.branchName.toUpperCase()}</span>
                 </>
               ) : (
                 <>
@@ -354,61 +453,87 @@ export default function CommandCenter() {
       </div>
 
        <style jsx>{`
-         .tv-inventory-alert-bar {
-           background: rgba(43, 8, 8, 0.5);
-           border: 2px solid #ff4444;
-           margin: 0 15px 15px;
-           border-radius: 12px;
-           padding: 12px 20px;
-           display: flex;
-           align-items: center;
-           gap: 20px;
-           animation: alert-panic-pulse 2s infinite;
-           box-shadow: 0 0 30px rgba(255,0,0,0.2);
-         }
-         .alert-badge {
-           background: #ff4444;
-           color: white;
-           padding: 6px 12px;
-           border-radius: 8px;
-           font-weight: 900;
-           font-size: 0.9rem;
-           display: flex;
-           align-items: center;
-           gap: 8px;
-           white-space: nowrap;
-         }
-         .alert-content { display: flex; gap: 20px; overflow: hidden; flex: 1; }
-         .alert-item {
-           display: flex;
-           align-items: center;
-           gap: 8px;
-           background: rgba(0,0,0,0.3);
-           padding: 4px 12px;
-           border-radius: 6px;
-           border: 1px solid rgba(255,255,255,0.1);
-           white-space: nowrap;
-         }
-         .alert-item .name { font-weight: 700; color: #fff; }
-         .alert-item .branch { font-size: 0.8rem; color: #ffaa00; font-weight: 800; }
-         .alert-item .level { font-size: 0.8rem; font-weight: 900; color: #ff4444; }
-         .alert-more { font-weight: 800; color: #fff; opacity: 0.6; font-size: 0.9rem; }
+         .tv-background { background: #050505; min-height: 100vh; color: #fff; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; padding: 10px; overflow-x: hidden; }
+         .public-mode { background: radial-gradient(circle at top right, #1a1a2e, #050505); }
+         .owner-mode { background: radial-gradient(circle at top right, #1a0a0a, #050505); }
 
-         @keyframes alert-panic-pulse {
-           0% { border-color: #ff4444; box-shadow: 0 0 10px rgba(255,0,0,0.3); }
-           50% { border-color: #ff0000; box-shadow: 0 0 30px rgba(255,0,0,0.6); }
-           100% { border-color: #ff4444; box-shadow: 0 0 10px rgba(255,0,0,0.3); }
+         .tv-header { padding: 15px 30px; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+         .header-logo { width: 60px; height: 60px; background: #fff; border-radius: 12px; object-fit: contain; padding: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+         
+         .demo-badge { background: #3b82f6; color: #fff; padding: 4px 10px; border-radius: 6px; font-weight: 900; font-size: 0.7rem; }
+         .secure-badge { background: #ef4444; color: #fff; padding: 4px 10px; border-radius: 6px; font-weight: 900; font-size: 0.7rem; display: flex; align-items: center; gap: 4px; animation: glow-red 2s infinite; }
+         @keyframes glow-red { 0%, 100% { box-shadow: 0 0 5px rgba(239, 68, 68, 0.5); } 50% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.8); } }
+
+         .owner-audit-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 15px; padding: 0 15px 15px; }
+         .audit-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 15px; }
+         .feed-panel { border-left: 4px solid var(--accent); }
+         .loss-panel { border-left: 4px solid #ef4444; }
+         .card-title { font-size: 0.8rem; font-weight: 800; color: rgba(255,255,255,0.4); display: flex; align-items: center; gap: 10px; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
+         
+         .audit-list { height: 180px; overflow-y: auto; font-family: 'JetBrains Mono', 'Monaco', monospace; font-size: 0.8rem; }
+         .audit-item { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.03); align-items: baseline; }
+         .audit-time { color: rgba(255,255,255,0.3); white-space: nowrap; font-size: 0.7rem; }
+         .audit-branch { color: var(--info); font-weight: 800; white-space: nowrap; font-size: 0.75rem; min-width: 80px; }
+         .audit-msg { color: #fff; opacity: 0.9; line-height: 1.4; }
+         .danger-text { color: #fe6b6b; font-weight: 600; }
+
+         .loss-metrics { display: flex; gap: 10px; }
+         .loss-box { flex: 1; padding: 15px; border-radius: 12px; display: flex; flex-direction: column; }
+         .loss-box.sunk { background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.1); }
+         .loss-box.potential { background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.1); }
+         .loss-box .label { font-size: 0.65rem; font-weight: 900; opacity: 0.5; color: #fff; }
+         .loss-box .value { font-size: 1.6rem; font-weight: 900; color: #fff; margin: 4px 0; letter-spacing: -0.5px; }
+         .loss-box .desc { font-size: 0.6rem; opacity: 0.3; text-transform: uppercase; font-weight: 700; }
+
+         .ruined-list { font-size: 0.75rem; color: rgba(255,255,255,0.6); display: flex; flex-direction: column; gap: 8px; }
+         .ruined-item { display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; background: rgba(255,255,255,0.02); border-radius: 4px; }
+
+         .tv-grid { display: grid; padding: 0 15px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; flex: 1; overflow-y: auto; }
+         .tv-branch-card { padding: 20px; border-radius: 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); position: relative; overflow: hidden; transition: all 0.3s; }
+         .card-online-neon { border-color: rgba(0, 255, 0, 0.2); box-shadow: inset 0 0 15px rgba(0,255,0,0.02); }
+         .just-sold { animation: sale-pulse 3s; border-color: #4CAF50 !important; }
+         @keyframes sale-pulse { 0% { background: rgba(76, 175, 80, 0.1); transform: translateY(-5px); } 100% { background: rgba(255,255,255,0.03); transform: translateY(0); } }
+
+         .tv-rank-badge { position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 6px; font-size: 0.65rem; font-weight: 900; color: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.1); }
+         .tv-branch-name { font-size: 1.3rem; font-weight: 800; display: flex; align-items: center; gap: 10px; margin-bottom: 8px; color: #fff; }
+         .tv-branch-revenue { font-size: 2.8rem; font-weight: 900; margin-bottom: 4px; letter-spacing: -1px; }
+         .tv-branch-orders { font-size: 0.85rem; opacity: 0.4; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+
+         .status-pill { padding: 8px 12px; border-radius: 12px; font-size: 0.8rem; font-weight: 900; display: flex; align-items: center; gap: 10px; }
+         .status-pill.online { background: rgba(0, 255, 0, 0.05); color: #00ff00; border: 1px solid rgba(0, 255, 0, 0.1); }
+         .status-pill.offline { background: rgba(239, 68, 68, 0.05); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.1); }
+
+         .tv-inventory-alert-bar { background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; margin: 0 15px 15px; border-radius: 12px; padding: 12px 20px; display: flex; align-items: center; gap: 20px; }
+         .alert-badge { background: #ef4444; color: #fff; padding: 6px 12px; border-radius: 8px; font-weight: 900; font-size: 0.75rem; display: flex; align-items: center; gap: 8px; }
+         .alert-content { display: flex; gap: 25px; overflow-x: auto; flex: 1; padding: 5px 0; }
+         .alert-item { display: flex; align-items: center; gap: 8px; white-space: nowrap; font-size: 0.85rem; }
+         .alert-item .name { font-weight: 700; }
+         .alert-item .branch { opacity: 0.5; font-size: 0.75rem; }
+         .alert-item .level { color: #ef4444; font-weight: 900; }
+
+         .tv-hourly-section { background: rgba(255,255,255,0.01); padding: 20px 30px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.03); margin: 10px 15px; }
+         .tv-ticker-bar { height: 45px; border-radius: 12px; margin: 5px 15px 15px; background: #000; border: 1px solid rgba(255,255,255,0.05); overflow: hidden; display: flex; align-items: center; }
+         .tv-ticker-content { display: flex; gap: 60px; animation: ticker 50s linear infinite; }
+         .tv-ticker-item { display: flex; align-items: center; gap: 12px; white-space: nowrap; font-size: 0.85rem; font-weight: 600; }
+
+         .oven-indicator-badge { background: rgba(245, 158, 11, 0.1); color: #f59e0b; padding: 6px 12px; border-radius: 8px; font-size: 0.7rem; font-weight: 800; border: 1px solid rgba(245, 158, 11, 0.2); letter-spacing: 0.5px; }
+         .stock-warning-badge { background: rgba(239, 68, 68, 0.15); color: #ef4444; padding: 6px 12px; border-radius: 8px; font-size: 0.7rem; font-weight: 800; border: 1px solid rgba(239, 68, 68, 0.3); }
+
+         .fullscreen-btn { position: fixed; bottom: 30px; right: 30px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 1000; transition: all 0.2s; }
+         .fullscreen-btn:hover { background: rgba(255,255,255,0.1); transform: scale(1.1); }
+
+         @media (max-width: 1024px) {
+           .owner-audit-grid { grid-template-columns: 1fr; }
          }
 
-         .panic-stock { border-color: var(--danger) !important; background: rgba(231, 76, 60, 0.1) !important; animation: pulse-panic 1.5s infinite; }
-         @keyframes pulse-panic { 0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(231, 76, 60, 0); } 100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); } }
-         .stock-warning-badge { background: var(--danger); color: white; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; display: flex; align-items: center; gap: 6px; animation: bounce-alert 0.5s infinite alternate; }
-         @keyframes bounce-alert { to { transform: translateY(-4px); } }
-         .ranked-up { border-color: #FFD700 !important; background: rgba(255, 215, 0, 0.1) !important; }
-         .tv-rank-pill { background: rgba(255,255,255,0.1); color: #fff; padding: 4px 12px; border-radius: 200px; font-size: 0.8rem; font-weight: 900; border: 1px solid rgba(255,255,255,0.1); }
-         .pulse-fast { animation: pulse-wifi 1s infinite; }
-         @keyframes pulse-wifi { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
-      `}</style>
+         @media (max-width: 768px) {
+           .tv-header { flex-direction: column; align-items: flex-start; gap: 20px; padding: 20px; }
+           .tv-global-stats { width: 100%; text-align: left; }
+           .tv-main-revenue { font-size: 3.2rem; }
+           .tv-grid { grid-template-columns: 1fr; }
+           .tv-header h1 { font-size: 1.6rem !important; }
+         }
+       `}</style>
     </div>
   );
 }

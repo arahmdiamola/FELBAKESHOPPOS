@@ -55,8 +55,12 @@ const branchFilter = (req) => {
   const branchId = req.headers['x-branch-id'];
   const role = req.headers['x-user-role'];
 
-  // Global access check (System Admins and Owners see everything if no filter)
   if (['system_admin', 'owner'].includes(role) && (!branchId || branchId === 'all')) {
+    return "1=1";
+  }
+
+  // Demo mode: Allow 'all' branches if explicitly requested and no role (public)
+  if (branchId === 'all' && !role) {
     return "1=1";
   }
 
@@ -428,9 +432,13 @@ app.post('/api/production/log', async (req, res) => {
     // 3. Process Raw Materials usage
     if (Array.isArray(items)) {
       for (const item of items) {
+        // Fetch current cost price to lock it in for audit
+        const material = await db.get("SELECT costPrice FROM raw_materials WHERE id = ?", [item.materialId]);
+        const costPrice = material?.costPrice || 0;
+
         await db.run(
-          "INSERT INTO production_log_items (id, productionLogId, materialId, materialName, quantityUsed, unit) VALUES (?, ?, ?, ?, ?, ?)",
-          [uuidv4(), id, item.materialId, item.materialName, item.quantityUsed, item.unit]
+          "INSERT INTO production_log_items (id, productionLogId, materialId, materialName, quantityUsed, unit, costPrice) VALUES (?, ?, ?, ?, ?, ?, ?)",
+          [uuidv4(), id, item.materialId, item.materialName, item.quantityUsed, item.unit, costPrice]
         );
         // ALWAYS Deduct from raw materials stock
         await db.run("UPDATE raw_materials SET stock = stock - ? WHERE id = ?", [item.quantityUsed, item.materialId]);
@@ -493,10 +501,14 @@ app.post('/api/production/void', async (req, res) => {
     if (!log) throw new Error('Production log not found');
 
     // 1. Mark as ruined
-    await db.run("UPDATE production_logs SET status = 'ruined' WHERE id = ?", [logId]);
+    await db.run("UPDATE production_logs SET status = 'ruined', notes = ? WHERE id = ?", [reason, logId]);
 
     // 2. Audit Log (Notification for Owner)
-    await logAction(req, 'PRODUCTION_SPOILAGE', `Voided Batch: ${log.productName}. Ingredients lost. Reason: ${reason || 'Not specified'}`);
+    await logAction(req, 'PRODUCTION_SPOILAGE', { 
+      product: log.productName, 
+      reason: reason || 'Not specified',
+      lossType: 'VOIDED_BATCH'
+    });
 
     await db.run("COMMIT");
     res.json({ success: true });
