@@ -227,13 +227,14 @@ app.get('/api/users', async (req, res) => {
   try {
     const userRole = req.headers['x-user-role'];
     if (!userRole || userRole === 'system_admin') {
-      const allUsers = await db.all("SELECT * FROM users");
-      return res.json(allUsers);
+      const allDbUsers = await db.all("SELECT * FROM users");
+      return res.json(allDbUsers);
     }
     const { query, params } = getBranchFilter(req);
-    const filteredUsers = await db.all(`SELECT * FROM users WHERE ${query}`, params);
-    res.json(filteredUsers);
+    const branchUsers = await db.all(`SELECT * FROM users WHERE ${query}`, params);
+    res.json(branchUsers);
   } catch (err) {
+    console.error('[GET /api/users Failure]', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -897,15 +898,17 @@ app.use((req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`API Server running on port ${PORT}`);
-
-  // Initialize Database asynchronously after port bind
-  initDb().then(database => {
-    db = database;
-    console.log("Database perfectly connected and synced!");
-  }).catch(err => {
-    console.error("CRITICAL DATABASE FAILURE:", err);
-    process.exit(1); // Force process shutdown so Render logs the error immediately
+// Initialize Database then Start Listening (Enforced order for Render stability)
+console.log("Initializing database connection...");
+initDb().then(database => {
+  db = database;
+  console.log("Database perfectly connected and synced!");
+  
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`API Server running on port ${PORT}`);
   });
+}).catch(err => {
+  console.error("FATAL: Failed to initialize database:", err);
+  // Important: On Render, we want the process to crash if DB fails so it restarts
+  process.exit(1);
 });

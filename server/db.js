@@ -240,11 +240,10 @@ export async function initDb() {
         await db.run("INSERT INTO settings (key, value) VALUES (?, ?)", [key, value]);
       }
     }
-
-  } catch (err) {
-    console.error("CRITICAL: Database initialization failed:", err);
-    throw err; // Re-throw to ensure server shutdown if we can't even init schema
+    console.log("Database perfectly connected and synced!");
+    return db;
+  } catch (e) {
+    console.error("Database initialization failed:", e);
+    throw e;
   }
-
-  return db;
 }
