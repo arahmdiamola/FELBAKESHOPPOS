@@ -26,8 +26,8 @@ export function ProductProvider({ children }) {
 
       if (cachedP?.length || cachedC?.length) {
         console.log(`[Performance] Instant UI from Cache (${cachedP.length} products)`);
-        setProducts(cachedP.sort((a, b) => a.name.localeCompare(b.name)));
-        setCategories(cachedC.sort((a, b) => a.name.localeCompare(b.name)));
+        setProducts(cachedP.sort((a, b) => (a.name || '').localeCompare(b.name || '')));
+        setCategories(cachedC.sort((a, b) => (a.name || '').localeCompare(b.name || '')));
       }
     } catch (e) {
       console.warn('[Performance] Cache pre-load failed', e);
@@ -36,8 +36,8 @@ export function ProductProvider({ children }) {
     // 2. Background Revalidation (Network)
     try {
       const [p, c] = await Promise.all([api.get('/products'), api.get('/categories')]);
-      const sortedProducts = (p || []).sort((a, b) => a.name.localeCompare(b.name));
-      const sortedCategories = (c || []).sort((a, b) => a.name.localeCompare(b.name));
+      const sortedProducts = (p || []).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      const sortedCategories = (c || []).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
       
       // Update state without flashing if data changed
       setProducts(sortedProducts);
