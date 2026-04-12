@@ -338,10 +338,87 @@ app.post('/api/products/inventory', async (req, res) => {
   }
   res.json({ success: true });
 });
-app.put('/api/products/:id/adjust', async (req, res) => {
-  const { quantity } = req.body;
   await db.run("UPDATE products SET stock = GREATEST(0, stock + ?) WHERE id = ?", [quantity, req.params.id]);
   res.json({ success: true });
+});
+
+// --- RAW MATERIALS ---
+app.get('/api/raw-materials', async (req, res) => {
+  const materials = await db.all(`SELECT * FROM raw_materials WHERE ${branchFilter(req)}`);
+  res.json(materials);
+});
+
+app.post('/api/raw-materials', async (req, res) => {
+  const { id, name, stock, unit, reorderPoint, emoji } = req.body;
+  const branchId = req.headers['x-branch-id'] || req.body.branchId;
+  await db.run(
+    "INSERT INTO raw_materials (id, branchId, name, stock, unit, reorderPoint, emoji) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    [id, branchId, name, stock || 0, unit || 'kg', reorderPoint || 0, emoji || '📦']
+  );
+  res.json({ success: true });
+});
+
+app.put('/api/raw-materials/:id', async (req, res) => {
+  const { name, stock, unit, reorderPoint, emoji } = req.body;
+  await db.run(
+    "UPDATE raw_materials SET name=?, stock=?, unit=?, reorderPoint=?, emoji=? WHERE id=?",
+    [name, stock, unit, reorderPoint, emoji, req.params.id]
+  );
+  res.json({ success: true });
+});
+
+app.delete('/api/raw-materials/:id', async (req, res) => {
+  await db.run("DELETE FROM raw_materials WHERE id = ?", [req.params.id]);
+  res.json({ success: true });
+});
+
+// --- PRODUCTION ---
+app.get('/api/production/logs', async (req, res) => {
+  const logs = await db.all(`SELECT * FROM production_logs WHERE ${branchFilter(req)} ORDER BY date DESC LIMIT 50`);
+  for (const log of logs) {
+    log.items = await db.all("SELECT * FROM production_log_items WHERE productionLogId = ?", [log.id]);
+  }
+  res.json(logs);
+});
+
+app.post('/api/production/log', async (req, res) => {
+  const { id, productId, productName, quantityProduced, items, date, notes } = req.body;
+  const branchId = req.headers['x-branch-id'];
+  const userId = req.headers['x-user-id'];
+  const userNameToken = req.headers['x-user-name'] || 'User';
+
+  try {
+    await db.run("BEGIN TRANSACTION");
+
+    // 1. Create Production Log
+    await db.run(
+      "INSERT INTO production_logs (id, branchId, userId, userName, productId, productName, quantityProduced, date, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      [id, branchId, userId, userNameToken, productId, productName, quantityProduced, date, notes]
+    );
+
+    // 2. Add Finished Product stock
+    if (productId && quantityProduced > 0) {
+      await db.run("UPDATE products SET stock = stock + ? WHERE id = ?", [quantityProduced, productId]);
+    }
+
+    // 3. Process Raw Materials usage
+    for (const item of items) {
+      await db.run(
+        "INSERT INTO production_log_items (id, productionLogId, materialId, materialName, quantityUsed, unit) VALUES (?, ?, ?, ?, ?, ?)",
+        [uuidv4(), id, item.materialId, item.materialName, item.quantityUsed, item.unit]
+      );
+      // Deduct from raw materials stock
+      await db.run("UPDATE raw_materials SET stock = stock - ? WHERE id = ?", [item.quantityUsed, item.materialId]);
+    }
+
+    await db.run("COMMIT");
+    await logAction(req, 'PRODUCTION_COMPLETED', { product: productName, quantity: quantityProduced });
+    res.json({ success: true });
+  } catch (err) {
+    await db.run("ROLLBACK");
+    console.error('[Production Log Failed]', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // --- TRANSACTIONS ---

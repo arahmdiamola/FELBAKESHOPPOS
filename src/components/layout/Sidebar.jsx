@@ -8,16 +8,19 @@ import { api } from '../../utils/api';
 import SyncStatus from '../shared/SyncStatus';
 import {
   ShoppingBag, LayoutDashboard, Package, ClipboardList,
-  Users, Wallet, Settings, LogOut, CalendarClock, Boxes, Menu, ChevronsLeft, Activity, Shield, RotateCcw
+  Users, Wallet, Settings, LogOut, CalendarClock, Boxes, Menu, ChevronsLeft, Activity, Shield, RotateCcw,
+  ChefHat, Wheat
 } from 'lucide-react';
 
 const navItems = [
   { to: '/pos', icon: ShoppingBag, label: 'POS Register' },
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/baking', icon: ChefHat, label: 'Baking Batch' },
   { to: '/reports', icon: ClipboardList, label: 'Reports' },
   { section: 'Management' },
   { to: '/products', icon: Package, label: 'Products' },
   { to: '/inventory', icon: Boxes, label: 'Inventory' },
+  { to: '/raw-materials', icon: Wheat, label: 'Raw Materials' },
   { to: '/preorders', icon: CalendarClock, label: 'Pre-Orders' },
   { to: '/customers', icon: Users, label: 'Customers' },
   { to: '/expenses', icon: Wallet, label: 'Expenses' },
@@ -73,10 +76,17 @@ export default function Sidebar() {
     }
 
     if (currentUser?.role === 'cashier') {
-      return !['/reports', '/expenses', '/users', '/settings'].includes(item.to);
+      return !['/reports', '/expenses', '/users', '/settings', '/raw-materials', '/baking'].includes(item.to);
+    }
+    if (currentUser?.role === 'baker') {
+      return ['/baking', '/raw-materials'].includes(item.to);
     }
     if (currentUser?.role === 'manager') {
       return !['/users', '/settings'].includes(item.to);
+    }
+    if (currentUser?.role === 'admin' || currentUser?.role === 'system_admin') {
+       // Admins see everything including baking
+       return true;
     }
     return true;
   });

@@ -132,6 +132,40 @@ export async function initDb() {
       branchId TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS raw_materials (
+      id TEXT PRIMARY KEY,
+      branchId TEXT NOT NULL,
+      name TEXT NOT NULL,
+      stock REAL DEFAULT 0,
+      unit TEXT DEFAULT 'kg',
+      reorderPoint REAL DEFAULT 0,
+      emoji TEXT,
+      FOREIGN KEY (branchId) REFERENCES branches(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS production_logs (
+      id TEXT PRIMARY KEY,
+      branchId TEXT NOT NULL,
+      userId TEXT NOT NULL,
+      userName TEXT,
+      productId TEXT, -- Product produced
+      productName TEXT,
+      quantityProduced REAL DEFAULT 0,
+      date TEXT NOT NULL,
+      notes TEXT,
+      FOREIGN KEY (branchId) REFERENCES branches(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS production_log_items (
+      id TEXT PRIMARY KEY,
+      productionLogId TEXT NOT NULL,
+      materialId TEXT NOT NULL,
+      materialName TEXT,
+      quantityUsed REAL NOT NULL,
+      unit TEXT,
+      FOREIGN KEY (productionLogId) REFERENCES production_logs(id)
+    );
+
     -- Performance Indexes for High-Traffic Filtering
     CREATE INDEX IF NOT EXISTS idx_transactions_branch_date ON transactions(branchId, date);
     CREATE INDEX IF NOT EXISTS idx_logs_branch_time ON system_logs(branchId, timestamp);

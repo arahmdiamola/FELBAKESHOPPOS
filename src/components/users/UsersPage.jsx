@@ -11,6 +11,7 @@ const roleColors = {
   admin: 'badge-amber',
   manager: 'badge-blue',
   cashier: 'badge-green',
+  baker: 'badge-purple',
 };
 
 const emptyForm = { name: '', role: 'cashier', pin: '', branchId: '', image: '' };
@@ -227,17 +228,19 @@ export default function UsersPage() {
           <div className="card-header"><h3 className="card-title">Role Permissions</h3></div>
           <div className="table-container" style={{ border: 'none' }}>
             <table className="table">
-              <thead><tr><th>Feature</th><th>Admin</th><th>Manager</th><th>Cashier</th></tr></thead>
+              <thead><tr><th>Feature</th><th>Admin</th><th>Manager</th><th>Cashier</th><th>Baker</th></tr></thead>
               <tbody>
-                <tr><td className="primary">POS Register</td><td>✅</td><td>✅</td><td>✅</td></tr>
-                <tr><td className="primary">Dashboard</td><td>✅</td><td>✅</td><td>✅</td></tr>
-                <tr><td className="primary">Products Management</td><td>✅</td><td>✅</td><td>View Only</td></tr>
-                <tr><td className="primary">Inventory</td><td>✅</td><td>✅</td><td>View Only</td></tr>
-                <tr><td className="primary">Pre-Orders</td><td>✅</td><td>✅</td><td>✅</td></tr>
-                <tr><td className="primary">Customers</td><td>✅</td><td>✅</td><td>✅</td></tr>
-                <tr><td className="primary">Expenses</td><td>✅</td><td>✅</td><td>❌</td></tr>
-                <tr><td className="primary">User Management</td><td>✅</td><td>❌</td><td>❌</td></tr>
-                <tr><td className="primary">Settings</td><td>✅</td><td>❌</td><td>❌</td></tr>
+                <tr><td className="primary">POS Register</td><td>✅</td><td>✅</td><td>✅</td><td>❌</td></tr>
+                <tr><td className="primary">Dashboard</td><td>✅</td><td>✅</td><td>✅</td><td>❌</td></tr>
+                <tr><td className="primary">Baking POS</td><td>✅</td><td>✅</td><td>❌</td><td>✅</td></tr>
+                <tr><td className="primary">Products Management</td><td>✅</td><td>✅</td><td>View Only</td><td>❌</td></tr>
+                <tr><td className="primary">Inventory</td><td>✅</td><td>✅</td><td>View Only</td><td>❌</td></tr>
+                <tr><td className="primary">Raw Materials</td><td>✅</td><td>✅</td><td>View Only</td><td>✅</td></tr>
+                <tr><td className="primary">Pre-Orders</td><td>✅</td><td>✅</td><td>✅</td><td>❌</td></tr>
+                <tr><td className="primary">Customers</td><td>✅</td><td>✅</td><td>✅</td><td>❌</td></tr>
+                <tr><td className="primary">Expenses</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td></tr>
+                <tr><td className="primary">User Management</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr>
+                <tr><td className="primary">Settings</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr>
               </tbody>
             </table>
           </div>
@@ -282,6 +285,7 @@ export default function UsersPage() {
             <select className="select" value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))}>
               <option value="cashier">Cashier</option>
               <option value="manager">Manager</option>
+              <option value="baker">Baker</option>
               <option value="admin">Admin</option>
               {currentUser?.role === 'system_admin' && <option value="system_admin">System Admin</option>}
             </select>

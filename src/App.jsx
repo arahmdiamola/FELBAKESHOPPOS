@@ -14,6 +14,8 @@ import SettingsPage from './components/settings/SettingsPage';
 import ReportsPage from './components/reports/ReportsPage';
 import CommandCenter from './components/reports/CommandCenter';
 import ToastContainer from './components/shared/ToastContainer';
+import BakingPage from './components/baking/BakingPage';
+import RawMaterialsPage from './components/inventory/RawMaterialsPage';
 
 function AppRoutes() {
   const { currentUser } = useAuth();
@@ -55,9 +57,11 @@ function AppRoutes() {
           <Route path="/users" element={<UsersPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/baking" element={<BakingPage />} />
+          <Route path="/raw-materials" element={<RawMaterialsPage />} />
           {/* We keep this here too for completeness, but it will be handled by the branch above */}
           <Route path="/command-center" element={<CommandCenter />} />
-          <Route path="*" element={<Navigate to="/pos" replace />} />
+          <Route path="*" element={<Navigate to={currentUser.role === 'baker' ? '/baking' : '/pos'} replace />} />
         </Routes>
       </div>
       <ToastContainer />
