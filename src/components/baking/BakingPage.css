@@ -30,7 +30,7 @@
 .material-stock.low { color: #E74C3C; opacity: 1; }
 .material-item.active .material-stock { color: white; opacity: 0.6; }
 
-.sidebar-footer { padding: 24px; background: #FDFBF8; border-top: 1px solid rgba(74, 55, 40, 0.06); }
+.studio-sidebar-footer { padding: 24px; background: #FDFBF8; border-top: 1px solid rgba(74, 55, 40, 0.06); }
 .assembly-card { background: white; border-radius: 28px; padding: 24px; box-shadow: 0 15px 35px rgba(74, 55, 40, 0.06); border: 1px solid rgba(74, 55, 40, 0.04); }
 .assembly-title { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; color: #4A3728; margin-bottom: 20px; }
 .assembly-list { max-height: 140px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }

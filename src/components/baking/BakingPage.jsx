@@ -208,7 +208,7 @@ export default function BakingPage() {
               </div>
            </div>
 
-           <div className="sidebar-footer">
+           <div className="studio-sidebar-footer">
               <div className="assembly-card">
                  <div className="assembly-title">Batch Assembly</div>
                  <div className="assembly-list">
