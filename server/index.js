@@ -42,7 +42,7 @@ async function logAction(req, action, details = null) {
 
     const branchId = req.headers['x-branch-id'] || null;
     await db.run(
-      "INSERT INTO system_logs (id, timestamp, userId, userName, action, details, branchId) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO system_logs (id, timestamp, user_id, user_name, action, details, branch_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
       [uuidv4(), new Date().toISOString(), userId, finalName, action, typeof details === 'object' ? JSON.stringify(details) : details, branchId]
     );
   } catch (e) {
@@ -68,10 +68,10 @@ const getBranchFilter = (req) => {
     // If a manager has no branch, allow them to see everything as well
     if (role === 'manager') return { query: "1=1", params: [] };
     // Otherwise, lock out unassigned staff
-    return { query: "branchId = ?", params: ['UNASSIGNED_OR_LOCKED'] };
+    return { query: "branch_id = ?", params: ['UNASSIGNED_OR_LOCKED'] };
   }
 
-  return { query: "branchId = ?", params: [branchId] };
+  return { query: "branch_id = ?", params: [branchId] };
 };
 
 // --- AUTH ---
@@ -80,8 +80,8 @@ app.post('/api/auth/login', async (req, res) => {
   try {
     const user = await db.get("SELECT * FROM users WHERE id = ? AND pin = ?", [id, pin]);
     if (user) {
-      if (user.branchId) {
-        const branch = await db.get("SELECT * FROM branches WHERE id = ?", [user.branchId]);
+      if (user.branch_id) {
+        const branch = await db.get("SELECT * FROM branches WHERE id = ?", [user.branch_id]);
         user.branchName = branch?.name;
       }
       res.json(user);
@@ -104,17 +104,17 @@ const requireSystemAdmin = (req, res, next) => {
 app.get('/api/branches', async (req, res) => {
   try {
     const branches = await db.all("SELECT * FROM branches");
-    const allSessions = await db.all("SELECT branchId, lastSeen FROM branch_sessions");
+    const allSessions = await db.all("SELECT branch_id, last_seen FROM branch_sessions");
     
     // Master Session-Based Online Detection
     const now = new Date();
     const processed = branches.map(b => {
-      const branchSessions = allSessions.filter(s => s.branchId === b.id);
+      const branchSessions = allSessions.filter(s => s.branch_id === b.id);
       const sessionCount = branchSessions.length;
 
       const activeSessions = branchSessions.filter(s => {
-        if (!s.lastSeen) return false;
-        const lastSeenDate = new Date(s.lastSeen);
+        if (!s.last_seen) return false;
+        const lastSeenDate = new Date(s.last_seen);
         return !isNaN(lastSeenDate.getTime()) && (now - lastSeenDate) < 60000;
       });
 
@@ -123,7 +123,7 @@ app.get('/api/branches', async (req, res) => {
 
       if (activeSessions.length > 0) {
         const lates = activeSessions.map(s => {
-          const d = new Date(s.lastSeen);
+          const d = new Date(s.last_seen);
           return isNaN(d.getTime()) ? 0 : Math.abs(now - d);
         });
         const mostRecent = Math.min(...lates);
@@ -146,13 +146,13 @@ app.post('/api/branches/:id/pulse', async (req, res) => {
   const branchId = req.params.id;
   try {
     const timestamp = new Date().toISOString();
-    // 1. Update master branch lastSeen (fallback)
-    await db.run("UPDATE branches SET lastSeen = ? WHERE id = ?", [timestamp, branchId]);
+    // 1. Update master branch last_seen (fallback)
+    await db.run("UPDATE branches SET last_seen = ? WHERE id = ?", [timestamp, branchId]);
     
     // 2. Update specific session if userId provided
     if (userId) {
        await db.run(
-         "INSERT INTO branch_sessions (branchId, userId, lastSeen) VALUES (?, ?, ?) ON CONFLICT(branchId, userId) DO UPDATE SET lastSeen = excluded.lastSeen",
+         "INSERT INTO branch_sessions (branch_id, user_id, last_seen) VALUES (?, ?, ?) ON CONFLICT(branch_id, user_id) DO UPDATE SET last_seen = excluded.last_seen",
          [branchId, userId, timestamp]
        );
     }
@@ -167,9 +167,9 @@ app.post('/api/branches/:id/disconnect', async (req, res) => {
   const branchId = req.params.id;
   try {
     if (userId) {
-      await db.run("DELETE FROM branch_sessions WHERE branchId = ? AND userId = ?", [branchId, userId]);
+      await db.run("DELETE FROM branch_sessions WHERE branch_id = ? AND user_id = ?", [branchId, userId]);
     } else {
-      await db.run("UPDATE branches SET lastSeen = NULL WHERE id = ?", [branchId]);
+      await db.run("UPDATE branches SET last_seen = NULL WHERE id = ?", [branchId]);
     }
     res.json({ success: true });
   } catch (error) {
@@ -215,7 +215,7 @@ app.delete('/api/branches/:id', requireSystemAdmin, async (req, res) => {
 app.post('/api/branches/:id/heartbeat', async (req, res) => {
   try {
     const timestamp = new Date().toISOString();
-    await db.run("UPDATE branches SET lastSeen = ? WHERE id = ?", [timestamp, req.params.id]);
+    await db.run("UPDATE branches SET last_seen = ? WHERE id = ?", [timestamp, req.params.id]);
     res.json({ success: true, timestamp });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -242,8 +242,8 @@ app.post('/api/users', async (req, res) => {
   const { id, name, role, pin, branchId, image } = req.body;
   try {
     await db.run(
-      "INSERT INTO users (id, name, role, pin, branchId, image) VALUES (?, ?, ?, ?, ?, ?)",
-      [id, name, role, pin, branchId || null, image]
+      "INSERT INTO users (id, name, role, pin, branch_id, image) VALUES (?, ?, ?, ?, ?, ?)",
+      [id, name, role, pin, branch_id || null, image]
     );
     res.json({ id });
   } catch (err) {
@@ -254,8 +254,8 @@ app.put('/api/users/:id', async (req, res) => {
   const { name, role, branchId, image } = req.body;
   try {
     await db.run(
-      "UPDATE users SET name = ?, role = ?, branchId = ?, image = ? WHERE id = ?",
-      [name, role, branchId || null, image, req.params.id]
+      "UPDATE users SET name = ?, role = ?, branch_id = ?, image = ? WHERE id = ?",
+      [name, role, branch_id || null, image, req.params.id]
     );
     res.json({ success: true });
   } catch (err) {
@@ -296,7 +296,7 @@ app.post('/api/products', async (req, res) => {
   const { id, name, categoryId, price, costPrice, stock, unit, reorderPoint, emoji, image, isTopSelling } = req.body;
   const branchId = req.headers['x-branch-id'] || req.body.branchId;
   await db.run(
-    "INSERT INTO products (id, branchId, name, categoryId, price, costPrice, stock, unit, reorderPoint, emoji, image, isTopSelling) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "INSERT INTO products (id, branch_id, name, category_id, price, cost_price, stock, unit, reorder_point, emoji, image, is_top_selling) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     [id, branchId, name, categoryId, price, costPrice, stock, unit, reorderPoint, emoji, image, isTopSelling || 0]
   );
   res.json({ success: true });
@@ -312,7 +312,7 @@ app.post('/api/products/batch', async (req, res) => {
   try {
     for (const p of products) {
       await db.run(
-        "INSERT INTO products (id, branchId, name, categoryId, price, costPrice, stock, unit, reorderPoint, emoji, image, isTopSelling) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO products (id, branch_id, name, category_id, price, cost_price, stock, unit, reorder_point, emoji, image, is_top_selling) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [p.id, branchId, p.name, p.categoryId, p.price, p.costPrice, p.stock, p.unit, p.reorderPoint, p.emoji, p.image || null, p.isTopSelling || 0]
       );
     }
@@ -324,7 +324,7 @@ app.post('/api/products/batch', async (req, res) => {
 app.put('/api/products/:id', async (req, res) => {
     const updates = req.body;
     await db.run(
-      "UPDATE products SET name=?, price=?, costPrice=?, stock=?, categoryId=?, unit=?, reorderPoint=?, emoji=?, image=?, isTopSelling=? WHERE id=?",
+      "UPDATE products SET name=?, price=?, cost_price=?, stock=?, category_id=?, unit=?, reorder_point=?, emoji=?, image=?, is_top_selling=? WHERE id=?",
       [updates.name, updates.price, updates.costPrice, updates.stock, updates.categoryId, updates.unit, updates.reorderPoint, updates.emoji, updates.image, updates.isTopSelling, req.params.id]
     );
     
@@ -371,7 +371,7 @@ app.post('/api/raw-materials', async (req, res) => {
     }
 
     await db.run(
-      "INSERT INTO raw_materials (id, branchId, name, stock, unit, reorderPoint, emoji) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO raw_materials (id, branch_id, name, stock, unit, reorder_point, emoji) VALUES (?, ?, ?, ?, ?, ?, ?)",
       [id, branchId, name, stock || 0, unit || 'kg', reorderPoint || 0, emoji || '📦']
     );
     res.json({ success: true });
@@ -384,7 +384,7 @@ app.post('/api/raw-materials', async (req, res) => {
 app.put('/api/raw-materials/:id', async (req, res) => {
   const { name, stock, unit, reorderPoint, emoji } = req.body;
   await db.run(
-    "UPDATE raw_materials SET name=?, stock=?, unit=?, reorderPoint=?, emoji=? WHERE id=?",
+    "UPDATE raw_materials SET name=?, stock=?, unit=?, reorder_point=?, emoji=? WHERE id=?",
     [name, stock, unit, reorderPoint, emoji, req.params.id]
   );
   res.json({ success: true });
@@ -405,7 +405,7 @@ app.get('/api/production/logs', async (req, res) => {
   
   const logs = await db.all(sql, params);
   for (const log of logs) {
-    log.items = await db.all("SELECT * FROM production_log_items WHERE productionLogId = ?", [log.id]);
+    log.items = await db.all("SELECT * FROM production_log_items WHERE production_log_id = ?", [log.id]);
   }
   res.json(logs);
 });
@@ -426,7 +426,7 @@ app.post('/api/production/log', async (req, res) => {
     await db.transaction(async (tx) => {
       // 1. Create Production Log
       await tx.run(
-        "INSERT INTO production_logs (id, branchId, userId, userName, productId, productName, quantityProduced, estimatedYield, date, notes, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO production_logs (id, branch_id, user_id, user_name, product_id, product_name, quantity_produced, estimated_yield, date, notes, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [id, branchId, userId, userNameToken, productId, productName, quantityProduced || 0, estimatedYield || 0, date, notes, finalStatus]
       );
 
@@ -439,11 +439,11 @@ app.post('/api/production/log', async (req, res) => {
       if (Array.isArray(items)) {
         for (const item of items) {
           // Fetch current cost price to lock it in for audit
-          const material = await tx.get("SELECT costPrice FROM raw_materials WHERE id = ?", [item.materialId]);
-          const costPrice = material?.costPrice || 0;
+          const material = await tx.get("SELECT cost_price FROM raw_materials WHERE id = ?", [item.materialId]);
+          const costPrice = material?.cost_price || 0;
 
           await tx.run(
-            "INSERT INTO production_log_items (id, productionLogId, materialId, materialName, quantityUsed, unit, costPrice) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO production_log_items (id, production_log_id, material_id, material_name, quantity_used, unit, cost_price) VALUES (?, ?, ?, ?, ?, ?, ?)",
             [uuidv4(), id, item.materialId, item.materialName, item.quantityUsed, item.unit, costPrice]
           );
           // ALWAYS Deduct from raw materials stock
@@ -476,7 +476,7 @@ app.post('/api/production/finalize', async (req, res) => {
 
       // 1. Update status and yield
       await tx.run(
-        "UPDATE production_logs SET status = 'completed', quantityProduced = ? WHERE id = ?",
+        "UPDATE production_logs SET status = 'completed', quantity_produced = ? WHERE id = ?",
         [actualYield, logId]
       );
 
@@ -486,8 +486,8 @@ app.post('/api/production/finalize', async (req, res) => {
       }
     });
 
-    const finalLog = await db.get("SELECT productName FROM production_logs WHERE id = ?", [logId]);
-    await logAction(req, 'PRODUCTION_FINALIZED', { product: finalLog?.productName, actual: actualYield });
+    const finalLog = await db.get("SELECT product_name FROM production_logs WHERE id = ?", [logId]);
+    await logAction(req, 'PRODUCTION_FINALIZED', { product: finalLog?.product_name, actual: actualYield });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -525,7 +525,7 @@ app.get('/api/transactions', async (req, res) => {
   const { query, params } = getBranchFilter(req);
   const txns = await db.all(`SELECT * FROM transactions WHERE ${query} ORDER BY date DESC ${limit}`, params);
   for (const t of txns) {
-    t.items = await db.all("SELECT * FROM transaction_items WHERE transactionId = ?", [t.id]);
+    t.items = await db.all("SELECT * FROM transaction_items WHERE transaction_id = ?", [t.id]);
   }
   res.json(txns);
 });
@@ -554,16 +554,16 @@ app.post('/api/transactions', async (req, res) => {
   try {
     await db.transaction(async (tx) => {
       await tx.run(
-        "INSERT INTO transactions (id, branchId, receiptNumber, subtotal, discount, tax, total, paymentMethod, amountPaid, change, customerId, customerName, cashierId, cashierName, date, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO transactions (id, branch_id, receipt_number, subtotal, discount, tax, total, payment_method, amount_paid, change, customer_id, customer_name, cashier_id, cashier_name, date, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [t.id, branchId, t.receiptNumber, t.subtotal, t.discount, t.tax, t.total, t.paymentMethod, t.amountPaid, t.change, t.customerId, t.customerName, t.cashierId, t.cashierName, t.date, t.status, t.notes]
       );
 
-      // Refresh lastSeen on transaction (auto-heartbeat)
-      await tx.run("UPDATE branches SET lastSeen = ? WHERE id = ?", [new Date().toISOString(), branchId]);
+      // Refresh last_seen on transaction (auto-heartbeat)
+      await tx.run("UPDATE branches SET last_seen = ? WHERE id = ?", [new Date().toISOString(), branchId]);
 
       for (const i of t.items) {
         await tx.run(
-          "INSERT INTO transaction_items (id, transactionId, productId, name, price, quantity, unit, discount, total) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          "INSERT INTO transaction_items (id, transaction_id, product_id, name, price, quantity, unit, discount, total) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
           [i.id || uuidv4(), t.id, i.productId, i.name, i.price, i.quantity, i.unit, i.discount, i.total]
         );
       }
@@ -588,7 +588,7 @@ app.post('/api/customers', async (req, res) => {
     const c = req.body;
     const branchId = req.headers['x-branch-id'] || c.branchId;
     await db.run(
-      "INSERT INTO customers (id, branchId, name, phone, email, address, totalSpent, visits, balance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO customers (id, branch_id, name, phone, email, address, total_spent, visits, balance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
       [c.id, branchId, c.name, c.phone, c.email, c.address, c.totalSpent || 0, c.visits || 0, c.balance || 0]
     );
     res.json({ success: true });
@@ -633,7 +633,7 @@ app.post('/api/expenses', async (req, res) => {
   const e = req.body;
   const branchId = req.headers['x-branch-id'] || e.branchId;
     await db.run(
-      "INSERT INTO expenses (id, branchId, category, description, amount, date, addedBy) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO expenses (id, branch_id, category, description, amount, date, added_by) VALUES (?, ?, ?, ?, ?, ?, ?)",
       [uuidv4(), branchId, e.category, e.description, e.amount, e.date, e.addedBy]
     );
     
@@ -672,7 +672,7 @@ app.post('/api/preorders', async (req, res) => {
       return res.status(400).json({ error: 'Preorder must have a valid branchId' });
     }
     await db.run(
-      "INSERT INTO preorders (id, branchId, customerName, customerPhone, items, totalPrice, deposit, status, dueDate, notes, quantity, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO preorders (id, branch_id, customer_name, customer_phone, items, total_price, deposit, status, due_date, notes, quantity, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       [p.id, branchId, p.customerName, p.customerPhone, JSON.stringify(p.items), p.totalPrice, p.deposit, p.status, p.dueDate, p.notes, p.quantity || 1, p.createdAt]
     );
     res.json({ success: true });
@@ -782,15 +782,15 @@ app.post('/api/restore', async (req, res) => {
 
     // 3. Re-populate Tables in correct dependency order
     const tableOrder = [
-      { name: 'branches', data: backup.branches, cols: ['id', 'name', 'address'] },
-      { name: 'users', data: backup.users, cols: ['id', 'name', 'role', 'pin', 'branchId', 'image'] },
+      { name: 'branches', data: backup.branches, cols: ['id', 'name', 'address', 'last_seen'] },
+      { name: 'users', data: backup.users, cols: ['id', 'name', 'role', 'pin', 'branch_id', 'image'] },
       { name: 'categories', data: backup.categories, cols: ['id', 'name', 'emoji'] },
-      { name: 'products', data: backup.products, cols: ['id', 'branchId', 'name', 'categoryId', 'price', 'costPrice', 'stock', 'unit', 'reorderPoint', 'emoji', 'image', 'isTopSelling'] },
-      { name: 'customers', data: backup.customers, cols: ['id', 'branchId', 'name', 'phone', 'email', 'address', 'totalSpent', 'visits', 'balance'] },
-      { name: 'transactions', data: backup.transactions, cols: ['id', 'branchId', 'receiptNumber', 'subtotal', 'discount', 'tax', 'total', 'paymentMethod', 'amountPaid', 'change', 'customerId', 'customerName', 'cashierId', 'cashierName', 'date', 'status', 'notes'] },
-      { name: 'transaction_items', data: backup.transaction_items, cols: ['id', 'transactionId', 'productId', 'name', 'price', 'quantity', 'unit', 'discount', 'total'] },
-      { name: 'expenses', data: backup.expenses, cols: ['id', 'branchId', 'category', 'description', 'amount', 'date', 'addedBy'] },
-      { name: 'preorders', data: backup.preorders, cols: ['id', 'branchId', 'customerName', 'customerPhone', 'items', 'totalPrice', 'deposit', 'status', 'dueDate', 'notes', 'quantity', 'createdAt'] },
+      { name: 'products', data: backup.products, cols: ['id', 'branch_id', 'name', 'category_id', 'price', 'cost_price', 'stock', 'unit', 'reorder_point', 'emoji', 'image', 'is_top_selling'] },
+      { name: 'customers', data: backup.customers, cols: ['id', 'branch_id', 'name', 'phone', 'email', 'address', 'total_spent', 'visits', 'balance'] },
+      { name: 'transactions', data: backup.transactions, cols: ['id', 'branch_id', 'receipt_number', 'subtotal', 'discount', 'tax', 'total', 'payment_method', 'amount_paid', 'change', 'customer_id', 'customer_name', 'cashier_id', 'cashier_name', 'date', 'status', 'notes'] },
+      { name: 'transaction_items', data: backup.transaction_items, cols: ['id', 'transaction_id', 'product_id', 'name', 'price', 'quantity', 'unit', 'discount', 'total'] },
+      { name: 'expenses', data: backup.expenses, cols: ['id', 'branch_id', 'category', 'description', 'amount', 'date', 'added_by'] },
+      { name: 'preorders', data: backup.preorders, cols: ['id', 'branch_id', 'customer_name', 'customer_phone', 'items', 'total_price', 'deposit', 'status', 'due_date', 'notes', 'quantity', 'created_at'] },
       { name: 'settings', data: backup.settings, cols: ['key', 'value'] }
     ];
 
@@ -829,10 +829,10 @@ app.get('/api/logs', async (req, res) => {
 
     let logs;
     const query = `
-      SELECT l.*, b.name as branchName 
+      SELECT l.*, b.name as branch_name 
       FROM system_logs l 
-      LEFT JOIN branches b ON l.branchId = b.id 
-      ${userRole === 'system_admin' ? '' : 'WHERE l.branchId = ?'} 
+      LEFT JOIN branches b ON l.branch_id = b.id 
+      ${userRole === 'system_admin' ? '' : 'WHERE l.branch_id = ?'} 
       ORDER BY l.timestamp DESC LIMIT ?
     `;
 

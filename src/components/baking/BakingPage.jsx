@@ -268,10 +268,12 @@ export default function BakingPage() {
                     <div key={batch.id} className="batch-live-card">
                       <div className="flex justify-between items-start mb-4">
                         <div>
-                          <p className="font-black text-mocha text-sm">{batch.productName}</p>
-                          <p className="text-[10px] font-bold opacity-60">Estimated: {batch.estimatedYield} units</p>
+                          <p className="font-black text-mocha text-sm">{batch.productName || 'Batch Production'}</p>
+                          <p className="text-[11px] font-black uppercase text-accent mt-1">
+                            Estimated: {batch.estimatedYield || 0} {batch.unit || 'pcs'}
+                          </p>
                         </div>
-                        <div className="live-timer">
+                        <div className="live-timer-lux">
                            {new Date(batch.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </div>
@@ -281,7 +283,7 @@ export default function BakingPage() {
                           onClick={() => {
                             setSelectedBatch(batch);
                             setKeypadMode('production');
-                            setTempQty(batch.estimatedYield.toString());
+                            setTempQty((batch.estimatedYield || 0).toString());
                             setShowQtyModal(true);
                           }}
                         >
@@ -319,8 +321,8 @@ export default function BakingPage() {
                     <tbody>
                       {history.slice(0, 5).map(log => (
                         <tr key={log.id}>
-                          <td className="font-bold text-xs">{log.productName}</td>
-                          <td className="text-xs font-black text-accent">{log.quantityProduced}</td>
+                          <td className="font-bold text-xs">{log.productName || 'Batch'}</td>
+                          <td className="text-xs font-black text-accent">{log.quantityProduced || 0}</td>
                           <td className="text-xs text-muted">{new Date(log.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
                           <td><span className="badge badge-green text-xs">Logged</span></td>
                         </tr>
@@ -370,13 +372,15 @@ export default function BakingPage() {
                     ) : (
                        <div className="luxury-emoji-box">{item.emoji}</div>
                     )}
-                    <div className="flex-1">
-                      <div className="luxury-material-name">{item.materialName}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="luxury-material-name truncate">{item.materialName}</div>
                       <div className="luxury-material-qty">{item.quantityUsed} {item.unit}</div>
                     </div>
-                    <button className="luxury-remove-btn" onClick={() => removeFromBatch(item.materialId)}>
-                      <Trash2 size={14} />
-                    </button>
+                    <div className="flex items-center">
+                      <button className="luxury-remove-btn shadow-sm" onClick={() => removeFromBatch(item.materialId)}>
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -426,11 +430,13 @@ export default function BakingPage() {
               disabled={activeBatch.length === 0 || !targetProduct || isSaving}
               onClick={handleStartBatch}
             >
-              {isSaving ? 'Processing...' : (
-                <>
-                  <PackageCheck size={20} /> 
-                  <span>Start & Place in Oven</span>
-                </>
+              {isSaving ? (
+                <span className="flex items-center gap-2">Processing...</span>
+              ) : (
+                <div className="flex items-center justify-center gap-3 w-full">
+                  <PackageCheck size={24} strokeWidth={2.5} /> 
+                  <span className="text-base font-black">Start & Place in Oven</span>
+                </div>
               )}
             </button>
           </div>
@@ -633,13 +639,19 @@ export default function BakingPage() {
           font-weight: 700;
         }
         .luxury-remove-btn {
-          color: #D1D1D1;
-          background: transparent;
-          border: none;
+          color: #ef4444;
+          background: #fff5f5;
+          border: 1px solid #fee2e2;
+          width: 32px;
+          height: 32px;
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           cursor: pointer;
-          transition: color 0.2s;
+          transition: all 0.2s;
         }
-        .luxury-remove-btn:hover { color: var(--danger); }
+        .luxury-remove-btn:hover { background: #ef4444; color: white; transform: scale(1.1); }
 
         .sidebar-footer-luxury {
           padding: 24px;
@@ -849,13 +861,14 @@ export default function BakingPage() {
            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
            border: 1px solid rgba(0,0,0,0.03);
         }
-        .live-timer {
-           font-size: 0.65rem;
-           font-weight: 800;
-           color: var(--mocha);
-           background: var(--mocha-light);
-           padding: 4px 10px;
-           border-radius: 20px;
+        .live-timer-lux {
+           font-size: 0.7rem;
+           font-weight: 900;
+           color: white;
+           background: var(--mocha);
+           padding: 6px 14px;
+           border-radius: 50px;
+           box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
         
         .btn-lux-green {

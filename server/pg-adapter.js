@@ -21,36 +21,18 @@ const preparePostgresSql = (sql) => {
   return sql.replace(/\?/g, () => `$${i++}`);
 };
 
-/**
- * Helper to convert snake_case or lowercase keys from Postgres into camelCase
- */
 const camelize = (obj) => {
-  if (!obj || typeof obj !== 'object') return obj;
+  if (!obj || typeof obj !== 'object' || obj instanceof Date) return obj;
+  if (Array.isArray(obj)) return obj.map(v => camelize(v));
+  
   const newObj = {};
   for (let key in obj) {
-    // Specifically handle our camelCase fields that Postgres lowercases
-    const camelKey = key.toLowerCase()
-      .replace('categoryid', 'categoryId')
-      .replace('branchid', 'branchId')
-      .replace('costprice', 'costPrice')
-      .replace('reorderpoint', 'reorderPoint')
-      .replace('istopselling', 'isTopSelling')
-      .replace('receiptnumber', 'receiptNumber')
-      .replace('paymentmethod', 'paymentMethod')
-      .replace('amountpaid', 'amountPaid')
-      .replace('customerid', 'customerId')
-      .replace('customername', 'customerName')
-      .replace('cashierid', 'cashierId')
-      .replace('cashiername', 'cashierName')
-      .replace('transactionid', 'transactionId')
-      .replace('productid', 'productId')
-      .replace('totalprice', 'totalPrice')
-      .replace('duedate', 'dueDate')
-      .replace('customername', 'customerName')
-      .replace('customerphone', 'customerPhone')
-      .replace('lastseen', 'lastSeen')
-      .replace('createdat', 'createdAt');
-    newObj[camelKey] = obj[key];
+    const camelKey = key.replace(/([-_][a-z])/ig, ($1) => {
+      return $1.toUpperCase()
+        .replace('-', '')
+        .replace('_', '');
+    });
+    newObj[camelKey] = camelize(obj[key]);
   }
   return newObj;
 };
