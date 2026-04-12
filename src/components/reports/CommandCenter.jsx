@@ -274,7 +274,9 @@ export default function CommandCenter({ isPublic = false }) {
             {globalSales.length.toLocaleString()} TRANSACTIONS
           </div>
         </div>
-           {/* SLIDE NAVIGATION INDICATOR */}
+      </div>
+
+      {/* SLIDE NAVIGATION INDICATOR */}
       <div className="tv-slide-nav">
         <button onClick={() => setActiveSlide(1)} className={activeSlide === 1 ? 'active' : ''}>1</button>
         <button onClick={() => setActiveSlide(2)} className={activeSlide === 2 ? 'active' : ''}>2</button>
