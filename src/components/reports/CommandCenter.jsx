@@ -125,14 +125,7 @@ export default function CommandCenter() {
     }
 
     return finalData;
-  }, [globalSales, branches, products, globalTopProducts]);
-
-  const globalLowStock = useMemo(() => {
-    return getLowStockProducts().map(p => ({
-      ...p,
-      branchName: branches.find(b => b.id === p.branchId)?.name || 'Unknown'
-    }));
-  }, [products, branches, getLowStockProducts]);
+  }, [globalSales, branches, products]);
 
   // Global Sales Pulse Data (Hourly)
   const pulseMetrics = useMemo(() => {
