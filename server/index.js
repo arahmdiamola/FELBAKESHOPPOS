@@ -159,9 +159,17 @@ app.post('/api/branches/:id/pulse', async (req, res) => {
     
     res.json({ success: true });
   } catch (error) {
+    console.error('[Pulse Failure]', { 
+      message: error.message, 
+      stack: error.stack,
+      branchId, 
+      userId,
+      timestamp: new Date().toISOString()
+    });
     res.status(500).json({ error: error.message });
   }
 });
+
 app.post('/api/branches/:id/disconnect', async (req, res) => {
   const { userId } = req.body;
   const branchId = req.params.id;

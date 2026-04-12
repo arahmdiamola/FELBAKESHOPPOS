@@ -266,23 +266,42 @@ export async function initDb() {
     const fallbackAdditions = [
       "ALTER TABLE users ADD COLUMN IF NOT EXISTS image TEXT",
       "ALTER TABLE products ADD COLUMN IF NOT EXISTS image TEXT",
+      "ALTER TABLE branches ADD COLUMN IF NOT EXISTS last_seen TEXT",
       "ALTER TABLE products ADD COLUMN IF NOT EXISTS cost_price REAL DEFAULT 0",
       "ALTER TABLE products ADD COLUMN IF NOT EXISTS is_top_selling INTEGER DEFAULT 0",
       "ALTER TABLE preorders ADD COLUMN IF NOT EXISTS quantity REAL DEFAULT 1",
       "ALTER TABLE raw_materials ADD COLUMN IF NOT EXISTS cost_price REAL DEFAULT 0",
       "ALTER TABLE production_logs ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'completed'",
-      "ALTER TABLE production_logs ADD COLUMN IF NOT EXISTS estimated_yield REAL DEFAULT 0"
+      "ALTER TABLE production_logs ADD COLUMN IF NOT EXISTS estimated_yield REAL DEFAULT 0",
+      "ALTER TABLE branch_sessions ADD COLUMN IF NOT EXISTS last_seen TEXT"
     ];
 
     for (const sql of fallbackAdditions) {
       try { await db.run(sql); } catch (e) { }
     }
 
+    // 3.5 Force Primary Key on branch_sessions (Required for ON CONFLICT in Postgres)
+    try {
+      const hasPk = await db.get(`
+        SELECT count(*) as count
+        FROM information_schema.table_constraints
+        WHERE table_name = 'branch_sessions' AND constraint_type = 'PRIMARY KEY'
+      `);
+      if (parseInt(hasPk?.count || 0) === 0) {
+        console.log("[Migration] Adding Primary Key to branch_sessions...");
+        await db.run("ALTER TABLE branch_sessions ADD PRIMARY KEY (branch_id, user_id)");
+      }
+    } catch (e) { 
+      console.warn("[PK Guard] branch_sessions PK likely already exists or table empty.", e.message);
+    }
+
     // 4. Verification Check: Critical Columns Must Exist
     const checkColumns = [
       { t: 'transactions', c: 'branch_id' },
       { t: 'system_logs', c: 'branch_id' },
-      { t: 'branch_sessions', c: 'branch_id' }
+      { t: 'branch_sessions', c: 'branch_id' },
+      { t: 'branches', c: 'last_seen' },
+      { t: 'branch_sessions', c: 'last_seen' }
     ];
 
     for (const check of checkColumns) {
