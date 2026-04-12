@@ -367,43 +367,40 @@ export default function BakingPage() {
         </div>
       </Modal>
 
-      {/* Touch-Friendly Quantity Modal */}
       <Modal 
         isOpen={showQtyModal} 
         onClose={() => setShowQtyModal(false)}
-        title={keypadMode === 'production' ? `Production Qty: ${targetProduct?.name}` : `Add ${selectedMaterial?.name}`}
+        title={keypadMode === 'production' ? `Finish: ${targetProduct?.name}` : `Add ${selectedMaterial?.name}`}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <div style={{ textAlign: 'center', fontSize: '3rem', background: 'var(--bg-main)', padding: 20, borderRadius: 16, fontWeight: 900, color: 'var(--accent)' }}>
-            {tempQty || '0'} <span style={{ fontSize: 'var(--font-md)', color: 'var(--text-muted)' }}>{keypadMode === 'production' ? targetProduct?.unit : selectedMaterial?.unit}</span>
+        <div className="keypad-container-luxury">
+          <div className="keypad-display-luxury">
+            <span className="keypad-val">{tempQty || '0'}</span>
+            <span className="keypad-unit">{keypadMode === 'production' ? targetProduct?.unit : selectedMaterial?.unit}</span>
           </div>
           
-          {/* Numeric Keypad Simulation */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+          <div className="keypad-grid-luxury">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, '.', 0].map(n => (
               <button 
                 key={n} 
-                className="num-btn" 
-                style={{ height: 60 }}
+                className="lux-num-btn" 
                 onClick={() => setTempQty(p => p + n.toString())}
               >
                 {n}
               </button>
             ))}
             <button 
-              className="btn btn-danger" 
-              style={{ height: 60 }}
+              className="lux-num-btn reset" 
               onClick={() => setTempQty('')}
             >
-              <RotateCcw size={20} />
+              <RotateCcw size={24} />
             </button>
           </div>
 
           <button 
-            className="btn btn-primary w-full py-4 text-lg font-bold"
+            className="lux-confirm-btn"
             onClick={confirmAdd}
           >
-            {keypadMode === 'production' ? 'Update Production Qty' : 'Add to Batch'}
+            {keypadMode === 'production' ? 'Confirm Production' : 'Add to Batch'}
           </button>
         </div>
       </Modal>
@@ -417,17 +414,23 @@ export default function BakingPage() {
         }
         .pos-container {
           background-color: #F8F5F2;
+          background-image: 
+            radial-gradient(at 0% 0%, hsla(28,100%,74%,0.15) 0, transparent 50%), 
+            radial-gradient(at 50% 0%, hsla(180,100%,74%,0.05) 0, transparent 50%), 
+            radial-gradient(at 100% 0%, hsla(28,100%,74%,0.15) 0, transparent 50%);
+          background-attachment: fixed;
+        }
+        .card {
+          background: rgba(255, 255, 255, 0.6) !important;
+          backdrop-filter: blur(15px) !important;
+          -webkit-backdrop-filter: blur(15px) !important;
+          border: 1px solid rgba(255, 255, 255, 0.4) !important;
+          box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07) !important;
+          border-radius: 32px !important;
         }
         .batch-sidebar {
-          display: flex;
-          flex-direction: column;
-          background: rgba(255, 255, 255, 0.7);
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 255, 255, 0.3);
-          box-shadow: 0 20px 50px rgba(0,0,0,0.05);
-          border-radius: 32px;
-          overflow: hidden;
+          background: rgba(255, 255, 255, 0.4) !important;
+          border-left: 1px solid rgba(255, 255, 255, 0.2) !important;
         }
         .clear-batch-minimal {
           display: flex;
@@ -485,14 +488,15 @@ export default function BakingPage() {
           gap: 12px;
         }
         .ingredient-luxury-card {
-           background: white;
+           background: rgba(255, 255, 255, 0.5);
+           backdrop-filter: blur(5px);
            padding: 16px;
            border-radius: 20px;
            display: flex;
            align-items: center;
            gap: 16px;
            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
-           border: 1px solid rgba(0,0,0,0.03);
+           border: 1px solid rgba(255, 255, 255, 0.5);
         }
         .luxury-emoji-box {
           width: 44px;
@@ -634,36 +638,74 @@ export default function BakingPage() {
         .luxury-submit-btn:disabled { opacity: 0.4; cursor: not-allowed; filter: grayscale(1); }
 
         .material-card {
+           background: rgba(255, 255, 255, 0.4) !important;
            border-radius: 24px !important;
-           border: 1px solid rgba(0,0,0,0.04) !important;
+           border: 1px solid rgba(255, 255, 255, 0.5) !important;
+           backdrop-filter: blur(10px);
+        }
+        .material-card:hover {
+           background: rgba(255, 255, 255, 0.6) !important;
+           border-color: var(--mocha) !important;
         }
         .material-emoji { font-size: 3rem; margin-bottom: 12px; filter: drop-shadow(0 8px 12px rgba(0,0,0,0.1)); transition: transform 0.3s; }
         .material-card:hover .material-emoji { transform: translateY(-5px) scale(1.1); }
         
-        .num-btn {
+        .keypad-container-luxury {
+          display: flex;
+          flex-direction: column;
+          gap: 32px;
+          padding: 10px;
+        }
+        .keypad-display-luxury {
+          text-align: center;
+          padding: 20px;
+          display: flex;
+          align-items: baseline;
+          justify-content: center;
+          gap: 12px;
+        }
+        .keypad-val { font-size: 5rem; font-weight: 900; color: #D4763C; line-height: 1; }
+        .keypad-unit { font-size: 1.5rem; font-weight: 800; color: #BBB0A8; }
+
+        .keypad-grid-luxury {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 16px;
+        }
+        .lux-num-btn {
+          height: 80px;
           background: white;
           border: 1px solid rgba(0,0,0,0.05);
-          border-radius: 16px;
+          border-radius: 24px;
+          font-size: 2rem;
           font-weight: 900;
-          color: var(--mocha);
-          font-size: 1.5rem;
+          color: #4A3728;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
           transition: all 0.2s;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.03);
         }
-        .num-btn:active { transform: scale(0.95); background: var(--mocha-light); }
+        .lux-num-btn:active { transform: scale(0.95); background: #FDFBF7; }
+        .lux-num-btn.reset { background: #ef4444; color: white; }
+        .lux-num-btn.reset:hover { background: #dc2626; }
 
-        @keyframes slideUp {
-          from { transform: translateY(20px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
+        .lux-confirm-btn {
+          width: 100%;
+          padding: 24px;
+          background: #E68D50;
+          color: white;
+          border-radius: 20px;
+          border: none;
+          font-size: 1.2rem;
+          font-weight: 900;
+          cursor: pointer;
+          transition: all 0.2s;
+          box-shadow: 0 10px 25px rgba(230, 141, 80, 0.2);
         }
-        .animate-slide-up { animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both; }
-        
-        @keyframes scaleIn {
-          from { transform: scale(0.9); opacity: 0; }
-          to { transform: scale(1); opacity: 1; }
-        }
-        .animate-scale-in { animation: scaleIn 0.3s ease both; }
-        
-        .text-mocha { color: var(--mocha); }
+        .lux-confirm-btn:hover { transform: translateY(-3px); box-shadow: 0 15px 35px rgba(230, 141, 80, 0.3); }
+        .lux-confirm-btn:active { transform: translateY(0); }
       `}</style>
     </>
   );
