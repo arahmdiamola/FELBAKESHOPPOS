@@ -133,6 +133,7 @@ export function ProductProvider({ children }) {
       addProduct, addProductsBatch, updateProduct, deleteProduct,
       adjustStock, deductStock, restoreStock,
       addCategory, deleteCategory, getLowStockProducts,
+      refetch: fetchData
     }}>
       {children}
     </ProductContext.Provider>

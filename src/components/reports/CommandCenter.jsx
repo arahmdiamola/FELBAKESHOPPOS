@@ -16,7 +16,7 @@ import {
 
 export default function CommandCenter() {
   const { getTodayStats } = useOrders();
-  const { products } = useProducts();
+  const { products, getLowStockProducts, refetch } = useProducts();
   const { settings } = useSettings();
   const [branches, setBranches] = useState([]);
   const [globalSales, setGlobalSales] = useState([]);
@@ -37,6 +37,9 @@ export default function CommandCenter() {
         ]);
         setGlobalSales(tx || []);
         setBranches(branchesData || []);
+        
+        // Background refresh products to ensure low-stock alerts are "live"
+        await refetch();
       } catch (e) {
         console.error('[Mission Control Master Fetch Error]', e);
       }
@@ -59,19 +62,12 @@ export default function CommandCenter() {
 
   const stats = getTodayStats();
 
-  // Identify Top 3 Products Globally for "Stock Panic" monitoring
-  const globalTopProducts = useMemo(() => {
-    const map = {};
-    globalSales.slice(0, 500).forEach(t => {
-      (t.items || []).forEach(item => {
-        map[item.productId] = (map[item.productId] || 0) + item.quantity;
-      });
-    });
-    return Object.entries(map)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
-      .map(entry => entry[0]);
-  }, [globalSales]);
+  const globalLowStock = useMemo(() => {
+    return getLowStockProducts().map(p => ({
+      ...p,
+      branchName: branches.find(b => b.id === p.branchId)?.name || 'Unknown'
+    }));
+  }, [products, branches, getLowStockProducts]);
 
   // Branch Performance Analysis
   const branchPerformance = useMemo(() => {
@@ -96,8 +92,8 @@ export default function CommandCenter() {
     const finalData = currentRanks.map((b, index) => {
        const isSyncing = (b.lastSeenSecondsAgo === null); 
        
-       const branchProducts = products.filter(p => p.branchId === b.id);
-       const criticalProducts = branchProducts.filter(p => globalTopProducts.includes(p.id) && p.stock < 5);
+       // Use unified low-stock logic instead of hardcoded < 5 rule
+       const criticalProducts = globalLowStock.filter(p => p.branchId === b.id);
        
        return { 
          ...b, 
@@ -131,6 +127,13 @@ export default function CommandCenter() {
     return finalData;
   }, [globalSales, branches, products, globalTopProducts]);
 
+  const globalLowStock = useMemo(() => {
+    return getLowStockProducts().map(p => ({
+      ...p,
+      branchName: branches.find(b => b.id === p.branchId)?.name || 'Unknown'
+    }));
+  }, [products, branches, getLowStockProducts]);
+
   // Global Sales Pulse Data (Hourly)
   const pulseMetrics = useMemo(() => {
     const data = [];
@@ -156,13 +159,24 @@ export default function CommandCenter() {
   }, [globalSales]);
 
   const tickerItems = useMemo(() => {
-      const items = globalSales.slice(0, 10).map(t => ({
+      const sales = globalSales.slice(0, 10).map(t => ({
           branchName: branches.find(b => b.id === t.branchId)?.name || 'Branch',
           total: t.total,
-          id: t.id
+          id: t.id,
+          type: 'sale'
       }));
-      return [...items, ...items];
-  }, [globalSales, branches]);
+
+      const alerts = globalLowStock.slice(0, 5).map(p => ({
+          branchName: p.branchName,
+          itemName: p.name,
+          emoji: p.emoji || '⚠️',
+          id: p.id,
+          type: 'alert'
+      }));
+
+      const combined = [...sales, ...alerts];
+      return [...combined, ...combined];
+  }, [globalSales, branches, globalLowStock]);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -210,6 +224,25 @@ export default function CommandCenter() {
           </div>
         </div>
       </div>
+
+      {globalLowStock.length > 0 && (
+        <div className="tv-inventory-alert-bar">
+          <div className="alert-badge"><AlertTriangle size={20} /> INVENTORY WAR ROOM</div>
+          <div className="alert-content">
+             {globalLowStock.slice(0, 8).map(p => (
+               <div key={p.id} className="alert-item">
+                 <span>{p.emoji}</span>
+                 <span className="name">{p.name}</span>
+                 <span className="branch">@{p.branchName}</span>
+                 <span className="level">STOCK: {p.stock}</span>
+               </div>
+             ))}
+             {globalLowStock.length > 8 && (
+               <div className="alert-more">+{globalLowStock.length - 8} MORE CRITICAL</div>
+             )}
+          </div>
+        </div>
+      )}
 
       <div className="tv-grid" style={{ padding: '0 15px', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 15, flex: 1, overflow: 'hidden' }}>
         {branchPerformance.map((branch, index) => (
@@ -304,20 +337,76 @@ export default function CommandCenter() {
         </ResponsiveContainer>
       </div>
 
-      <div className="tv-ticker-bar" style={{ height: 40, borderRadius: 20, margin: '5px 15px 15px' }}>
+       <div className="tv-ticker-bar" style={{ height: 40, borderRadius: 20, margin: '5px 15px 15px' }}>
         <div className="tv-ticker-content" style={{ gap: 50, fontSize: '1rem' }}>
           {tickerItems.map((item, i) => (
             <div key={`${item.id}-${i}`} className="tv-ticker-item">
-              <ShoppingCart size={16} style={{ color: 'var(--accent)' }} />
-              <span style={{ letterSpacing: 0.5 }}>{item.branchName.toUpperCase()}</span>
-              <span style={{ color: '#4CAF50', fontWeight: 800 }}>{formatCurrency(item.total)}</span>
+              {item.type === 'alert' ? (
+                <>
+                  <AlertTriangle size={16} style={{ color: 'var(--danger)' }} />
+                  <span style={{ color: 'var(--danger)', fontWeight: 800 }}>LOW STOCK: {item.itemName.toUpperCase()}</span>
+                  <span style={{ opacity: 0.6 }}>@ {item.branchName.toUpperCase()}</span>
+                </>
+              ) : (
+                <>
+                  <ShoppingCart size={16} style={{ color: 'var(--accent)' }} />
+                  <span style={{ letterSpacing: 0.5 }}>{item.branchName.toUpperCase()}</span>
+                  <span style={{ color: '#4CAF50', fontWeight: 800 }}>{formatCurrency(item.total)}</span>
+                </>
+              )}
               <span style={{ opacity: 0.2 }}>|</span>
             </div>
           ))}
         </div>
       </div>
 
-      <style jsx>{`
+       <style jsx>{`
+         .tv-inventory-alert-bar {
+           background: rgba(43, 8, 8, 0.5);
+           border: 2px solid #ff4444;
+           margin: 0 15px 15px;
+           border-radius: 12px;
+           padding: 12px 20px;
+           display: flex;
+           align-items: center;
+           gap: 20px;
+           animation: alert-panic-pulse 2s infinite;
+           box-shadow: 0 0 30px rgba(255,0,0,0.2);
+         }
+         .alert-badge {
+           background: #ff4444;
+           color: white;
+           padding: 6px 12px;
+           border-radius: 8px;
+           font-weight: 900;
+           font-size: 0.9rem;
+           display: flex;
+           align-items: center;
+           gap: 8px;
+           white-space: nowrap;
+         }
+         .alert-content { display: flex; gap: 20px; overflow: hidden; flex: 1; }
+         .alert-item {
+           display: flex;
+           align-items: center;
+           gap: 8px;
+           background: rgba(0,0,0,0.3);
+           padding: 4px 12px;
+           border-radius: 6px;
+           border: 1px solid rgba(255,255,255,0.1);
+           white-space: nowrap;
+         }
+         .alert-item .name { font-weight: 700; color: #fff; }
+         .alert-item .branch { font-size: 0.8rem; color: #ffaa00; font-weight: 800; }
+         .alert-item .level { font-size: 0.8rem; font-weight: 900; color: #ff4444; }
+         .alert-more { font-weight: 800; color: #fff; opacity: 0.6; font-size: 0.9rem; }
+
+         @keyframes alert-panic-pulse {
+           0% { border-color: #ff4444; box-shadow: 0 0 10px rgba(255,0,0,0.3); }
+           50% { border-color: #ff0000; box-shadow: 0 0 30px rgba(255,0,0,0.6); }
+           100% { border-color: #ff4444; box-shadow: 0 0 10px rgba(255,0,0,0.3); }
+         }
+
          .panic-stock { border-color: var(--danger) !important; background: rgba(231, 76, 60, 0.1) !important; animation: pulse-panic 1.5s infinite; }
          @keyframes pulse-panic { 0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(231, 76, 60, 0); } 100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); } }
          .stock-warning-badge { background: var(--danger); color: white; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; display: flex; align-items: center; gap: 6px; animation: bounce-alert 0.5s infinite alternate; }
