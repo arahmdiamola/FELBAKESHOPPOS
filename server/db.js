@@ -1,10 +1,23 @@
 import { pgAdapter } from './pg-adapter.js';
 import { v4 as uuidv4 } from 'uuid';
 
+async function renameColumn(db, table, oldCol, newCol) {
+  try {
+    // Attempt lowercase (standard PG behavior if not quoted)
+    await db.run(`ALTER TABLE ${table} RENAME COLUMN IF EXISTS ${oldCol.toLowerCase()} TO "${newCol}"`);
+    // Attempt quoted CamelCase
+    await db.run(`ALTER TABLE ${table} RENAME COLUMN IF EXISTS "${oldCol}" TO "${newCol}"`);
+  } catch (e) {
+    console.error(`[Migration Error] Failed to rename ${table}.${oldCol} -> ${newCol}:`, e.message);
+  }
+}
+
 export async function initDb() {
   const db = pgAdapter;
 
   try {
+    console.log("Starting Database Initialization...");
+
     // 1. Core Tables
     await db.exec(`
       CREATE TABLE IF NOT EXISTS branches (
@@ -198,14 +211,10 @@ export async function initDb() {
       { table: 'branch_sessions', cols: { 'branchId': 'branch_id', 'userId': 'user_id', 'lastSeen': 'last_seen' } }
     ];
 
+    console.log("Running Column Renaming Migrations...");
     for (const m of migrationDef) {
       for (const [oldCol, newCol] of Object.entries(m.cols)) {
-        try {
-          // Attempt 1: Quoted CamelCase (e.g., "branchId")
-          await db.run(`ALTER TABLE ${m.table} RENAME COLUMN IF EXISTS "${oldCol}" TO "${newCol}"`);
-          // Attempt 2: Case-insensitive lowercase (e.g., branchid)
-          await db.run(`ALTER TABLE ${m.table} RENAME COLUMN IF EXISTS ${oldCol.toLowerCase()} TO "${newCol}"`);
-        } catch (e) { }
+        await renameColumn(db, m.table, oldCol, newCol);
       }
     }
 
@@ -267,16 +276,22 @@ export async function initDb() {
     }
 
     // 6. Basic Performance Indexes (Ensuring columns exist first)
-    await db.exec(`
-      CREATE INDEX IF NOT EXISTS idx_transactions_branch_date ON transactions(branch_id, date);
-      CREATE INDEX IF NOT EXISTS idx_logs_branch_time ON system_logs(branch_id, timestamp);
-      CREATE INDEX IF NOT EXISTS idx_sessions_branch ON branch_sessions(branch_id);
-    `);
+    console.log("Creating Performance Indexes...");
+    try {
+      await db.exec(`
+        CREATE INDEX IF NOT EXISTS idx_transactions_branch_date ON transactions(branch_id, date);
+        CREATE INDEX IF NOT EXISTS idx_logs_branch_time ON system_logs(branch_id, timestamp);
+        CREATE INDEX IF NOT EXISTS idx_sessions_branch ON branch_sessions(branch_id);
+      `);
+    } catch (indexError) {
+      console.error("[Index Error] Failed to create indexes. This usually means a column rename failed:", indexError.message);
+      // We don't throw here to allow the server to at least start without indexes if necessary
+    }
 
     console.log("Database perfectly connected and synced!");
     return db;
   } catch (e) {
-    console.error("Database initialization failed:", e);
+    console.error("CRITICAL: Database initialization failed:", e.message);
     throw e;
   }
 }
