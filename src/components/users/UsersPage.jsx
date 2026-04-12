@@ -35,7 +35,7 @@ export default function UsersPage() {
   const canEdit = (targetUser) => {
     if (currentUser?.id === targetUser.id) return true;
     if (currentUser?.role === 'admin' || currentUser?.role === 'system_admin') return true;
-    if (currentUser?.role === 'manager' && targetUser.role === 'cashier') return true;
+    if (currentUser?.role === 'manager' && ['cashier', 'baker'].includes(targetUser.role)) return true;
     return false;
   };
 
