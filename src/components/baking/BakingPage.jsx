@@ -27,6 +27,8 @@ export default function BakingPage() {
   const [activeBatches, setActiveBatches] = useState([]);
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [now, setNow] = useState(new Date());
+  const [historyTab, setHistoryTab] = useState('success'); // 'success' or 'waste'
+  const [alerts, setAlerts] = useState([]);
   
   const [showQtyModal, setShowQtyModal] = useState(false);
   const [showProductModal, setShowProductModal] = useState(false);
@@ -43,6 +45,10 @@ export default function BakingPage() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    fetchHistory();
+  }, [historyTab]);
+
   const fetchMaterials = async () => {
     try {
       const data = await api.get('/raw-materials');
@@ -56,7 +62,8 @@ export default function BakingPage() {
 
   const fetchHistory = async () => {
     try {
-      const data = await api.get('/production/logs?status=completed');
+      const status = historyTab === 'success' ? 'completed' : 'ruined';
+      const data = await api.get(`/production/logs?status=${status}`);
       setHistory(data);
     } catch (err) {}
   };
@@ -65,6 +72,10 @@ export default function BakingPage() {
     try {
       const data = await api.get('/production/logs?status=in_oven');
       setActiveBatches(data);
+      
+      // Update alerts if we find ruined batches in recent history
+      const recentRuined = await api.get('/production/logs?status=ruined&limit=5');
+      setAlerts(recentRuined);
     } catch (err) {}
   };
 
@@ -210,67 +221,69 @@ export default function BakingPage() {
         actions={<ChefHat className="text-accent" size={32} />}
       />
 
-      <div className="pos-container animate-fade-in" style={{ height: 'calc(100vh - 120px)', display: 'grid', gridTemplateColumns: 'minmax(0, 3fr) minmax(360px, 1.2fr)', gap: 20, padding: 20 }}>
+      <div className="pos-container animate-fade-in" style={{ height: 'calc(100vh - 120px)', display: 'grid', gridTemplateColumns: 'minmax(0, 3fr) minmax(360px, 1fr)', gap: 24, padding: 24 }}>
         
-        {/* Left Side: Ingredients Grid */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-          <div className="card-header flex items-center justify-between">
-            <h3 className="card-title">Select Ingredients</h3>
-            <div className="search-bar" style={{ width: 250 }}>
-              <Search size={16} />
-              <input 
-                placeholder="Search raw materials..." 
-                value={search} 
-                onChange={e => setSearch(e.target.value)} 
-              />
+        {/* Left Side Column */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24, overflowY: 'auto', paddingRight: 10 }}>
+          
+          {/* Section 1: Ingredients Selection */}
+          <div className="card-elegant">
+            <div className="p-6 flex items-center justify-between border-b border-mocha/5">
+              <h3 className="card-title-elegant">1. Select Ingredients</h3>
+              <div className="search-bar-elegant">
+                <Search size={16} />
+                <input 
+                  placeholder="Find materials..." 
+                  value={search} 
+                  onChange={e => setSearch(e.target.value)} 
+                />
+              </div>
+            </div>
+            
+            <div className="p-6">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 16 }}>
+                {filteredMaterials.map(m => (
+                    <button 
+                      key={m.id}
+                      className="material-card-elegant"
+                      onClick={() => addToBatch(m)}
+                    >
+                      <div className="material-visual">
+                        {m.image ? (
+                          <div className="material-image-lux" style={{ backgroundImage: `url(${m.image})` }} />
+                        ) : (
+                          <div className="material-emoji-lux">{m.emoji}</div>
+                        )}
+                      </div>
+                      <div className="material-info-lux">
+                        <div className="material-name-lux truncate">{m.name}</div>
+                        <div className={`material-stock-lux ${m.stock <= m.reorderPoint ? 'low' : ''}`}>
+                          {m.stock} {m.unit}
+                        </div>
+                      </div>
+                      {activeBatch.some(item => item.materialId === m.id) && (
+                        <div className="batch-check-elegant">
+                          <Check size={12} strokeWidth={4} />
+                        </div>
+                      )}
+                    </button>
+                ))}
+              </div>
             </div>
           </div>
-          
-          <div className="card-body" style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 16 }}>
-              {filteredMaterials.map(m => (
-                  <button 
-                    key={m.id}
-                    className="card hover-scale material-card"
-                    onClick={() => addToBatch(m)}
-                    style={{ 
-                      padding: '24px 12px', textAlign: 'center', cursor: 'pointer',
-                      background: 'var(--card-bg)', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', position: 'relative',
-                      border: '1px solid var(--border-light)', overflow: 'hidden'
-                    }}
-                  >
-                    {m.image ? (
-                      <div className="material-image-lux" style={{ backgroundImage: `url(${m.image})` }} />
-                    ) : (
-                      <div className="material-emoji">{m.emoji}</div>
-                    )}
-                    <div style={{ fontWeight: 800, fontSize: 'var(--font-xs)', color: 'var(--text-mocha)', marginBottom: 4, zIndex: 2, position: 'relative' }}>{m.name}</div>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: m.stock <= m.reorderPoint ? 'var(--danger)' : 'var(--sage)', zIndex: 2, position: 'relative' }}>
-                      {m.stock} {m.unit}
-                    </div>
-                    {activeBatch.some(item => item.materialId === m.id) && (
-                      <div className="batch-check">
-                        <Check size={14} strokeWidth={3} />
-                      </div>
-                    )}
-                    {m.stock <= m.reorderPoint && <div className="low-stock-dot" />}
-                  </button>
-              ))}
-            </div>
 
-            {/* Live Oven Subsection */}
-            {activeBatches.length > 0 && (
-              <div className="mt-12 p-8 glass-oven animate-pulse-slow relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-orange-500 to-transparent opacity-50" />
-                <h4 className="text-sm font-black uppercase text-mocha mb-8 flex items-center justify-between relative z-10">
+          {/* Section 2: Oven Monitor */}
+          {activeBatches.length > 0 && (
+            <div className="card-elegant overflow-hidden">
+              <div className="glass-oven-header">
                   <div className="flex items-center gap-3">
-                    <div className="oven-dot" /> 🥧 In the Oven (Live)
+                    <div className="oven-dot" /> <span className="font-black text-xs uppercase tracking-widest text-[#D4763C]">Studio Oven Monitor</span>
                   </div>
-                  <span className="text-[10px] bg-mocha-light/80 backdrop-blur-sm border border-mocha/10 px-3 py-1.5 rounded-full font-black tracking-tighter">
-                    {activeBatches.length} BATCHES ACTIVE
-                  </span>
-                </h4>
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 relative z-10">
+                  <span className="text-[10px] font-black uppercase text-mocha opacity-50">{activeBatches.length} Batches Active</span>
+              </div>
+              
+              <div className="p-8 bg-gradient-to-br from-orange-50/50 to-transparent">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                   {activeBatches.map(batch => {
                     const product = products.find(p => p.id === batch.productId);
                     const startTime = new Date(batch.date);
@@ -279,33 +292,28 @@ export default function BakingPage() {
                     const secs = Math.floor((diffMs % 60000) / 1000);
 
                     return (
-                      <div key={batch.id} className="batch-live-card group">
-                        <div className="flex gap-4 items-start mb-6">
-                          <div className="w-16 h-16 bg-cream rounded-2xl flex items-center justify-center text-3xl shadow-inner border border-mocha/5 group-hover:scale-110 transition-transform">
+                      <div key={batch.id} className="oven-batch-card shadow-xl shadow-orange-900/5">
+                        <div className="flex gap-4 items-center mb-6">
+                          <div className="oven-product-emoji">
                             {product?.emoji || '🥧'}
                           </div>
                           <div className="flex-1">
-                            <h5 className="font-black text-mocha text-base leading-tight">
-                              {batch.productName || 'Batch Production'}
-                            </h5>
-                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2">
-                               <span className="text-[10px] font-black uppercase tracking-wider text-accent bg-accent/10 px-2 py-0.5 rounded">
-                                 Target: {batch.estimatedYield || 0} {batch.unit || 'pcs'}
+                            <h5 className="batch-title-lux">{batch.productName || 'Batch'}</h5>
+                            <div className="batch-meta-row">
+                               <span className="batch-yield-tag">Target: {batch.estimatedYield || 0} {batch.unit || 'pcs'}</span>
+                               <span className="batch-timer-tag animate-pulse">
+                                 <ChefHat size={12} /> {mins}m {secs}s
                                </span>
-                               <div className="flex items-center gap-1.5 text-[10px] font-bold text-sage">
-                                 <RotateCcw size={10} className="animate-spin-slow" />
-                                 {mins}m {secs}s in heat
-                               </div>
                             </div>
                           </div>
-                          <div className="live-timer-lux">
+                          <div className="batch-time-tag">
                              {startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </div>
                         </div>
                         
                         <div className="flex gap-3">
                           <button 
-                            className="flex-1 btn-lux-green py-4 text-[11px] font-black uppercase tracking-widest shadow-lg shadow-sage/20 hover:shadow-sage/40"
+                            className="finish-btn-elegant flex-1"
                             onClick={() => {
                               setSelectedBatch(batch);
                               setKeypadMode('production');
@@ -316,7 +324,7 @@ export default function BakingPage() {
                             Finish & Log
                           </button>
                           <button 
-                            className="px-5 btn-lux-ruin shadow-lg shadow-red-500/5 hover:shadow-red-500/20"
+                            className="void-btn-elegant"
                             onClick={() => handleVoidBatch(batch.id)}
                             title="Abort Batch"
                           >
@@ -328,147 +336,181 @@ export default function BakingPage() {
                   })}
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Recent History Subsection */}
-            {history.length > 0 && (
-              <div className="mt-12">
-                <h4 className="text-xs font-black uppercase tracking-widest text-muted mb-4 flex items-center gap-2">
-                  <RotateCcw size={14} /> Recent Productions
-                </h4>
-                <div className="table-container">
-                  <table className="table mini-table">
-                    <thead>
-                      <tr>
-                        <th>Product</th>
-                        <th>Qty</th>
-                        <th>Time</th>
-                        <th>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {history.slice(0, 5).map(log => (
-                        <tr key={log.id}>
-                          <td className="font-bold text-xs">{log.productName || 'Batch'}</td>
-                          <td className="text-xs font-black text-accent">{log.quantityProduced || 0}</td>
-                          <td className="text-xs text-muted">{new Date(log.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                          <td><span className="badge badge-green text-xs">Logged</span></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+          {/* Section 3: History & Waste Log */}
+          <div className="card-elegant">
+            <div className="px-6 pt-6 flex items-center justify-between border-b border-mocha/5">
+              <div className="flex gap-6">
+                <button 
+                  className={`history-tab ${historyTab === 'success' ? 'active' : ''}`}
+                  onClick={() => setHistoryTab('success')}
+                >
+                  Production Logs
+                </button>
+                <button 
+                  className={`history-tab ${historyTab === 'waste' ? 'active' : ''}`}
+                  onClick={() => setHistoryTab('waste')}
+                >
+                  Waste & Spoilage
+                </button>
               </div>
-            )}
+            </div>
+            
+            <div className="p-0">
+               {history.length === 0 ? (
+                 <div className="p-12 text-center opacity-30 italic text-sm">No recent records found in this category</div>
+               ) : (
+                 <div className="history-list">
+                    {history.slice(0, 10).map(log => (
+                      <div key={log.id} className="history-item">
+                        <div className="history-icon-box">
+                           {products.find(p => p.id === log.productId)?.emoji || '📌'}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                             <span className="history-name">{log.productName || 'Batch'}</span>
+                             <span className={`history-status-badge ${log.status}`}>
+                               {log.status === 'ruined' ? 'WASTE' : 'SUCCESS'}
+                             </span>
+                          </div>
+                          <div className="history-meta">
+                             {log.status === 'ruined' ? (
+                               <span className="text-red-500 font-bold">LOSS: {log.notes || 'Unspecified'}</span>
+                             ) : (
+                               <span>Produced {log.quantityProduced} {log.unit || 'pcs'}</span>
+                             )}
+                             <span className="mx-2">•</span>
+                             <span>{new Date(log.date).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                 </div>
+               )}
+            </div>
           </div>
         </div>
 
-        {/* Right Side: Batch Summary */}
-        <div className="card batch-sidebar">
-          <div className="card-header flex items-center justify-between" style={{ background: 'transparent', borderBottom: '1px solid rgba(0,0,0,0.05)', padding: '24px' }}>
-            <div className="flex items-center gap-3">
-              <ChefHat size={22} className="text-mocha" />
-              <h3 className="card-title" style={{ color: '#4A3728', fontSize: '1rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Studio Log</h3>
-            </div>
-            {activeBatch.length > 0 && (
-              <button onClick={clearBatch} className="clear-batch-minimal">
-                <Trash2 size={16} />
-                <span>Clear</span>
-              </button>
-            )}
-          </div>
-
-          <div className="batch-content-luxury">
-            {activeBatch.length === 0 ? (
-              <div className="empty-luxury animate-fade-in">
-                <div className="empty-icon-wrapper">
-                  <Scale size={42} strokeWidth={1} />
-                </div>
-                <p className="empty-text">Select ingredients to begin your craft</p>
-                <div className="empty-dot-grid"></div>
+        {/* Right Side: Sidebar */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          {/* Batch Sidebar */}
+          <div className="card-elegant flex-1 flex flex-col overflow-hidden">
+            <div className="p-6 flex items-center justify-between border-b border-mocha/5">
+              <div className="flex items-center gap-3">
+                <ChefHat size={20} className="text-mocha" />
+                <h3 className="card-title-elegant">Studio Log</h3>
               </div>
-            ) : (
-              <div className="ingredient-stack">
-                {activeBatch.map((item, index) => (
-                  <div 
-                    key={item.materialId} 
-                    className="ingredient-luxury-card animate-slide-up"
-                    style={{ animationDelay: `${index * 0.05}s` }}
-                  >
-                    {item.image ? (
-                       <div className="luxury-image-box-sidebar" style={{ backgroundImage: `url(${item.image})` }} />
-                    ) : (
-                       <div className="luxury-emoji-box">{item.emoji}</div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="luxury-material-name truncate">{item.materialName}</div>
-                      <div className="luxury-material-qty">{item.quantityUsed} {item.unit}</div>
-                    </div>
-                    <div className="flex items-center">
-                      <button className="luxury-remove-btn shadow-sm" onClick={() => removeFromBatch(item.materialId)}>
-                        <Trash2 size={16} />
+              {activeBatch.length > 0 && (
+                <button onClick={clearBatch} className="text-[10px] font-black uppercase text-red-500 hover:opacity-70 transition-opacity">
+                  Clear All
+                </button>
+              )}
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6">
+              {activeBatch.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-center opacity-20 py-20">
+                  <Scale size={48} strokeWidth={1} />
+                  <p className="mt-4 text-sm font-bold">Select ingredients to prep batch</p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {activeBatch.map((item, index) => (
+                    <div key={item.materialId} className="sidebar-ingredient-card animate-slide-up" style={{ animationDelay: `${index * 0.05}s` }}>
+                      <div className="w-10 h-10 bg-mocha-light rounded-xl flex items-center justify-center text-xl">
+                        {item.emoji || '📦'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[11px] font-black text-mocha truncate">{item.materialName}</div>
+                        <div className="text-[10px] font-bold text-sage">{item.quantityUsed} {item.unit}</div>
+                      </div>
+                      <button className="w-8 h-8 rounded-lg bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-sm" onClick={() => removeFromBatch(item.materialId)}>
+                        <Trash2 size={14} />
                       </button>
                     </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 bg-cream/50 border-t border-mocha/5">
+              <div className="mb-6 space-y-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-mocha/40">Target Product</label>
+                  {!targetProduct ? (
+                    <button className="w-full py-4 border-2 border-dashed border-mocha/10 rounded-2xl text-[11px] font-bold text-mocha/40 hover:border-mocha/30 hover:text-mocha/60 transition-all flex items-center justify-center gap-2" onClick={() => setShowProductModal(true)}>
+                      <Plus size={16} /> Choose Product
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-3 p-3 bg-mocha rounded-2xl text-white shadow-lg">
+                      <span className="text-2xl">{targetProduct.emoji}</span>
+                      <div className="flex-1">
+                        <div className="text-[11px] font-black">{targetProduct.name}</div>
+                        <div className="text-[9px] opacity-60 font-bold uppercase tracking-tighter">{targetProduct.unit || 'pcs'} target</div>
+                      </div>
+                      <button onClick={() => setTargetProduct(null)} className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors">
+                        <RotateCcw size={14} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-mocha/40">Expected Yield</label>
+                  <div className="flex items-center bg-white rounded-2xl p-1 border border-mocha/5 shadow-inner" onClick={openProductionKeypad}>
+                     <button className="w-12 h-12 rounded-xl text-mocha hover:bg-mocha-light transition-colors" onClick={(e) => { e.stopPropagation(); setQuantityToProduce(Math.max(1, quantityToProduce - 1)); }}>
+                       <Minus size={18} />
+                     </button>
+                     <div className="flex-1 text-center">
+                        <span className="text-xl font-black text-mocha leading-none">{quantityToProduce}</span>
+                        <span className="text-[9px] block font-bold text-mocha/30 uppercase">{targetProduct?.unit || 'pcs'}</span>
+                     </div>
+                     <button className="w-12 h-12 rounded-xl text-mocha hover:bg-mocha-light transition-colors" onClick={(e) => { e.stopPropagation(); setQuantityToProduce(quantityToProduce + 1); }}>
+                       <Plus size={18} />
+                     </button>
                   </div>
-                ))}
+                </div>
               </div>
-            )}
+
+              <button 
+                className={`w-full py-5 rounded-3xl font-black uppercase tracking-widest text-xs shadow-xl transition-all ${activeBatch.length === 0 || !targetProduct || isSaving ? 'bg-mocha/10 text-mocha/30 cursor-not-allowed' : 'bg-sage text-white shadow-sage/20 hover:shadow-sage/40 hover:-translate-y-1'}`}
+                disabled={activeBatch.length === 0 || !targetProduct || isSaving}
+                onClick={handleStartBatch}
+              >
+                {isSaving ? 'Processing...' : 'Place in Oven'}
+              </button>
+            </div>
           </div>
 
-          <div className="sidebar-footer-luxury">
-            <div className="luxury-input-section">
-              <label className="luxury-label">Production Target</label>
-              {!targetProduct ? (
-                <button className="luxury-picker-btn" onClick={() => setShowProductModal(true)}>
-                  <Plus size={18} />
-                  <span>Tap to choose product</span>
-                </button>
-              ) : (
-                <div className="luxury-selected-card animate-scale-in">
-                  <span className="luxury-selected-emoji">{targetProduct.emoji}</span>
-                  <div className="flex-1">
-                     <div className="luxury-selected-name">{targetProduct.name}</div>
-                     <div className="luxury-selected-meta">{targetProduct.unit || 'pcs'}</div>
-                  </div>
-                  <button onClick={() => setTargetProduct(null)} className="luxury-reset-btn">
-                     <RotateCcw size={14} />
-                  </button>
+          {/* Alert Widget */}
+          <div className="card-elegant overflow-hidden bg-red-50/50 border-red-100/50">
+             <div className="p-4 bg-red-500 text-white flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                   <Info size={16} />
+                   <span className="text-[10px] font-bold uppercase tracking-widest">Spoilage Alerts</span>
                 </div>
-              )}
-            </div>
-
-            <div className="luxury-input-section">
-              <label className="luxury-label">Expected Yield</label>
-              <div className="luxury-qty-wrapper" onClick={openProductionKeypad}>
-                 <button className="qty-lux-btn" onClick={(e) => { e.stopPropagation(); setQuantityToProduce(Math.max(1, quantityToProduce - 1)); }}>
-                   <Minus size={18} />
-                 </button>
-                 <div className="qty-lux-display">
-                    <span className="qty-lux-val">{quantityToProduce}</span>
-                    <span className="qty-lux-unit">{targetProduct?.unit || 'pcs'}</span>
-                 </div>
-                 <button className="qty-lux-btn" onClick={(e) => { e.stopPropagation(); setQuantityToProduce(quantityToProduce + 1); }}>
-                   <Plus size={18} />
-                 </button>
-              </div>
-            </div>
-
-            <button 
-              className={`luxury-submit-btn ${isSaving ? 'loading' : ''}`}
-              disabled={activeBatch.length === 0 || !targetProduct || isSaving}
-              onClick={handleStartBatch}
-            >
-              {isSaving ? (
-                <span className="flex items-center gap-2">Processing...</span>
-              ) : (
-                <div className="flex items-center justify-center gap-3 w-full">
-                  <PackageCheck size={24} strokeWidth={2.5} /> 
-                  <span className="text-base font-black">Start & Place in Oven</span>
-                </div>
-              )}
-            </button>
+                {alerts.length > 0 && <span className="animate-ping w-2 h-2 bg-white rounded-full" />}
+             </div>
+             <div className="p-4 flex flex-col gap-3">
+                {alerts.length === 0 ? (
+                   <p className="text-[10px] italic text-red-400 text-center py-4">No recent production losses</p>
+                ) : (
+                   alerts.slice(0, 3).map(alert => (
+                      <div key={alert.id} className="p-3 bg-white border border-red-100 rounded-xl shadow-sm animate-shake">
+                         <div className="flex items-center justify-between mb-1">
+                            <span className="text-[10px] font-black text-mocha truncate">{alert.productName}</span>
+                            <span className="text-[8px] font-bold text-red-500 uppercase">Ruined</span>
+                         </div>
+                         <p className="text-[9px] font-bold text-red-400 capitalize truncate">Reason: {alert.notes || 'Unknown'}</p>
+                      </div>
+                   ))
+                )}
+             </div>
           </div>
         </div>
+      </div>
       </div>
 
       {/* Product Selection Modal */}
@@ -532,399 +574,190 @@ export default function BakingPage() {
         </div>
       </Modal>
 
-      <style>{`
-        :root {
-          --mocha: #4A3728;
-          --mocha-light: #F5E6D3;
-          --sage: #6B8E23;
-          --cream: #FAF9F6;
-        }
-        .pos-container {
-          background-color: #F8F5F2;
-          background-image: 
-            radial-gradient(at 0% 0%, hsla(28,100%,74%,0.15) 0, transparent 50%), 
-            radial-gradient(at 50% 0%, hsla(180,100%,74%,0.05) 0, transparent 50%), 
-            radial-gradient(at 100% 0%, hsla(28,100%,74%,0.15) 0, transparent 50%);
-          background-attachment: fixed;
-        }
-        .card {
-          background: rgba(255, 255, 255, 0.6) !important;
-          backdrop-filter: blur(15px) !important;
-          -webkit-backdrop-filter: blur(15px) !important;
-          border: 1px solid rgba(255, 255, 255, 0.4) !important;
-          box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07) !important;
-          border-radius: 32px !important;
-        }
-        .batch-sidebar {
-          background: rgba(255, 255, 255, 0.4) !important;
-          border-left: 1px solid rgba(255, 255, 255, 0.2) !important;
-        }
-        .clear-batch-minimal {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          background: var(--mocha-light);
-          color: var(--mocha);
-          border: none;
-          padding: 6px 12px;
-          border-radius: 12px;
-          font-size: 0.7rem;
-          font-weight: 800;
-          text-transform: uppercase;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .clear-batch-minimal:hover { transform: scale(1.05); background: #eddec9; }
-
-        .batch-content-luxury {
-          flex: 1;
-          overflow-y: auto;
-          padding: 24px;
-          position: relative;
-        }
-        .empty-luxury {
-          height: 100%;
+      <        /* Overhaul Styles */
+        .card-elegant {
+          background: white;
+          border-radius: 32px;
+          border: 1px solid rgba(74, 55, 40, 0.05);
+          box-shadow: 0 10px 40px rgba(74, 55, 40, 0.03);
           display: flex;
           flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          text-align: center;
-          color: var(--mocha);
-          opacity: 0.4;
         }
-        .empty-icon-wrapper {
-          width: 80px;
-          height: 80px;
-          border: 1px dashed var(--mocha);
+        .card-title-elegant {
+          color: var(--mocha);
+          font-size: 0.85rem;
+          font-weight: 900;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+        }
+        .search-bar-elegant {
+          background: #F8F5F2;
+          padding: 10px 20px;
+          border-radius: 16px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          color: #A0938A;
+          border: 1px solid rgba(0,0,0,0.02);
+        }
+        .search-bar-elegant input { border: none; background: transparent; font-size: 0.8rem; font-weight: 700; width: 100%; outline: none; }
+        
+        .material-card-elegant {
+          background: #FDFBF7;
+          border-radius: 24px;
+          border: 1px solid transparent;
+          padding: 16px;
+          text-align: center;
+          cursor: pointer;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          position: relative;
+        }
+        .material-card-elegant:hover {
+          background: white;
+          border-color: var(--mocha);
+          transform: translateY(-4px);
+          box-shadow: 0 10px 25px rgba(74, 55, 40, 0.08);
+        }
+        .material-visual { margin-bottom: 12px; }
+        .material-emoji-lux { font-size: 2.2rem; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1)); }
+        .material-name-lux { font-weight: 800; font-size: 0.75rem; color: var(--mocha); margin-bottom: 2px; }
+        .material-stock-lux { font-size: 0.65rem; font-weight: 700; color: var(--sage); }
+        .material-stock-lux.low { color: #ef4444; }
+        .batch-check-elegant {
+          position: absolute;
+          top: -8px;
+          right: -8px;
+          width: 24px;
+          height: 24px;
+          background: var(--mocha);
+          color: white;
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
-          margin-bottom: 20px;
+          box-shadow: 0 4px 10px rgba(74, 55, 40, 0.3);
+          border: 2px solid white;
         }
-        .empty-text {
-          font-size: 0.8rem;
-          font-weight: 600;
-          max-width: 150px;
-          line-height: 1.5;
+
+        .glass-oven-header {
+           background: rgba(255, 120, 0, 0.05);
+           padding: 16px 32px;
+           border-bottom: 1px solid rgba(255, 120, 0, 0.1);
+           display: flex;
+           justify-content: space-between;
+           align-items: center;
         }
-        
-        .ingredient-stack {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
+        .oven-batch-card {
+           background: white;
+           border-radius: 28px;
+           padding: 24px;
+           border: 1px solid rgba(0,0,0,0.03);
+           transition: all 0.3s;
         }
-        .ingredient-luxury-card {
-           background: rgba(255, 255, 255, 0.5);
-           backdrop-filter: blur(5px);
-           padding: 16px;
+        .oven-batch-card:hover { transform: translateY(-3px); }
+        .oven-product-emoji {
+           width: 56px;
+           height: 56px;
+           background: #FDFBF7;
            border-radius: 20px;
            display: flex;
            align-items: center;
-           gap: 16px;
-           box-shadow: 0 4px 12px rgba(0,0,0,0.02);
-           border: 1px solid rgba(255, 255, 255, 0.5);
+           justify-content: center;
+           font-size: 1.8rem;
+           box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);
         }
-        .material-image-lux {
-           height: 80px;
-           width: 100%;
-           background-size: cover;
-           background-position: center;
-           margin-bottom: 12px;
-           border-radius: 12px;
-           box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-           position: relative;
-           z-index: 2;
-        }
+        .batch-title-lux { font-size: 1rem; font-weight: 900; color: var(--mocha); margin-bottom: 4px; }
+        .batch-meta-row { display: flex; gap: 8px; flex-wrap: wrap; }
+        .batch-yield-tag { font-size: 10px; font-black uppercase tracking-tight text-accent bg-accent/10 px-2 py-0.5 rounded-lg; }
+        .batch-timer-tag { font-size: 10px; font-black uppercase text-sage bg-sage/10 px-2 py-0.5 rounded-lg flex items-center gap-1.5; }
+        .batch-time-tag { font-size: 10px; font-black text-mocha/30; }
 
-        .luxury-image-box-sidebar {
-           width: 44px;
-           height: 44px;
-           background-size: cover;
-           background-position: center;
-           border-radius: 14px;
-           box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        .finish-btn-elegant { 
+           background: var(--sage); 
+           color: white; 
+           border: none; 
+           padding: 16px; 
+           border-radius: 18px; 
+           font-size: 0.7rem; 
+           font-weight: 900; 
+           text-transform: uppercase; 
+           letter-spacing: 0.1em; 
+           cursor: pointer;
+           transition: all 0.2s;
         }
-
-        .luxury-emoji-box {
-          width: 44px;
-          height: 44px;
-          background: #FDFBF7;
-          border-radius: 14px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 1.4rem;
-        }
-        .luxury-material-name {
-          font-weight: 800;
-          font-size: 0.85rem;
-          color: var(--mocha);
-        }
-        .luxury-material-qty {
-          font-size: 0.75rem;
-          color: var(--sage);
-          font-weight: 700;
-        }
-        .luxury-remove-btn {
-          color: #ef4444;
-          background: #fff5f5;
-          border: 1px solid #fee2e2;
-          width: 32px;
-          height: 32px;
-          border-radius: 10px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .luxury-remove-btn:hover { background: #ef4444; color: white; transform: scale(1.1); }
-
-        .sidebar-footer-luxury {
-          padding: 24px;
-          background: white;
-          border-top: 1px solid rgba(0,0,0,0.05);
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-        }
-        .luxury-input-section {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-        .luxury-label {
-          font-size: 0.65rem;
-          font-weight: 900;
-          text-transform: uppercase;
-          color: #A0938A;
-          letter-spacing: 0.15em;
-        }
-        .luxury-picker-btn {
-           background: #FDFBF7;
-           border: 1px dashed #E5E1DA;
-           padding: 16px;
-           border-radius: 16px;
-           color: #8B837E;
-           font-size: 0.75rem;
-           font-weight: 700;
+        .finish-btn-elegant:hover { background: #7ca529; transform: scale(1.02); }
+        .void-btn-elegant {
+           background: #FFF5F5;
+           color: #EF4444;
+           border: 1px solid #FEE2E2;
+           width: 52px;
+           border-radius: 18px;
+           cursor: pointer;
+           transition: all 0.2s;
            display: flex;
            align-items: center;
            justify-content: center;
-           gap: 10px;
+        }
+        .void-btn-elegant:hover { background: #EF4444; color: white; }
+
+        .history-tab {
+           padding: 20px 0;
+           font-size: 0.7rem;
+           font-weight: 900;
+           text-transform: uppercase;
+           letter-spacing: 0.1em;
+           color: #A0938A;
+           border-bottom: 3px solid transparent;
            cursor: pointer;
            transition: all 0.2s;
         }
-        .luxury-picker-btn:hover { border-color: var(--mocha); color: var(--mocha); background: white; }
+        .history-tab.active { color: var(--mocha); border-bottom-color: var(--mocha); }
+        .history-item {
+           padding: 20px 24px;
+           display: flex;
+           align-items: center;
+           gap: 20px;
+           border-bottom: 1px solid rgba(0,0,0,0.02);
+           transition: background 0.2s;
+        }
+        .history-item:hover { background: #FDFBF7; }
+        .history-icon-box {
+           width: 44px;
+           height: 44px;
+           background: #F8F5F2;
+           border-radius: 16px;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           font-size: 1.2rem;
+        }
+        .history-name { font-size: 0.85rem; font-weight: 800; color: var(--mocha); }
+        .history-status-badge { font-size: 8px; font-weight: 900; padding: 4px 10px; border-radius: 50px; text-transform: uppercase; }
+        .history-status-badge.completed { background: #DCFCE7; color: #166534; }
+        .history-status-badge.ruined { background: #FEE2E2; color: #991B1B; }
+        .history-meta { font-size: 0.7rem; font-weight: 600; color: #A0938A; margin-top: 2px; }
 
-        .luxury-selected-card {
-           background: var(--mocha);
-           padding: 16px;
+        .sidebar-ingredient-card {
+           background: white;
+           padding: 12px;
            border-radius: 18px;
-           color: white;
            display: flex;
            align-items: center;
            gap: 12px;
-           box-shadow: 0 10px 25px rgba(74, 55, 40, 0.2);
-        }
-        .luxury-selected-emoji { font-size: 1.8rem; }
-        .luxury-selected-name { font-weight: 800; font-size: 0.85rem; }
-        .luxury-selected-meta { font-size: 0.65rem; opacity: 0.6; font-weight: 600; text-transform: uppercase; }
-        .luxury-reset-btn { background: rgba(255,255,255,0.1); border: none; width: 28px; height: 28px; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s; }
-        .luxury-reset-btn:hover { background: rgba(255,255,255,0.2); }
-
-        .luxury-qty-wrapper {
-          background: #FDFBF7;
-          border-radius: 18px;
-          display: flex;
-          align-items: center;
-          padding: 6px;
-          cursor: pointer;
-        }
-        .qty-lux-btn {
-          width: 40px;
-          height: 40px;
-          border-radius: 12px;
-          border: none;
-          background: white;
-          color: var(--mocha);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          box-shadow: 0 4px 10px rgba(0,0,0,0.03);
-          transition: all 0.2s;
-        }
-        .qty-lux-btn:active { transform: scale(0.9); }
-        .qty-lux-display {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-        }
-        .qty-lux-val { font-size: 1.4rem; font-weight: 900; color: var(--mocha); line-height: 1; }
-        .qty-lux-unit { font-size: 0.6rem; font-weight: 800; color: #BBB0A8; text-transform: uppercase; }
-
-        .luxury-submit-btn {
-          width: 100%;
-          background: var(--sage);
-          color: white;
-          padding: 20px;
-          border-radius: 20px;
-          border: none;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 12px;
-          font-weight: 800;
-          font-size: 0.9rem;
-          box-shadow: 0 10px 30px rgba(107, 142, 35, 0.25);
-          cursor: pointer;
-          transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .luxury-submit-btn:hover:not(:disabled) {
-          transform: translateY(-4px);
-          box-shadow: 0 15px 40px rgba(107, 142, 35, 0.35);
-          background: #7ca529;
-        }
-        .luxury-submit-btn:disabled { opacity: 0.4; cursor: not-allowed; filter: grayscale(1); }
-
-        .material-card {
-           background: rgba(255, 255, 255, 0.4) !important;
-           border-radius: 24px !important;
-           border: 1px solid rgba(255, 255, 255, 0.5) !important;
-           backdrop-filter: blur(10px);
-        }
-        .material-card:hover {
-           background: rgba(255, 255, 255, 0.6) !important;
-           border-color: var(--mocha) !important;
-        }
-        .material-emoji { font-size: 3rem; margin-bottom: 12px; filter: drop-shadow(0 8px 12px rgba(0,0,0,0.1)); transition: transform 0.3s; }
-        .material-card:hover .material-emoji { transform: translateY(-5px) scale(1.1); }
-        
-        .keypad-container-luxury {
-          display: flex;
-          flex-direction: column;
-          gap: 32px;
-          padding: 10px;
-        }
-        .keypad-display-luxury {
-          text-align: center;
-          padding: 20px;
-          display: flex;
-          align-items: baseline;
-          justify-content: center;
-          gap: 12px;
-        }
-        .keypad-val { font-size: 5rem; font-weight: 900; color: #D4763C; line-height: 1; }
-        .keypad-unit { font-size: 1.5rem; font-weight: 800; color: #BBB0A8; }
-
-        .keypad-grid-luxury {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 16px;
-        }
-        .lux-num-btn {
-          height: 80px;
-          background: white;
-          border: 1px solid rgba(0,0,0,0.05);
-          border-radius: 24px;
-          font-size: 2rem;
-          font-weight: 900;
-          color: #4A3728;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: all 0.2s;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-        }
-        .lux-num-btn:active { transform: scale(0.95); background: #FDFBF7; }
-        .lux-num-btn.reset { background: #ef4444; color: white; }
-        .lux-num-btn.reset:hover { background: #dc2626; }
-
-        .lux-confirm-btn {
-          width: 100%;
-          padding: 24px;
-          background: #E68D50;
-          color: white;
-          border-radius: 20px;
-          border: none;
-          font-size: 1.2rem;
-          font-weight: 900;
-          cursor: pointer;
-          transition: all 0.2s;
-          box-shadow: 0 10px 25px rgba(230, 141, 80, 0.2);
-        }
-        .lux-confirm-btn:hover { transform: translateY(-3px); box-shadow: 0 15px 35px rgba(230, 141, 80, 0.3); }
-        .lux-confirm-btn:active { transform: translateY(0); }
-        .glass-oven {
-          background: linear-gradient(135deg, rgba(255, 120, 0, 0.03) 0%, rgba(212, 118, 60, 0.08) 100%);
-          border: 1px solid rgba(212, 118, 60, 0.15);
-          box-shadow: inset 0 0 40px rgba(255, 100, 0, 0.05);
-          border-radius: 36px;
-        }
-        .oven-dot {
-          width: 8px;
-          height: 8px;
-          background: #ff4d00;
-          border-radius: 50%;
-          box-shadow: 0 0 10px #ff4d00;
-          animation: pulse 1s infinite;
-        }
-        @keyframes pulse {
-          0% { opacity: 0.4; }
-          50% { opacity: 1; }
-          100% { opacity: 0.4; }
-        }
-        .animate-pulse-slow {
-          animation: pulse 4s infinite ease-in-out;
+           border: 1px solid rgba(0,0,0,0.02);
+           box-shadow: 0 4px 10px rgba(0,0,0,0.01);
         }
         
-        .batch-live-card {
-           background: rgba(255, 255, 255, 0.9);
-           padding: 24px;
-           border-radius: 28px;
-           box-shadow: 0 10px 30px rgba(0,0,0,0.04);
-           border: 1px solid white;
-           transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .batch-live-card:hover {
-           transform: translateY(-5px);
-           box-shadow: 0 20px 40px rgba(0,0,0,0.08);
-           background: white;
-        }
-        .live-timer-lux {
-           font-size: 0.7rem;
-           font-weight: 900;
-           color: white;
-           background: var(--mocha);
-           padding: 6px 14px;
-           border-radius: 50px;
-           box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
+        .animate-spin-slow { animation: spin 4s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         
-        .btn-lux-green {
-           background: var(--sage);
-           color: white;
-           border-radius: 14px;
-           border: none;
-           cursor: pointer;
-           transition: all 0.2s;
+        .animate-shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+          10%, 90% { transform: translate3d(-1px, 0, 0); }
+          20%, 80% { transform: translate3d(2px, 0, 0); }
+          30%, 50%, 70% { transform: translate3d(-3px, 0, 0); }
+          40%, 60% { transform: translate3d(3px, 0, 0); }
         }
-        .btn-lux-green:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(107, 142, 35, 0.2); }
-        
-        .btn-lux-ruin {
-           background: #fee2e2;
-           color: #ef4444;
-           border: none;
-           border-radius: 14px;
-           cursor: pointer;
-           transition: all 0.2s;
-        }
-        .btn-lux-ruin:hover { background: #ef4444; color: white; }
       `}</style>
     </>
   );
