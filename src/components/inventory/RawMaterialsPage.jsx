@@ -100,20 +100,26 @@ export default function RawMaterialsPage() {
         )}
       />
 
-      <div className="page-content animate-fade-in">
-        <div className="filter-bar mb-4">
-          <div className="search-bar" style={{ flex: 1, maxWidth: 400 }}>
-            <Search />
+      <div className="pos-glass-layout animate-fade-in">
+        <div className="filter-bar-luxury mb-6">
+          <div className="search-bar-glass" style={{ flex: 1, maxWidth: 460 }}>
+            <Search size={18} />
             <input 
-              placeholder="Search materials (e.g. Flour, Sugar...)" 
+              placeholder="Filter by material name..." 
               value={search} 
               onChange={e => setSearch(e.target.value)} 
             />
           </div>
+          {isAdmin && (
+             <button className="luxury-add-btn" onClick={openAdd}>
+                <Plus size={18} />
+                <span>New Material</span>
+             </button>
+          )}
         </div>
 
-        <div className="table-container">
-          <table className="table">
+        <div className="glass-table-container">
+          <table className="luxury-table">
             <thead>
               <tr>
                 <th width="50"></th>
@@ -125,34 +131,47 @@ export default function RawMaterialsPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map(m => {
+               {filtered.map((m, index) => {
                 const isLow = m.reorderPoint > 0 && m.stock <= m.reorderPoint;
                 return (
-                  <tr key={m.id}>
-                    <td style={{ fontSize: '1.5rem' }}>{m.emoji}</td>
-                    <td className="primary">{m.name}</td>
-                    <td>
-                      <span className={`badge ${isLow ? 'badge-red' : 'badge-green'}`} style={{ fontSize: '1.1rem', fontWeight: 700 }}>
-                        {m.stock} {m.unit}
-                      </span>
+                  <tr key={m.id} className="animate-slide-up" style={{ animationDelay: `${index * 0.05}s` }}>
+                    <td className="luxury-td-emoji">
+                      <div className="luxury-emoji-badge">{m.emoji}</div>
                     </td>
-                    <td>{m.reorderPoint} {m.unit}</td>
+                    <td className="luxury-td-name">
+                       <div className="name-main">{m.name}</div>
+                       <div className="name-sub">Baking Ingredient</div>
+                    </td>
+                    <td>
+                      <div className={`luxury-stock-pill ${isLow ? 'low' : 'optimal'}`}>
+                        <span className="stock-val">{m.stock}</span>
+                        <span className="stock-unit">{m.unit}</span>
+                      </div>
+                    </td>
+                    <td className="luxury-td-reorder">
+                       <div className="reorder-label">Threshold</div>
+                       <div className="reorder-val">{m.reorderPoint} {m.unit}</div>
+                    </td>
                     <td>
                       {isLow ? (
-                        <span className="text-danger flex items-center gap-1 font-bold">
-                          <AlertTriangle size={14} /> Low Stock
-                        </span>
+                        <div className="luxury-status-badge critical">
+                          <AlertTriangle size={12} />
+                          <span>Needs Restock</span>
+                        </div>
                       ) : (
-                        <span className="text-success font-medium">Optimal</span>
+                        <div className="luxury-status-badge healthy">
+                          <div className="status-dot" />
+                          <span>Healthy Stock</span>
+                        </div>
                       )}
                     </td>
                     {isAdmin && (
                       <td>
                         <div className="flex gap-2">
-                          <button className="btn btn-secondary btn-sm" onClick={() => openEdit(m)}>
+                          <button className="action-btn-circle edit" onClick={() => openEdit(m)}>
                             <Edit3 size={14} />
                           </button>
-                          <button className="btn btn-ghost btn-sm text-danger" onClick={() => handleDelete(m.id, m.name)}>
+                          <button className="action-btn-circle delete" onClick={() => handleDelete(m.id, m.name)}>
                             <Trash2 size={14} />
                           </button>
                         </div>
@@ -234,39 +253,184 @@ export default function RawMaterialsPage() {
         </div>
       </Modal>
       <style>{`
+        :root {
+          --mocha: #4A3728;
+          --mocha-light: #F5E6D3;
+          --sage: #6B8E23;
+          --cream: #FAF9F6;
+        }
+        .pos-glass-layout {
+          padding: 32px;
+          min-height: calc(100vh - 120px);
+          background-color: #F8F5F2;
+          background-image: 
+            radial-gradient(at 0% 0%, hsla(28,100%,74%,0.1) 0, transparent 50%), 
+            radial-gradient(at 100% 0%, hsla(180,100%,74%,0.08) 0, transparent 50%),
+            radial-gradient(at 50% 100%, hsla(28,100%,74%,0.05) 0, transparent 50%);
+          background-attachment: fixed;
+        }
+
+        .filter-bar-luxury {
+           display: flex;
+           align-items: center;
+           justify-content: space-between;
+           gap: 20px;
+        }
+        
+        .search-bar-glass {
+           background: rgba(255, 255, 255, 0.4);
+           backdrop-filter: blur(10px);
+           border: 1px solid rgba(255, 255, 255, 0.6);
+           border-radius: 20px;
+           padding: 12px 20px;
+           display: flex;
+           align-items: center;
+           gap: 12px;
+           color: var(--mocha);
+           box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+        }
+        .search-bar-glass input {
+           background: transparent;
+           border: none;
+           width: 100%;
+           outline: none;
+           font-weight: 700;
+           color: var(--mocha);
+        }
+
+        .luxury-add-btn {
+           background: var(--mocha);
+           color: white;
+           padding: 14px 24px;
+           border-radius: 20px;
+           border: none;
+           display: flex;
+           align-items: center;
+           gap: 10px;
+           font-weight: 800;
+           font-size: 0.85rem;
+           cursor: pointer;
+           box-shadow: 0 10px 25px rgba(74, 55, 40, 0.2);
+           transition: all 0.2s;
+        }
+        .luxury-add-btn:hover { transform: translateY(-3px); box-shadow: 0 15px 35px rgba(74, 55, 40, 0.3); }
+
+        .glass-table-container {
+           background: rgba(255, 255, 255, 0.4);
+           backdrop-filter: blur(20px);
+           border: 1px solid rgba(255, 255, 255, 0.4);
+           border-radius: 32px;
+           box-shadow: 0 20px 60px rgba(0,0,0,0.04);
+           overflow: hidden;
+        }
+
+        .luxury-table {
+           width: 100%;
+           border-collapse: collapse;
+        }
+        .luxury-table th {
+           padding: 24px;
+           text-align: left;
+           font-size: 0.7rem;
+           font-weight: 900;
+           text-transform: uppercase;
+           color: #A0938A;
+           letter-spacing: 0.15em;
+           border-bottom: 1px solid rgba(0,0,0,0.04);
+        }
+        .luxury-table td {
+           padding: 24px;
+           border-bottom: 1px solid rgba(0,0,0,0.03);
+        }
+
+        .luxury-td-emoji { text-align: center; }
+        .luxury-emoji-badge {
+           width: 50px;
+           height: 50px;
+           background: white;
+           border-radius: 18px;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           font-size: 1.8rem;
+           box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+        }
+        
+        .luxury-td-name .name-main { font-weight: 800; color: var(--mocha); font-size: 1rem; }
+        .luxury-td-name .name-sub { font-size: 0.7rem; color: #BBB0A8; font-weight: 600; }
+
+        .luxury-stock-pill {
+           padding: 10px 18px;
+           border-radius: 16px;
+           display: inline-flex;
+           align-items: baseline;
+           gap: 6px;
+           font-weight: 900;
+           box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .luxury-stock-pill.optimal { background: #dcfce7; color: #166534; }
+        .luxury-stock-pill.low { background: #fee2e2; color: #991b1b; }
+        .stock-val { font-size: 1.2rem; }
+        .stock-unit { font-size: 0.6rem; opacity: 0.7; text-transform: uppercase; }
+
+        .luxury-td-reorder .reorder-label { font-size: 0.6rem; color: #BBB0A8; font-weight: 700; text-transform: uppercase; }
+        .luxury-td-reorder .reorder-val { font-weight: 800; color: var(--mocha); font-size: 0.9rem; }
+
+        .luxury-status-badge {
+           padding: 8px 14px;
+           border-radius: 12px;
+           display: inline-flex;
+           align-items: center;
+           gap: 8px;
+           font-size: 0.75rem;
+           font-weight: 800;
+        }
+        .luxury-status-badge.healthy { background: rgba(107, 142, 35, 0.1); color: var(--sage); }
+        .luxury-status-badge.healthy .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--sage); box-shadow: 0 0 10px var(--sage); }
+        .luxury-status-badge.critical { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+
+        .action-btn-circle {
+           width: 36px;
+           height: 36px;
+           border-radius: 50%;
+           border: none;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           cursor: pointer;
+           transition: all 0.2s;
+        }
+        .action-btn-circle.edit { background: white; color: var(--mocha); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .action-btn-circle.edit:hover { background: var(--mocha); color: white; transform: rotate(15deg); }
+        .action-btn-circle.delete { background: transparent; color: #D1D1D1; }
+        .action-btn-circle.delete:hover { background: #fee2e2; color: #ef4444; }
+
         .emoji-grid {
           display: grid;
           grid-template-columns: repeat(8, 1fr);
-          gap: 8px;
-          padding: 12px;
-          background: var(--bg-main);
-          border-radius: 12px;
-          border: 1px solid var(--border-light);
+          gap: 10px;
+          padding: 16px;
+          background: #FDFBF7;
+          border-radius: 20px;
+          border: 1px solid rgba(0,0,0,0.05);
         }
         .emoji-btn {
-          font-size: 1.5rem;
-          padding: 8px;
-          border-radius: 8px;
+          font-size: 1.8rem;
+          padding: 10px;
+          border-radius: 14px;
           border: 2px solid transparent;
           background: transparent;
           cursor: pointer;
           transition: all 0.2s;
-          display: flex;
-          align-items: center;
-          justify-content: center;
         }
-        .emoji-btn:hover {
-          background: white;
-          transform: scale(1.1);
+        .emoji-btn:hover { background: white; transform: scale(1.1); }
+        .emoji-btn.active { border-color: var(--mocha); background: white; box-shadow: 0 10px 25px rgba(74, 55, 40, 0.15); }
+
+        @keyframes slideUp {
+          from { transform: translateY(20px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
         }
-        .emoji-btn.active {
-          border-color: var(--accent);
-          background: white;
-          box-shadow: 0 0 0 4px rgba(212,118,60,0.1);
-        }
-        .form-grid .full-width {
-          grid-column: 1 / -1;
-        }
+        .animate-slide-up { animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both; }
       `}</style>
     </>
   );
