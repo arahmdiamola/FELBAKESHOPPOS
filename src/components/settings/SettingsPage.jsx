@@ -276,6 +276,10 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 </div>
+                <div className="input-group">
+                  <label className="flex items-center gap-2"><TrendingUp size={14} /> Daily Sales Goal (₱)</label>
+                  <input className="input" type="number" value={form.branchGoal} onChange={e => setForm(p => ({ ...p, branchGoal: e.target.value }))} />
+                </div>
               </div>
             </div>
           </div>

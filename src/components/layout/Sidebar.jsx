@@ -76,16 +76,20 @@ export default function Sidebar() {
     }
 
     if (currentUser?.role === 'cashier') {
-      return !['/reports', '/expenses', '/users', '/settings', '/raw-materials', '/baking'].includes(item.to);
+      // Cashiers see POS, Dashboard, and only specific Management items
+      const allowedPaths = ['/pos', '/dashboard', '/preorders', '/customers', '/reports'];
+      return allowedPaths.includes(item.to);
     }
+    
     if (currentUser?.role === 'baker') {
       return ['/baking', '/raw-materials'].includes(item.to);
     }
+    
     if (currentUser?.role === 'manager') {
       return !['/users', '/settings'].includes(item.to);
     }
-    if (currentUser?.role === 'admin' || currentUser?.role === 'system_admin') {
-       // Admins see everything including baking
+    
+    if (currentUser?.role === 'admin' || currentUser?.role === 'system_admin' || currentUser?.role === 'owner') {
        return true;
     }
     return true;

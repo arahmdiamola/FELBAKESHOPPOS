@@ -51,27 +51,27 @@ async function logAction(req, action, details = null) {
 }
 
 // Helper to append branch condition (strictly enforced by role)
-const branchFilter = (req) => {
+const getBranchFilter = (req) => {
   const branchId = req.headers['x-branch-id'];
   const role = req.headers['x-user-role'];
 
   if (['system_admin', 'owner'].includes(role) && (!branchId || branchId === 'all')) {
-    return "1=1";
+    return { query: "1=1", params: [] };
   }
 
   // Demo mode: Allow 'all' branches if explicitly requested and no role (public)
   if (branchId === 'all' && !role) {
-    return "1=1";
+    return { query: "1=1", params: [] };
   }
 
   if (!branchId || branchId === 'all') {
     // If a manager has no branch, allow them to see everything as well
-    if (role === 'manager') return "1=1";
+    if (role === 'manager') return { query: "1=1", params: [] };
     // Otherwise, lock out unassigned staff
-    return "branchId = 'UNASSIGNED_OR_LOCKED'";
+    return { query: "branchId = ?", params: ['UNASSIGNED_OR_LOCKED'] };
   }
 
-  return `branchId = '${branchId}'`;
+  return { query: "branchId = ?", params: [branchId] };
 };
 
 // --- AUTH ---
@@ -225,10 +225,10 @@ app.post('/api/branches/:id/heartbeat', async (req, res) => {
 // --- USERS ---
 app.get('/api/users', async (req, res) => {
   if (!req.headers['x-user-role'] || req.headers['x-user-role'] === 'system_admin') {
-    const users = await db.all(`SELECT * FROM users`);
     return res.json(users);
   }
-  const users = await db.all(`SELECT * FROM users WHERE ${branchFilter(req)}`);
+  const { query, params } = getBranchFilter(req);
+  const users = await db.all(`SELECT * FROM users WHERE ${query}`, params);
   res.json(users);
 });
 app.post('/api/users', async (req, res) => {
@@ -281,7 +281,8 @@ app.post('/api/categories', async (req, res) => {
 });
 
 app.get('/api/products', async (req, res) => {
-  const products = await db.all(`SELECT * FROM products WHERE ${branchFilter(req)}`);
+  const { query, params } = getBranchFilter(req);
+  const products = await db.all(`SELECT * FROM products WHERE ${query}`, params);
   res.json(products);
 });
 app.post('/api/products', async (req, res) => {
@@ -347,7 +348,8 @@ app.put('/api/products/:id/adjust', async (req, res) => {
 
 // --- RAW MATERIALS ---
 app.get('/api/raw-materials', async (req, res) => {
-  const materials = await db.all(`SELECT * FROM raw_materials WHERE ${branchFilter(req)}`);
+  const { query, params } = getBranchFilter(req);
+  const materials = await db.all(`SELECT * FROM raw_materials WHERE ${query}`, params);
   res.json(materials);
 });
 
@@ -389,11 +391,12 @@ app.delete('/api/raw-materials/:id', async (req, res) => {
 // --- PRODUCTION ---
 app.get('/api/production/logs', async (req, res) => {
   const status = req.query.status;
-  let query = `SELECT * FROM production_logs WHERE ${branchFilter(req)}`;
-  if (status) query += ` AND status = '${status}'`;
-  query += ` ORDER BY date DESC LIMIT 100`;
+  const { query, params } = getBranchFilter(req);
+  let sql = `SELECT * FROM production_logs WHERE ${query}`;
+  if (status) sql += ` AND status = '${status}'`;
+  sql += ` ORDER BY date DESC LIMIT 100`;
   
-  const logs = await db.all(query);
+  const logs = await db.all(sql, params);
   for (const log of logs) {
     log.items = await db.all("SELECT * FROM production_log_items WHERE productionLogId = ?", [log.id]);
   }
@@ -512,11 +515,26 @@ app.post('/api/production/void', async (req, res) => {
 // --- TRANSACTIONS ---
 app.get('/api/transactions', async (req, res) => {
   const limit = req.query.limit ? `LIMIT ${req.query.limit}` : '';
-  const txns = await db.all(`SELECT * FROM transactions WHERE ${branchFilter(req)} ORDER BY date DESC ${limit}`);
+  const { query, params } = getBranchFilter(req);
+  const txns = await db.all(`SELECT * FROM transactions WHERE ${query} ORDER BY date DESC ${limit}`, params);
   for (const t of txns) {
     t.items = await db.all("SELECT * FROM transaction_items WHERE transactionId = ?", [t.id]);
   }
   res.json(txns);
+});
+
+app.get('/api/transactions/today', async (req, res) => {
+  try {
+    const { query, params } = getBranchFilter(req);
+    const today = new Date().toISOString().split('T')[0];
+    const txns = await db.all(
+      `SELECT * FROM transactions WHERE ${query} AND date LIKE ? ORDER BY date DESC`,
+      [...params, `${today}%`]
+    );
+    res.json(txns);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 app.post('/api/transactions', async (req, res) => {
   const t = req.body;
@@ -554,7 +572,8 @@ app.post('/api/transactions', async (req, res) => {
 
 // --- CUSTOMERS ---
 app.get('/api/customers', async (req, res) => {
-  const customers = await db.all(`SELECT * FROM customers WHERE ${branchFilter(req)}`);
+  const { query, params } = getBranchFilter(req);
+  const customers = await db.all(`SELECT * FROM customers WHERE ${query}`, params);
   res.json(customers);
 });
 app.post('/api/customers', async (req, res) => {
@@ -599,7 +618,8 @@ app.delete('/api/customers/:id', async (req, res) => {
 
 // --- EXPENSES ---
 app.get('/api/expenses', async (req, res) => {
-  const expenses = await db.all(`SELECT * FROM expenses WHERE ${branchFilter(req)} ORDER BY date DESC`);
+  const { query, params } = getBranchFilter(req);
+  const expenses = await db.all(`SELECT * FROM expenses WHERE ${query} ORDER BY date DESC`, params);
   res.json(expenses);
 });
 app.post('/api/expenses', async (req, res) => {
@@ -620,7 +640,8 @@ app.delete('/api/expenses/:id', async (req, res) => {
 
 // --- PREORDERS ---
 app.get('/api/preorders', async (req, res) => {
-  const preorders = await db.all(`SELECT * FROM preorders WHERE ${branchFilter(req)}`);
+  const { query, params } = getBranchFilter(req);
+  const preorders = await db.all(`SELECT * FROM preorders WHERE ${query}`, params);
   for (const p of preorders) {
     p.items = JSON.parse(p.items);
   }
@@ -853,6 +874,16 @@ app.use(express.static(distPath));
 // 404 for API
 app.use('/api', (req, res) => {
   res.status(404).json({ error: `API Route not found: ${req.method} ${req.originalUrl}` });
+});
+
+// Global Error Handler for API (prevents HTML fallbacks)
+app.use('/api', (err, req, res, next) => {
+  console.error('[API Error Interceptor]', err);
+  res.status(500).json({ 
+    error: 'Internal Server Error',
+    message: err.message,
+    path: req.path
+  });
 });
 
 // Catch-all to support React Router natively

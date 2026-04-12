@@ -9,7 +9,7 @@ import { formatCurrency } from '../../utils/formatters';
 export default function CashierDashboard({ activeBranch, settings, products, onClose }) {
   const [localProduction, setLocalProduction] = useState([]);
   const [localSales, setLocalSales] = useState([]);
-  const [branchGoal, setBranchGoal] = useState(25000); // Default goal
+  const branchGoal = parseFloat(settings?.branchGoal || 25000);
   const [activePromo, setActivePromo] = useState(0);
 
   const promos = [

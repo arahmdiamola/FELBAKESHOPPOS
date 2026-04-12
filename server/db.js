@@ -233,7 +233,8 @@ export async function initDb() {
         ['storeLogo', '/logo.png'],
         ['storeAddress', 'Brgy. San Jose, Quezon City'],
         ['storePhone', '0917-123-4567'],
-        ['receiptFooter', 'Thank you for choosing FEL Bakeshop! 🧁']
+        ['receiptFooter', 'Thank you for choosing FEL Bakeshop! 🧁'],
+        ['branchGoal', '25000']
       ];
       for (const [key, value] of defaultSettings) {
         await db.run("INSERT INTO settings (key, value) VALUES (?, ?)", [key, value]);

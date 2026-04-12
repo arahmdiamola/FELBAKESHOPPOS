@@ -201,7 +201,7 @@ const apiCall = async (path, options = {}) => {
       errorMessage = data.error || data.message;
     } else if (typeof data === 'string' && data.includes('<!DOCTYPE html>')) {
       const preview = data.substring(0, 100).replace(/[\n\r]/g, ' ');
-      errorMessage = `Server Error: Received HTML instead of JSON at ${path}. Preview: "${preview}..." (Check if Backend is running on port 3001)`;
+      errorMessage = `Server Error: Received HTML instead of JSON at ${path}. This usually means the API route is missing or the backend crashed. Preview: "${preview}..." (Check if port 3001 is running)`;
     }
     throw new Error(errorMessage);
   }
