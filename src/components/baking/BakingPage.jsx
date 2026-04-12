@@ -19,6 +19,7 @@ export default function BakingPage() {
   const [materials, setMaterials] = useState([]);
   const [search, setSearch] = useState('');
   const [activeBatch, setActiveBatch] = useState([]);
+  const [history, setHistory] = useState([]);
   const [targetProduct, setTargetProduct] = useState(null);
   const [quantityToProduce, setQuantityToProduce] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -30,6 +31,7 @@ export default function BakingPage() {
 
   useEffect(() => {
     fetchMaterials();
+    fetchHistory();
   }, []);
 
   const fetchMaterials = async () => {
@@ -41,6 +43,13 @@ export default function BakingPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const fetchHistory = async () => {
+    try {
+      const data = await api.get('/api/production/logs');
+      setHistory(data);
+    } catch (err) {}
   };
 
   const filteredMaterials = useMemo(() => {
@@ -58,11 +67,22 @@ export default function BakingPage() {
     const qty = parseFloat(tempQty);
     if (!qty || qty <= 0) return addToast('Please enter a valid quantity', 'error');
 
+    // Stock Guard
+    if (qty > selectedMaterial.stock) {
+      return addToast(`Insufficient stock! Only ${selectedMaterial.stock} ${selectedMaterial.unit} available.`, 'error');
+    }
+
     setActiveBatch(prev => {
       const existing = prev.find(item => item.materialId === selectedMaterial.id);
+      const totalNewQty = existing ? existing.quantityUsed + qty : qty;
+      
+      if (totalNewQty > selectedMaterial.stock) {
+        addToast(`Warning: Total usage exceeds stock`, 'warning');
+      }
+
       if (existing) {
         return prev.map(item => item.materialId === selectedMaterial.id 
-          ? { ...item, quantityUsed: item.quantityUsed + qty } 
+          ? { ...item, quantityUsed: totalNewQty } 
           : item
         );
       }
@@ -109,10 +129,17 @@ export default function BakingPage() {
       setTargetProduct(null);
       setQuantityToProduce(1);
       fetchMaterials(); // Refresh stock levels
+      fetchHistory();   // Refresh history list
     } catch (err) {
       addToast(err.message, 'error');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const clearBatch = () => {
+    if (activeBatch.length > 0 && confirm('Clear current selection?')) {
+      setActiveBatch([]);
     }
   };
 
@@ -140,39 +167,79 @@ export default function BakingPage() {
             </div>
           </div>
           
-          <div className="card-body" style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 12 }}>
+          <div className="card-body" style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 16 }}>
               {filteredMaterials.map(m => (
                 <button 
                   key={m.id}
-                  className="card hover-scale"
+                  className="card hover-scale material-card"
                   onClick={() => addToBatch(m)}
                   style={{ 
-                    padding: '16px 8px', textAlign: 'center', cursor: 'pointer', border: '1px solid var(--border-light)',
-                    background: 'var(--card-bg)', transition: 'all 0.2s', position: 'relative'
+                    padding: '24px 12px', textAlign: 'center', cursor: 'pointer',
+                    background: 'var(--card-bg)', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', position: 'relative',
+                    border: '1px solid var(--border-light)', overflow: 'hidden'
                   }}
                 >
-                  <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>{m.emoji}</div>
+                  <div className="material-emoji">{m.emoji}</div>
                   <div style={{ fontWeight: 800, fontSize: 'var(--font-xs)', color: 'var(--text-main)', marginBottom: 4 }}>{m.name}</div>
-                  <div style={{ fontSize: '0.7rem', color: m.stock <= m.reorderPoint ? 'var(--danger)' : 'var(--text-muted)' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: m.stock <= m.reorderPoint ? 'var(--danger)' : 'var(--text-muted)' }}>
                     {m.stock} {m.unit}
                   </div>
                   {activeBatch.some(item => item.materialId === m.id) && (
-                    <div style={{ position: 'absolute', top: 8, right: 8, background: 'var(--success)', color: 'white', borderRadius: 'full', padding: 2 }}>
-                      <Check size={12} />
+                    <div className="batch-check">
+                      <Check size={14} strokeWidth={3} />
                     </div>
                   )}
+                  {m.stock <= m.reorderPoint && <div className="low-stock-dot" />}
                 </button>
               ))}
             </div>
+
+            {/* Recent History Subsection */}
+            {history.length > 0 && (
+              <div className="mt-12">
+                <h4 className="text-xs font-black uppercase tracking-widest text-muted mb-4 flex items-center gap-2">
+                  <RotateCcw size={14} /> Recent Productions
+                </h4>
+                <div className="table-container">
+                  <table className="table mini-table">
+                    <thead>
+                      <tr>
+                        <th>Product</th>
+                        <th>Qty</th>
+                        <th>Time</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {history.slice(0, 5).map(log => (
+                        <tr key={log.id}>
+                          <td className="font-bold text-xs">{log.productName}</td>
+                          <td className="text-xs font-black text-accent">{log.quantityProduced}</td>
+                          <td className="text-xs text-muted">{new Date(log.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                          <td><span className="badge badge-green text-xs">Logged</span></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Right Side: Batch Summary */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', background: 'var(--bg-main)', border: '2px solid var(--border-light)' }}>
-          <div className="card-header flex items-center gap-4" style={{ background: 'var(--accent)', color: 'white' }}>
-            <ChefHat size={20} />
-            <h3 className="card-title" style={{ color: 'white' }}>Active Baking Log</h3>
+        <div className="card batch-sidebar">
+          <div className="card-header flex items-center justify-between" style={{ background: 'linear-gradient(135deg, var(--accent) 0%, #D45D1D 100%)', color: 'white', border: 'none' }}>
+            <div className="flex items-center gap-3">
+              <ChefHat size={20} />
+              <h3 className="card-title" style={{ color: 'white' }}>Live Baking Log</h3>
+            </div>
+            {activeBatch.length > 0 && (
+              <button onClick={clearBatch} className="text-white/80 hover:text-white transition-colors">
+                <Trash2 size={18} />
+              </button>
+            )}
           </div>
 
           <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
@@ -275,8 +342,8 @@ export default function BakingPage() {
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, '.', 0].map(n => (
               <button 
                 key={n} 
-                className="btn btn-secondary" 
-                style={{ height: 60, fontSize: 'var(--font-lg)', fontWeight: 800 }}
+                className="num-btn" 
+                style={{ height: 60 }}
                 onClick={() => setTempQty(p => p + n.toString())}
               >
                 {n}
@@ -304,15 +371,88 @@ export default function BakingPage() {
         .pos-container {
           background-color: var(--bg-main);
         }
+        .batch-sidebar {
+          display: flex;
+          flex-direction: column;
+          background: white;
+          border: 1px solid var(--border-light);
+          box-shadow: var(--shadow-xl);
+          border-radius: 24px;
+          overflow: hidden;
+        }
+        .material-card {
+           border-radius: 18px !important;
+        }
+        .material-emoji {
+          font-size: 2.8rem;
+          margin-bottom: 12px;
+          filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+          transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .material-card:hover .material-emoji {
+          transform: scale(1.15) rotate(5deg);
+        }
+        .batch-check {
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          background: var(--success);
+          color: white;
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 4px 10px rgba(34,197,94,0.3);
+          animation: scaleIn 0.3s ease;
+        }
+        .low-stock-dot {
+          position: absolute;
+          top: 12px;
+          left: 12px;
+          width: 8px;
+          height: 8px;
+          background: var(--danger);
+          border-radius: 50%;
+          box-shadow: 0 0 10px var(--danger);
+          animation: pulse 2s infinite;
+        }
+        .mini-table th {
+          font-size: 0.65rem;
+          color: var(--text-muted);
+          padding: 8px;
+        }
+        .mini-table td {
+          padding: 10px 8px;
+          border-bottom: 1px solid var(--bg-main);
+        }
+        @keyframes scaleIn {
+          from { transform: scale(0); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+        @keyframes pulse {
+          0% { transform: scale(0.95); opacity: 0.5; }
+          50% { transform: scale(1.2); opacity: 1; }
+          100% { transform: scale(0.95); opacity: 0.5; }
+        }
         .hover-scale:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(212,118,60,0.15) !important;
+          transform: translateY(-4px);
+          box-shadow: 0 12px 24px rgba(212,118,60,0.12) !important;
           border-color: var(--accent) !important;
         }
-        .pos-container input::-webkit-outer-spin-button,
-        .pos-container input::-webkit-inner-spin-button {
-          -webkit-appearance: none;
-          margin: 0;
+        .num-btn {
+           background: var(--bg-main);
+           border: 1px solid var(--border-light);
+           color: var(--text-main);
+           font-weight: 800;
+           font-size: 1.4rem;
+           border-radius: 12px;
+           transition: all 0.2s;
+        }
+        .num-btn:active {
+           background: var(--border-light);
+           transform: translateY(2px);
         }
       `}</style>
     </>

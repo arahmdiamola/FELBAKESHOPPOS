@@ -351,13 +351,24 @@ app.get('/api/raw-materials', async (req, res) => {
 });
 
 app.post('/api/raw-materials', async (req, res) => {
-  const { id, name, stock, unit, reorderPoint, emoji } = req.body;
-  const branchId = req.headers['x-branch-id'] || req.body.branchId;
-  await db.run(
-    "INSERT INTO raw_materials (id, branchId, name, stock, unit, reorderPoint, emoji) VALUES (?, ?, ?, ?, ?, ?, ?)",
-    [id, branchId, name, stock || 0, unit || 'kg', reorderPoint || 0, emoji || '📦']
-  );
-  res.json({ success: true });
+  try {
+    const { id, name, stock, unit, reorderPoint, emoji } = req.body;
+    let branchId = req.headers['x-branch-id'] || req.body.branchId;
+    
+    // Explicit validation: Cannot insert into 'all' branch
+    if (!branchId || branchId === 'all') {
+      return res.status(400).json({ error: 'Valid Branch ID is required' });
+    }
+
+    await db.run(
+      "INSERT INTO raw_materials (id, branchId, name, stock, unit, reorderPoint, emoji) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [id, branchId, name, stock || 0, unit || 'kg', reorderPoint || 0, emoji || '📦']
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[POST /api/raw-materials] Error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.put('/api/raw-materials/:id', async (req, res) => {
@@ -389,6 +400,10 @@ app.post('/api/production/log', async (req, res) => {
   const userId = req.headers['x-user-id'];
   const userNameToken = req.headers['x-user-name'] || 'User';
 
+  if (!branchId || branchId === 'all') {
+    return res.status(400).json({ error: 'Valid Branch ID is required for production logging' });
+  }
+
   try {
     await db.run("BEGIN TRANSACTION");
 
@@ -404,20 +419,22 @@ app.post('/api/production/log', async (req, res) => {
     }
 
     // 3. Process Raw Materials usage
-    for (const item of items) {
-      await db.run(
-        "INSERT INTO production_log_items (id, productionLogId, materialId, materialName, quantityUsed, unit) VALUES (?, ?, ?, ?, ?, ?)",
-        [uuidv4(), id, item.materialId, item.materialName, item.quantityUsed, item.unit]
-      );
-      // Deduct from raw materials stock
-      await db.run("UPDATE raw_materials SET stock = stock - ? WHERE id = ?", [item.quantityUsed, item.materialId]);
+    if (Array.isArray(items)) {
+      for (const item of items) {
+        await db.run(
+          "INSERT INTO production_log_items (id, productionLogId, materialId, materialName, quantityUsed, unit) VALUES (?, ?, ?, ?, ?, ?)",
+          [uuidv4(), id, item.materialId, item.materialName, item.quantityUsed, item.unit]
+        );
+        // Deduct from raw materials stock
+        await db.run("UPDATE raw_materials SET stock = stock - ? WHERE id = ?", [item.quantityUsed, item.materialId]);
+      }
     }
 
     await db.run("COMMIT");
     await logAction(req, 'PRODUCTION_COMPLETED', { product: productName, quantity: quantityProduced });
     res.json({ success: true });
   } catch (err) {
-    await db.run("ROLLBACK");
+    try { await db.run("ROLLBACK"); } catch (rbErr) {}
     console.error('[Production Log Failed]', err);
     res.status(500).json({ error: err.message });
   }

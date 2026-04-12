@@ -5,7 +5,9 @@ import { api } from '../../utils/api';
 import { v4 as uuidv4 } from 'uuid';
 import Header from '../layout/Header';
 import Modal from '../shared/Modal';
-import { Search, Wheat, Plus, Edit3, Trash2, AlertTriangle, ArrowUpDown, Scale } from 'lucide-react';
+import { Search, Wheat, Plus, Edit3, Trash2, AlertTriangle, ArrowUpDown, Scale, Star } from 'lucide-react';
+
+const BAKING_EMOJIS = ['🌾', '🥣', '🥚', '🥛', '🧈', '🧂', '🍞', '🥖', '🥐', '🥯', '🥞', '🥥', '🍫', '🌰', '🍯', '🥄', '🍶', '🍎', '🍋', '🫐', '🍓', '🍌', '🥔', '📦'];
 
 export default function RawMaterialsPage() {
   const { currentUser } = useAuth();
@@ -178,14 +180,19 @@ export default function RawMaterialsPage() {
         footer={<button className="btn btn-primary" onClick={handleSave}>Save Material</button>}
       >
         <div className="form-grid">
-          <div className="input-group">
-            <label>Emoji Icon</label>
-            <input 
-              className="input" 
-              value={form.emoji} 
-              onChange={e => setForm({...form, emoji: e.target.value})}
-              placeholder="🍞"
-            />
+          <div className="input-group full-width">
+            <label>Select Icon</label>
+            <div className="emoji-grid">
+              {BAKING_EMOJIS.map(e => (
+                <button 
+                  key={e} 
+                  className={`emoji-btn ${form.emoji === e ? 'active' : ''}`}
+                  onClick={() => setForm({...form, emoji: e})}
+                >
+                  {e}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="input-group">
             <label>Material Name *</label>
@@ -226,6 +233,41 @@ export default function RawMaterialsPage() {
           </div>
         </div>
       </Modal>
+      <style>{`
+        .emoji-grid {
+          display: grid;
+          grid-template-columns: repeat(8, 1fr);
+          gap: 8px;
+          padding: 12px;
+          background: var(--bg-main);
+          border-radius: 12px;
+          border: 1px solid var(--border-light);
+        }
+        .emoji-btn {
+          font-size: 1.5rem;
+          padding: 8px;
+          border-radius: 8px;
+          border: 2px solid transparent;
+          background: transparent;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .emoji-btn:hover {
+          background: white;
+          transform: scale(1.1);
+        }
+        .emoji-btn.active {
+          border-color: var(--accent);
+          background: white;
+          box-shadow: 0 0 0 4px rgba(212,118,60,0.1);
+        }
+        .form-grid .full-width {
+          grid-column: 1 / -1;
+        }
+      `}</style>
     </>
   );
 }
