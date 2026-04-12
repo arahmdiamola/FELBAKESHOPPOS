@@ -413,36 +413,34 @@ app.post('/api/production/log', async (req, res) => {
   const finalStatus = status || 'completed';
 
   try {
-    await db.run("BEGIN TRANSACTION");
+    await db.transaction(async (tx) => {
+      // 1. Create Production Log
+      await tx.run(
+        "INSERT INTO production_logs (id, branchId, userId, userName, productId, productName, quantityProduced, estimatedYield, date, notes, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [id, branchId, userId, userNameToken, productId, productName, quantityProduced || 0, estimatedYield || 0, date, notes, finalStatus]
+      );
 
-    // 1. Create Production Log
-    await db.run(
-      "INSERT INTO production_logs (id, branchId, userId, userName, productId, productName, quantityProduced, estimatedYield, date, notes, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      [id, branchId, userId, userNameToken, productId, productName, quantityProduced || 0, estimatedYield || 0, date, notes, finalStatus]
-    );
-
-    // 2. Add Finished Product stock (ONLY if completed immediately)
-    if (finalStatus === 'completed' && productId && quantityProduced > 0) {
-      await db.run("UPDATE products SET stock = stock + ? WHERE id = ?", [quantityProduced, productId]);
-    }
-
-    // 3. Process Raw Materials usage
-    if (Array.isArray(items)) {
-      for (const item of items) {
-        // Fetch current cost price to lock it in for audit
-        const material = await db.get("SELECT costPrice FROM raw_materials WHERE id = ?", [item.materialId]);
-        const costPrice = material?.costPrice || 0;
-
-        await db.run(
-          "INSERT INTO production_log_items (id, productionLogId, materialId, materialName, quantityUsed, unit, costPrice) VALUES (?, ?, ?, ?, ?, ?, ?)",
-          [uuidv4(), id, item.materialId, item.materialName, item.quantityUsed, item.unit, costPrice]
-        );
-        // ALWAYS Deduct from raw materials stock
-        await db.run("UPDATE raw_materials SET stock = stock - ? WHERE id = ?", [item.quantityUsed, item.materialId]);
+      // 2. Add Finished Product stock (ONLY if completed immediately)
+      if (finalStatus === 'completed' && productId && quantityProduced > 0) {
+        await tx.run("UPDATE products SET stock = stock + ? WHERE id = ?", [quantityProduced, productId]);
       }
-    }
 
-    await db.run("COMMIT");
+      // 3. Process Raw Materials usage
+      if (Array.isArray(items)) {
+        for (const item of items) {
+          // Fetch current cost price to lock it in for audit
+          const material = await tx.get("SELECT costPrice FROM raw_materials WHERE id = ?", [item.materialId]);
+          const costPrice = material?.costPrice || 0;
+
+          await tx.run(
+            "INSERT INTO production_log_items (id, productionLogId, materialId, materialName, quantityUsed, unit, costPrice) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            [uuidv4(), id, item.materialId, item.materialName, item.quantityUsed, item.unit, costPrice]
+          );
+          // ALWAYS Deduct from raw materials stock
+          await tx.run("UPDATE raw_materials SET stock = stock - ? WHERE id = ?", [item.quantityUsed, item.materialId]);
+        }
+      }
+    });
     
     // Audit Log
     if (finalStatus === 'completed') {
@@ -453,7 +451,6 @@ app.post('/api/production/log', async (req, res) => {
 
     res.json({ success: true });
   } catch (err) {
-    try { await db.run("ROLLBACK"); } catch (rbErr) {}
     console.error('[Production Log Failed]', err);
     res.status(500).json({ error: err.message });
   }
@@ -463,27 +460,26 @@ app.post('/api/production/finalize', async (req, res) => {
   const { logId, actualYield } = req.body;
   
   try {
-    await db.run("BEGIN TRANSACTION");
+    await db.transaction(async (tx) => {
+      const log = await tx.get("SELECT * FROM production_logs WHERE id = ?", [logId]);
+      if (!log) throw new Error('Production log not found');
 
-    const log = await db.get("SELECT * FROM production_logs WHERE id = ?", [logId]);
-    if (!log) throw new Error('Production log not found');
+      // 1. Update status and yield
+      await tx.run(
+        "UPDATE production_logs SET status = 'completed', quantityProduced = ? WHERE id = ?",
+        [actualYield, logId]
+      );
 
-    // 1. Update status and yield
-    await db.run(
-      "UPDATE production_logs SET status = 'completed', quantityProduced = ? WHERE id = ?",
-      [actualYield, logId]
-    );
+      // 2. Add to product stock
+      if (log.productId) {
+        await tx.run("UPDATE products SET stock = stock + ? WHERE id = ?", [actualYield, log.productId]);
+      }
+    });
 
-    // 2. Add to product stock
-    if (log.productId) {
-      await db.run("UPDATE products SET stock = stock + ? WHERE id = ?", [actualYield, log.productId]);
-    }
-
-    await db.run("COMMIT");
-    await logAction(req, 'PRODUCTION_FINALIZED', { product: log.productName, actual: actualYield });
+    const finalLog = await db.get("SELECT productName FROM production_logs WHERE id = ?", [logId]);
+    await logAction(req, 'PRODUCTION_FINALIZED', { product: finalLog?.productName, actual: actualYield });
     res.json({ success: true });
   } catch (err) {
-    try { await db.run("ROLLBACK"); } catch (rbErr) {}
     res.status(500).json({ error: err.message });
   }
 });
@@ -492,25 +488,23 @@ app.post('/api/production/void', async (req, res) => {
   const { logId, reason } = req.body;
   
   try {
-    await db.run("BEGIN TRANSACTION");
+    await db.transaction(async (tx) => {
+      const log = await tx.get("SELECT * FROM production_logs WHERE id = ?", [logId]);
+      if (!log) throw new Error('Production log not found');
 
-    const log = await db.get("SELECT * FROM production_logs WHERE id = ?", [logId]);
-    if (!log) throw new Error('Production log not found');
+      // 1. Mark as ruined
+      await tx.run("UPDATE production_logs SET status = 'ruined', notes = ? WHERE id = ?", [reason, logId]);
 
-    // 1. Mark as ruined
-    await db.run("UPDATE production_logs SET status = 'ruined', notes = ? WHERE id = ?", [reason, logId]);
-
-    // 2. Audit Log (Notification for Owner)
-    await logAction(req, 'PRODUCTION_SPOILAGE', { 
-      product: log.productName, 
-      reason: reason || 'Not specified',
-      lossType: 'VOIDED_BATCH'
+      // 2. Audit Log (Notification for Owner)
+      await logAction(req, 'PRODUCTION_SPOILAGE', { 
+        product: log.productName, 
+        reason: reason || 'Not specified',
+        lossType: 'VOIDED_BATCH'
+      });
     });
 
-    await db.run("COMMIT");
     res.json({ success: true });
   } catch (err) {
-    try { await db.run("ROLLBACK"); } catch (rbErr) {}
     res.status(500).json({ error: err.message });
   }
 });
@@ -533,20 +527,22 @@ app.post('/api/transactions', async (req, res) => {
   }
 
   try {
-    await db.run(
-      "INSERT INTO transactions (id, branchId, receiptNumber, subtotal, discount, tax, total, paymentMethod, amountPaid, change, customerId, customerName, cashierId, cashierName, date, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      [t.id, branchId, t.receiptNumber, t.subtotal, t.discount, t.tax, t.total, t.paymentMethod, t.amountPaid, t.change, t.customerId, t.customerName, t.cashierId, t.cashierName, t.date, t.status, t.notes]
-    );
-
-    // Refresh lastSeen on transaction (auto-heartbeat)
-    await db.run("UPDATE branches SET lastSeen = ? WHERE id = ?", [new Date().toISOString(), branchId]);
-
-    for (const i of t.items) {
-      await db.run(
-        "INSERT INTO transaction_items (id, transactionId, productId, name, price, quantity, unit, discount, total) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        [i.id || uuidv4(), t.id, i.productId, i.name, i.price, i.quantity, i.unit, i.discount, i.total]
+    await db.transaction(async (tx) => {
+      await tx.run(
+        "INSERT INTO transactions (id, branchId, receiptNumber, subtotal, discount, tax, total, paymentMethod, amountPaid, change, customerId, customerName, cashierId, cashierName, date, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [t.id, branchId, t.receiptNumber, t.subtotal, t.discount, t.tax, t.total, t.paymentMethod, t.amountPaid, t.change, t.customerId, t.customerName, t.cashierId, t.cashierName, t.date, t.status, t.notes]
       );
-    }
+
+      // Refresh lastSeen on transaction (auto-heartbeat)
+      await tx.run("UPDATE branches SET lastSeen = ? WHERE id = ?", [new Date().toISOString(), branchId]);
+
+      for (const i of t.items) {
+        await tx.run(
+          "INSERT INTO transaction_items (id, transactionId, productId, name, price, quantity, unit, discount, total) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          [i.id || uuidv4(), t.id, i.productId, i.name, i.price, i.quantity, i.unit, i.discount, i.total]
+        );
+      }
+    });
     
     await logAction(req, 'SALE_COMPLETED', { receiptNumber: t.receiptNumber, total: t.total });
     res.json({ success: true });

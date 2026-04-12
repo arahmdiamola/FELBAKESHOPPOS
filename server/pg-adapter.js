@@ -75,5 +75,32 @@ export const pgAdapter = {
     const pgSql = preparePostgresSql(sql);
     const { rows } = await pool.query(pgSql, params);
     return rows[0] ? camelize(rows[0]) : null;
+  },
+  transaction: async (callback) => {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      
+      const tx = {
+        run: (sql, params = []) => client.query(preparePostgresSql(sql), params),
+        all: async (sql, params = []) => {
+          const { rows } = await client.query(preparePostgresSql(sql), params);
+          return rows.map(row => camelize(row));
+        },
+        get: async (sql, params = []) => {
+          const { rows } = await client.query(preparePostgresSql(sql), params);
+          return rows[0] ? camelize(rows[0]) : null;
+        }
+      };
+
+      const result = await callback(tx);
+      await client.query('COMMIT');
+      return result;
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
   }
 };
