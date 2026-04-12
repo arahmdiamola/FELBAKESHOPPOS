@@ -246,37 +246,43 @@ export default function BakingPage() {
 
         {/* Right Side: Batch Summary */}
         <div className="card batch-sidebar">
-          <div className="card-header flex items-center justify-between" style={{ background: 'linear-gradient(135deg, var(--accent) 0%, #D45D1D 100%)', color: 'white', border: 'none' }}>
+          <div className="card-header flex items-center justify-between" style={{ background: 'transparent', borderBottom: '1px solid rgba(0,0,0,0.05)', padding: '24px' }}>
             <div className="flex items-center gap-3">
-              <ChefHat size={20} />
-              <h3 className="card-title" style={{ color: 'white' }}>Live Baking Log</h3>
+              <ChefHat size={22} className="text-mocha" />
+              <h3 className="card-title" style={{ color: '#4A3728', fontSize: '1rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Studio Log</h3>
             </div>
             {activeBatch.length > 0 && (
-              <button onClick={clearBatch} className="text-white/80 hover:text-white transition-colors">
-                <Trash2 size={18} />
+              <button onClick={clearBatch} className="clear-batch-minimal">
+                <Trash2 size={16} />
+                <span>Clear</span>
               </button>
             )}
           </div>
 
-          <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
+          <div className="batch-content-luxury">
             {activeBatch.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
-                <Scale size={48} style={{ opacity: 0.1, margin: '0 auto 16px' }} />
-                <p>Tap ingredients to add to batch</p>
+              <div className="empty-luxury animate-fade-in">
+                <div className="empty-icon-wrapper">
+                  <Scale size={42} strokeWidth={1} />
+                </div>
+                <p className="empty-text">Select ingredients to begin your craft</p>
+                <div className="empty-dot-grid"></div>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {activeBatch.map(item => (
-                  <div key={item.materialId} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl shadow-sm">
-                    <div className="flex items-center gap-3">
-                      <span style={{ fontSize: '1.2rem' }}>{item.emoji}</span>
-                      <div>
-                        <div className="font-bold text-sm text-gray-800">{item.materialName}</div>
-                        <div className="text-xs font-bold text-accent">{item.quantityUsed} {item.unit}</div>
-                      </div>
+              <div className="ingredient-stack">
+                {activeBatch.map((item, index) => (
+                  <div 
+                    key={item.materialId} 
+                    className="ingredient-luxury-card animate-slide-up"
+                    style={{ animationDelay: `${index * 0.05}s` }}
+                  >
+                    <div className="luxury-emoji-box">{item.emoji}</div>
+                    <div className="flex-1">
+                      <div className="luxury-material-name">{item.materialName}</div>
+                      <div className="luxury-material-qty">{item.quantityUsed} {item.unit}</div>
                     </div>
-                    <button className="text-red-400 hover:text-red-600 transition-colors" onClick={() => removeFromBatch(item.materialId)}>
-                      <Trash2 size={16} />
+                    <button className="luxury-remove-btn" onClick={() => removeFromBatch(item.materialId)}>
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 ))}
@@ -284,73 +290,53 @@ export default function BakingPage() {
             )}
           </div>
 
-          <div style={{ padding: 24, paddingBottom: 32, borderTop: '2px dashed var(--border-light)', background: 'white' }}>
-            <div className="input-group mb-6">
-              <label className="text-xs font-black uppercase tracking-widest text-muted mb-3 block">1. What are you baking?</label>
-              
+          <div className="sidebar-footer-luxury">
+            <div className="luxury-input-section">
+              <label className="luxury-label">Production Target</label>
               {!targetProduct ? (
-                <button 
-                  className="product-picker-btn"
-                  onClick={() => setShowProductModal(true)}
-                >
-                  <Plus size={20} />
-                  <span>Choose Product</span>
+                <button className="luxury-picker-btn" onClick={() => setShowProductModal(true)}>
+                  <Plus size={18} />
+                  <span>Tap to choose product</span>
                 </button>
               ) : (
-                <div className="selected-product-card animate-scale-in">
-                  <div className="flex items-center gap-4">
-                    <span className="selected-emoji">{targetProduct.emoji}</span>
-                    <div className="flex-1">
-                       <div className="font-black text-sm text-gray-800">{targetProduct.name}</div>
-                       <div className="text-[10px] font-bold text-muted uppercase tracking-tighter">Unit: {targetProduct.unit || 'pcs'}</div>
-                    </div>
-                    <button onClick={() => setTargetProduct(null)} className="text-red-400 hover:text-red-600 transition-colors">
-                       <RotateCcw size={14} />
-                    </button>
+                <div className="luxury-selected-card animate-scale-in">
+                  <span className="luxury-selected-emoji">{targetProduct.emoji}</span>
+                  <div className="flex-1">
+                     <div className="luxury-selected-name">{targetProduct.name}</div>
+                     <div className="luxury-selected-meta">{targetProduct.unit || 'pcs'}</div>
                   </div>
+                  <button onClick={() => setTargetProduct(null)} className="luxury-reset-btn">
+                     <RotateCcw size={14} />
+                  </button>
                 </div>
               )}
             </div>
 
-            <div className="input-group mb-8">
-              <label className="text-xs font-black uppercase tracking-widest text-muted mb-3 block">2. Quantity Produced</label>
-              <div className="qty-control-wrapper shadow-inner">
-                 <button 
-                   className="qty-btn minus" 
-                   onClick={() => setQuantityToProduce(Math.max(1, quantityToProduce - 1))}
-                 >
-                   <Minus size={22} />
+            <div className="luxury-input-section">
+              <label className="luxury-label">Expected Yield</label>
+              <div className="luxury-qty-wrapper" onClick={openProductionKeypad}>
+                 <button className="qty-lux-btn" onClick={(e) => { e.stopPropagation(); setQuantityToProduce(Math.max(1, quantityToProduce - 1)); }}>
+                   <Minus size={18} />
                  </button>
-                 <div className="qty-display" onClick={openProductionKeypad} style={{ cursor: 'pointer' }}>
-                    <input 
-                      type="number" 
-                      className="qty-input" 
-                      value={quantityToProduce}
-                      readOnly
-                    />
-                    <span className="qty-unit">{targetProduct?.unit || 'pcs'} (Tap to edit)</span>
+                 <div className="qty-lux-display">
+                    <span className="qty-lux-val">{quantityToProduce}</span>
+                    <span className="qty-lux-unit">{targetProduct?.unit || 'pcs'}</span>
                  </div>
-                 <button 
-                   className="qty-btn plus" 
-                   onClick={() => setQuantityToProduce(quantityToProduce + 1)}
-                 >
-                   <Plus size={22} />
+                 <button className="qty-lux-btn" onClick={(e) => { e.stopPropagation(); setQuantityToProduce(quantityToProduce + 1); }}>
+                   <Plus size={18} />
                  </button>
               </div>
             </div>
 
             <button 
-              className={`finish-baking-btn ${isSaving ? 'loading' : ''}`}
+              className={`luxury-submit-btn ${isSaving ? 'loading' : ''}`}
               disabled={activeBatch.length === 0 || !targetProduct || isSaving}
               onClick={handleFinishBaking}
             >
-              {isSaving ? 'Logging...' : (
+              {isSaving ? 'Processing...' : (
                 <>
-                  <PackageCheck size={24} /> 
-                  <div className="flex flex-col items-start leading-none">
-                    <span className="text-lg font-black uppercase tracking-widest">Finish Baking</span>
-                    <span className="text-[10px] opacity-70 font-bold tracking-tight">Sync Inventory & Product Stock</span>
-                  </div>
+                  <PackageCheck size={20} /> 
+                  <span>Finish & Sync Production</span>
                 </>
               )}
             </button>
@@ -423,204 +409,261 @@ export default function BakingPage() {
       </Modal>
 
       <style>{`
+        :root {
+          --mocha: #4A3728;
+          --mocha-light: #F5E6D3;
+          --sage: #6B8E23;
+          --cream: #FAF9F6;
+        }
         .pos-container {
-          background-color: var(--bg-main);
+          background-color: #F8F5F2;
         }
         .batch-sidebar {
           display: flex;
           flex-direction: column;
-          background: white;
-          border: 1px solid var(--border-light);
-          box-shadow: var(--shadow-xl);
-          border-radius: 24px;
+          background: rgba(255, 255, 255, 0.7);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          box-shadow: 0 20px 50px rgba(0,0,0,0.05);
+          border-radius: 32px;
           overflow: hidden;
         }
-        .material-card {
-           border-radius: 18px !important;
+        .clear-batch-minimal {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          background: var(--mocha-light);
+          color: var(--mocha);
+          border: none;
+          padding: 6px 12px;
+          border-radius: 12px;
+          font-size: 0.7rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          cursor: pointer;
+          transition: all 0.2s;
         }
-        .material-emoji {
-          font-size: 2.8rem;
-          margin-bottom: 12px;
-          filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
-          transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        .clear-batch-minimal:hover { transform: scale(1.05); background: #eddec9; }
+
+        .batch-content-luxury {
+          flex: 1;
+          overflow-y: auto;
+          padding: 24px;
+          position: relative;
         }
-        .material-card:hover .material-emoji {
-          transform: scale(1.15) rotate(5deg);
+        .empty-luxury {
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          color: var(--mocha);
+          opacity: 0.4;
         }
-        .batch-check {
-          position: absolute;
-          top: 12px;
-          right: 12px;
-          background: var(--success);
-          color: white;
-          width: 24px;
-          height: 24px;
+        .empty-icon-wrapper {
+          width: 80px;
+          height: 80px;
+          border: 1px dashed var(--mocha);
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 4px 10px rgba(34,197,94,0.3);
-          animation: scaleIn 0.3s ease;
+          margin-bottom: 20px;
         }
-        .low-stock-dot {
-          position: absolute;
-          top: 12px;
-          left: 12px;
-          width: 8px;
-          height: 8px;
-          background: var(--danger);
-          border-radius: 50%;
-          box-shadow: 0 0 10px var(--danger);
-          animation: pulse 2s infinite;
+        .empty-text {
+          font-size: 0.8rem;
+          font-weight: 600;
+          max-width: 150px;
+          line-height: 1.5;
         }
-        .mini-table th {
-          font-size: 0.65rem;
-          color: var(--text-muted);
-          padding: 8px;
+        
+        .ingredient-stack {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
         }
-        .mini-table td {
-          padding: 10px 8px;
-          border-bottom: 1px solid var(--bg-main);
-        }
-        @keyframes scaleIn {
-          from { transform: scale(0); opacity: 0; }
-          to { transform: scale(1); opacity: 1; }
-        }
-        @keyframes pulse {
-          0% { transform: scale(0.95); opacity: 0.5; }
-          50% { transform: scale(1.2); opacity: 1; }
-          100% { transform: scale(0.95); opacity: 0.5; }
-        }
-        .hover-scale:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 12px 24px rgba(212,118,60,0.12) !important;
-          border-color: var(--accent) !important;
-        }
-        .num-btn {
-           background: var(--bg-main);
-           border: 1px solid var(--border-light);
-           color: var(--text-main);
-           font-weight: 800;
-           font-size: 1.4rem;
-           border-radius: 12px;
-           transition: all 0.2s;
-        }
-        .num-btn:active {
-           background: var(--border-light);
-           transform: translateY(2px);
-        }
-        .product-picker-btn {
-           width: 100%;
-           padding: 20px;
-           border: 2px dashed var(--border-light);
-           background: var(--bg-main);
-           color: var(--text-muted);
-           border-radius: 16px;
-           display: flex;
-           flex-direction: column;
-           align-items: center;
-           gap: 8px;
-           transition: all 0.2s;
-           font-weight: 800;
-           font-size: 0.8rem;
-        }
-        .product-picker-btn:hover {
-           border-color: var(--accent);
+        .ingredient-luxury-card {
            background: white;
-           color: var(--accent);
-        }
-        .selected-product-card {
-           background: var(--bg-main);
            padding: 16px;
            border-radius: 20px;
-           border: 2px solid var(--accent);
-           box-shadow: 0 4px 15px rgba(212,118,60,0.1);
+           display: flex;
+           align-items: center;
+           gap: 16px;
+           box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+           border: 1px solid rgba(0,0,0,0.03);
         }
-        .selected-emoji {
-           font-size: 2rem;
-           filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+        .luxury-emoji-box {
+          width: 44px;
+          height: 44px;
+          background: #FDFBF7;
+          border-radius: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.4rem;
         }
-        .qty-control-wrapper {
-           background: var(--bg-main);
-           padding: 8px;
-           border-radius: 20px;
+        .luxury-material-name {
+          font-weight: 800;
+          font-size: 0.85rem;
+          color: var(--mocha);
+        }
+        .luxury-material-qty {
+          font-size: 0.75rem;
+          color: var(--sage);
+          font-weight: 700;
+        }
+        .luxury-remove-btn {
+          color: #D1D1D1;
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          transition: color 0.2s;
+        }
+        .luxury-remove-btn:hover { color: var(--danger); }
+
+        .sidebar-footer-luxury {
+          padding: 24px;
+          background: white;
+          border-top: 1px solid rgba(0,0,0,0.05);
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+        .luxury-input-section {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .luxury-label {
+          font-size: 0.65rem;
+          font-weight: 900;
+          text-transform: uppercase;
+          color: #A0938A;
+          letter-spacing: 0.15em;
+        }
+        .luxury-picker-btn {
+           background: #FDFBF7;
+           border: 1px dashed #E5E1DA;
+           padding: 16px;
+           border-radius: 16px;
+           color: #8B837E;
+           font-size: 0.75rem;
+           font-weight: 700;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           gap: 10px;
+           cursor: pointer;
+           transition: all 0.2s;
+        }
+        .luxury-picker-btn:hover { border-color: var(--mocha); color: var(--mocha); background: white; }
+
+        .luxury-selected-card {
+           background: var(--mocha);
+           padding: 16px;
+           border-radius: 18px;
+           color: white;
            display: flex;
            align-items: center;
            gap: 12px;
+           box-shadow: 0 10px 25px rgba(74, 55, 40, 0.2);
         }
-        .qty-btn {
-           width: 50px;
-           height: 50px;
-           border-radius: 16px;
-           border: none;
-           display: flex;
-           align-items: center;
-           justify-content: center;
-           transition: all 0.2s;
-           cursor: pointer;
+        .luxury-selected-emoji { font-size: 1.8rem; }
+        .luxury-selected-name { font-weight: 800; font-size: 0.85rem; }
+        .luxury-selected-meta { font-size: 0.65rem; opacity: 0.6; font-weight: 600; text-transform: uppercase; }
+        .luxury-reset-btn { background: rgba(255,255,255,0.1); border: none; width: 28px; height: 28px; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s; }
+        .luxury-reset-btn:hover { background: rgba(255,255,255,0.2); }
+
+        .luxury-qty-wrapper {
+          background: #FDFBF7;
+          border-radius: 18px;
+          display: flex;
+          align-items: center;
+          padding: 6px;
+          cursor: pointer;
         }
-        .qty-btn.minus { color: var(--danger); background: #fee2e2; }
-        .qty-btn.plus { color: var(--success); background: #dcfce7; }
-        .qty-btn:active { transform: scale(0.9); }
-        .qty-display {
-           flex: 1;
-           display: flex;
-           flex-direction: column;
-           align-items: center;
-           justify-content: center;
-           gap: 1px;
+        .qty-lux-btn {
+          width: 40px;
+          height: 40px;
+          border-radius: 12px;
+          border: none;
+          background: white;
+          color: var(--mocha);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+          transition: all 0.2s;
         }
-        .qty-input {
-           width: 100%;
-           text-align: center;
-           font-weight: 900;
-           font-size: 2rem;
-           background: transparent;
-           border: none;
-           color: var(--text-main);
-           outline: none;
-           height: 40px;
+        .qty-lux-btn:active { transform: scale(0.9); }
+        .qty-lux-display {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
         }
-        .qty-unit {
-           font-size: 0.6rem;
-           font-weight: 800;
-           color: var(--text-muted);
-           text-transform: uppercase;
-           letter-spacing: 0.1em;
+        .qty-lux-val { font-size: 1.4rem; font-weight: 900; color: var(--mocha); line-height: 1; }
+        .qty-lux-unit { font-size: 0.6rem; font-weight: 800; color: #BBB0A8; text-transform: uppercase; }
+
+        .luxury-submit-btn {
+          width: 100%;
+          background: var(--sage);
+          color: white;
+          padding: 20px;
+          border-radius: 20px;
+          border: none;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+          font-weight: 800;
+          font-size: 0.9rem;
+          box-shadow: 0 10px 30px rgba(107, 142, 35, 0.25);
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .finish-baking-btn {
-           width: 100%;
-           background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-           color: white;
-           padding: 24px;
-           border-radius: 20px;
-           border: none;
-           display: flex;
-           align-items: center;
-           justify-content: center;
-           gap: 16px;
-           box-shadow: 0 10px 20px rgba(16,185,129,0.25);
-           transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-           cursor: pointer;
+        .luxury-submit-btn:hover:not(:disabled) {
+          transform: translateY(-4px);
+          box-shadow: 0 15px 40px rgba(107, 142, 35, 0.35);
+          background: #7ca529;
         }
-        .finish-baking-btn:hover {
-           transform: translateY(-4px);
-           box-shadow: 0 15px 30px rgba(16,185,129,0.35);
+        .luxury-submit-btn:disabled { opacity: 0.4; cursor: not-allowed; filter: grayscale(1); }
+
+        .material-card {
+           border-radius: 24px !important;
+           border: 1px solid rgba(0,0,0,0.04) !important;
         }
-        .finish-baking-btn:disabled {
-           background: var(--bg-main);
-           color: var(--text-muted);
-           box-shadow: none;
-           cursor: not-allowed;
-           transform: none;
+        .material-emoji { font-size: 3rem; margin-bottom: 12px; filter: drop-shadow(0 8px 12px rgba(0,0,0,0.1)); transition: transform 0.3s; }
+        .material-card:hover .material-emoji { transform: translateY(-5px) scale(1.1); }
+        
+        .num-btn {
+          background: white;
+          border: 1px solid rgba(0,0,0,0.05);
+          border-radius: 16px;
+          font-weight: 900;
+          color: var(--mocha);
+          font-size: 1.5rem;
+          transition: all 0.2s;
         }
+        .num-btn:active { transform: scale(0.95); background: var(--mocha-light); }
+
+        @keyframes slideUp {
+          from { transform: translateY(20px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slide-up { animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both; }
+        
         @keyframes scaleIn {
-           from { transform: scale(0.8); opacity: 0; }
-           to { transform: scale(1); opacity: 1; }
+          from { transform: scale(0.9); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
         }
-        .animate-scale-in {
-           animation: scaleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
+        .animate-scale-in { animation: scaleIn 0.3s ease both; }
+        
+        .text-mocha { color: var(--mocha); }
       `}</style>
     </>
   );
