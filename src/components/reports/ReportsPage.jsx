@@ -262,7 +262,7 @@ export default function ReportsPage() {
                        <thead>
                           <tr>
                              <th>TIME & DATE</th>
-                             <th>RECIPET</th>
+                             <th>RECEIPT</th>
                              <th>CUSTOMER</th>
                              <th>PAYMENT</th>
                              <th style={{ textAlign: 'right' }}>TOTAL</th>

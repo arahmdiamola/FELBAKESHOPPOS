@@ -1,6 +1,25 @@
 import { pgAdapter } from './pg-adapter.js';
 import { v4 as uuidv4 } from 'uuid';
 
+async function syncColumnData(db, table, oldCol, newCol) {
+  try {
+    // 1. Check if both columns exist
+    const cols = await db.allRaw(`
+      SELECT column_name FROM information_schema.columns 
+      WHERE table_name = $1 AND table_schema = 'public'
+    `, [table]);
+    const names = cols.map(c => c.column_name);
+
+    if (names.includes(oldCol.toLowerCase()) && names.includes(newCol)) {
+      console.log(`[Data Rescue] Syncing ${table}.${oldCol} -> ${newCol}...`);
+      // Update newCol with oldCol data where newCol is empty/0
+      await db.run(`UPDATE ${table} SET "${newCol}" = "${oldCol}" WHERE ("${newCol}" IS NULL OR "${newCol}" = 0 OR "${newCol}" = '')`);
+    }
+  } catch (e) {
+    console.warn(`[Sync Warning] Failed to sync ${table}.${oldCol}:`, e.message);
+  }
+}
+
 async function ensureColumnRenamed(db, table, oldColNames, newColName) {
   try {
     // 1. Get all columns for this table
@@ -260,6 +279,24 @@ export async function initDb() {
     console.log("Processing Schema Transitions...");
     for (const m of migrationQueue) {
       await ensureColumnRenamed(db, m.table, m.variants, m.target);
+    }
+
+    // 2.5 Data Rescue: Sync data from old columns to new columns IF both exist
+    console.log("Executing Data Rescue Sync...");
+    const rescueList = [
+      { t: 'transactions', o: 'receiptNumber', n: 'receipt_number' },
+      { t: 'transactions', o: 'paymentMethod', n: 'payment_method' },
+      { t: 'transactions', o: 'amountPaid', n: 'amount_paid' },
+      { t: 'transactions', o: 'customerId', n: 'customer_id' },
+      { t: 'transactions', o: 'customerName', n: 'customer_name' },
+      { t: 'transactions', o: 'branchId', n: 'branch_id' },
+      { t: 'production_logs', o: 'quantityProduced', n: 'quantity_produced' },
+      { t: 'production_logs', o: 'estimatedYield', n: 'estimated_yield' },
+      { t: 'production_logs', o: 'productId', n: 'product_id' },
+      { t: 'production_logs', o: 'productName', n: 'product_name' }
+    ];
+    for (const r of rescueList) {
+      await syncColumnData(db, r.t, r.o, r.n);
     }
 
     // 3. Guaranteed Column Addition (If transition missed anything)

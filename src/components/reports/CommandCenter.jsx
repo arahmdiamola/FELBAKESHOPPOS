@@ -15,6 +15,7 @@ import { useOrders } from '../../contexts/OrderContext';
 import { useProducts } from '../../contexts/ProductContext';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useAuth } from '../../contexts/AuthContext';
+import './CommandCenter.css';
 
 export default function CommandCenter({ isPublic = false }) {
   const { getTodayStats } = useOrders();
@@ -252,7 +253,7 @@ export default function CommandCenter({ isPublic = false }) {
           )}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-               <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: '#fff', letterSpacing: '-1px', marginBottom: 0 }}>
+               <h1 className="tv-main-title">
                  {isPublic ? 'MISSION CONTROL' : 'OWNER\'S WAR ROOM'}
                </h1>
                {isPublic && <span className="demo-badge">PUBLIC DEMO</span>}
@@ -475,101 +476,6 @@ export default function CommandCenter({ isPublic = false }) {
         </div>
       </div>
 
-       <style jsx>{`
-          .tv-background { background: #050505; min-height: 100vh; color: #fff; font-family: 'Outfit', sans-serif; display: flex; flex-direction: column; padding: 10px; overflow-x: hidden; position: relative; }
-          .public-mode { background: radial-gradient(circle at top right, #1a1a2e, #050505); }
-          .owner-mode { background: radial-gradient(circle at top right, #140808, #050505); }
-
-          .tv-header { padding: 25px 40px; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; z-index: 10; }
-          .header-logo { width: 70px; height: 70px; background: #fff; border-radius: 16px; object-fit: contain; padding: 6px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
-          
-          .tv-slide-nav { position: absolute; top: 140px; right: 40px; display: flex; gap: 12px; z-index: 100; }
-          .tv-slide-nav button { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); color: #fff; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 0.8rem; font-weight: 800; transition: all 0.3s; }
-          .tv-slide-nav button.active { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 20px rgba(212, 118, 60, 0.4); }
-
-          .tv-viewport { flex: 1; position: relative; width: 100%; overflow: hidden; margin-top: 10px; }
-          .tv-slide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transition: all 1s cubic-bezier(0.23, 1, 0.32, 1); padding: 0 30px; display: flex; flex-direction: column; }
-          .tv-slide.active { opacity: 1; transform: translateX(0); visibility: visible; }
-          .tv-slide.inactive { opacity: 0; transform: translateX(100px); visibility: hidden; }
-
-          .slide-label { font-size: 0.8rem; font-weight: 900; color: rgba(255,255,255,0.3); display: flex; align-items: center; gap: 12px; margin-bottom: 25px; text-transform: uppercase; letter-spacing: 4px; border-left: 4px solid var(--accent); padding-left: 20px; }
-
-          .demo-badge { background: #3b82f6; color: #fff; padding: 4px 10px; border-radius: 6px; font-weight: 900; font-size: 0.7rem; }
-          .secure-badge { background: #ef4444; color: #fff; padding: 4px 10px; border-radius: 6px; font-weight: 900; font-size: 0.7rem; display: flex; align-items: center; gap: 4px; animation: glow-red 2s infinite; }
-          @keyframes glow-red { 0%, 100% { box-shadow: 0 0 5px rgba(239, 68, 68, 0.5); } 50% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.8); } }
-
-          .owner-audit-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 20px; }
-          .audit-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 24px; padding: 25px; backdrop-filter: blur(10px); }
-          .feed-panel { border-left: 1px solid rgba(212, 118, 60, 0.2); }
-          .loss-panel { border-left: 1px solid rgba(239, 68, 68, 0.2); }
-          .card-title { font-size: 0.75rem; font-weight: 800; color: rgba(255,255,255,0.3); display: flex; align-items: center; gap: 10px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; }
-          
-          .audit-list { height: 250px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; scrollbar-width: none; }
-          .audit-item { display: flex; gap: 15px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.03); align-items: baseline; }
-          .audit-time { color: rgba(255,255,255,0.2); white-space: nowrap; font-size: 0.7rem; font-weight: 700; }
-          .audit-branch { color: var(--info); font-weight: 800; white-space: nowrap; font-size: 0.75rem; min-width: 90px; }
-          .audit-msg { color: #fff; opacity: 0.8; line-height: 1.5; }
-          .danger-text { color: #fe6b6b; font-weight: 700; }
-
-          .loss-metrics { display: flex; gap: 15px; }
-          .loss-box { flex: 1; padding: 20px; border-radius: 16px; display: flex; flex-direction: column; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.04); }
-          .loss-box.sunk { border-top: 3px solid #ef4444; }
-          .loss-box.potential { border-top: 3px solid #f59e0b; }
-          .loss-box .label { font-size: 0.6rem; font-weight: 900; opacity: 0.4; color: #fff; text-transform: uppercase; letter-spacing: 1px; }
-          .loss-box .value { font-size: 1.8rem; font-weight: 900; color: #fff; margin: 6px 0; letter-spacing: -1px; }
-          .loss-box .desc { font-size: 0.6rem; opacity: 0.2; text-transform: uppercase; font-weight: 800; }
-
-          .ruined-list { font-size: 0.8rem; color: rgba(255,255,255,0.5); display: flex; flex-direction: column; gap: 10px; }
-          .ruined-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px solid rgba(255,255,255,0.03); }
-
-          .tv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 25px; }
-          .tv-branch-card { padding: 30px; border-radius: 28px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); position: relative; overflow: hidden; transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1); backdrop-filter: blur(12px); }
-          .tv-branch-card:hover { transform: translateY(-5px); background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); }
-          .card-online-neon { border-color: rgba(0, 255, 0, 0.15); box-shadow: 0 10px 40px rgba(0,0,0,0.3), inset 0 0 20px rgba(0,255,0,0.01); }
-          .ranked-up { animation: rank-pulse 2s cubic-bezier(0.4, 0, 0.2, 1); }
-          @keyframes rank-pulse { 0% { box-shadow: 0 0 0 0 rgba(212, 118, 60, 0.4); } 70% { box-shadow: 0 0 0 20px rgba(212, 118, 60, 0); } 100% { box-shadow: 0 0 0 0 rgba(212, 118, 60, 0); } }
-
-          .tv-rank-badge { position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.03); padding: 5px 14px; border-radius: 10px; font-size: 0.65rem; font-weight: 900; color: rgba(255,255,255,0.3); border: 1px solid rgba(255,255,255,0.05); text-transform: uppercase; letter-spacing: 1px; }
-          .tv-branch-name { font-size: 1.2rem; font-weight: 800; display: flex; align-items: center; gap: 10px; margin-bottom: 12px; color: #fff; opacity: 0.5; text-transform: uppercase; letter-spacing: 1px; }
-          .tv-branch-revenue { font-size: 4rem; font-weight: 900; margin-bottom: 8px; letter-spacing: -3px; line-height: 0.9; }
-          .tv-branch-orders { font-size: 0.8rem; opacity: 0.3; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; }
-
-          .status-pill { padding: 12px 18px; border-radius: 16px; font-size: 0.85rem; font-weight: 900; display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); }
-          .status-pill.online { color: #00ff00; border-color: rgba(0, 255, 0, 0.2); }
-          .status-pill.offline { color: #ef4444; border-color: rgba(239, 68, 68, 0.2); }
-
-          .tv-inventory-alert-bar { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 20px; padding: 15px 30px; display: flex; align-items: center; gap: 20px; }
-          .alert-badge { background: #ef4444; color: #fff; padding: 10px 15px; border-radius: 12px; font-weight: 900; font-size: 0.8rem; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3); }
-          .alert-content { display: flex; gap: 30px; overflow-x: auto; flex: 1; padding: 5px 0; scrollbar-width: none; }
-          .alert-item { display: flex; align-items: center; gap: 10px; white-space: nowrap; font-size: 0.95rem; }
-          .alert-item .name { font-weight: 800; }
-          .alert-item .branch { opacity: 0.5; font-size: 0.8rem; }
-          .alert-item .level { color: #ef4444; font-weight: 900; }
-
-          .tv-hourly-section { background: rgba(255,255,255,0.01); padding: 30px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.03); }
-          .tv-ticker-bar { height: 60px; background: rgba(0,0,0,0.8); border-top: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; z-index: 20; position: fixed; bottom: 0; left: 0; width: 100%; backdrop-filter: blur(10px); }
-          .tv-ticker-content { display: flex; gap: 80px; animation: ticker 60s linear infinite; padding-left: 20px; }
-          @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-          .tv-ticker-item { display: flex; align-items: center; gap: 15px; white-space: nowrap; font-size: 1rem; font-weight: 700; letter-spacing: 0.5px; }
-
-          .oven-indicator-badge { background: rgba(245, 158, 11, 0.1); color: #f59e0b; padding: 8px 15px; border-radius: 12px; font-size: 0.75rem; font-weight: 900; border: 1px solid rgba(245, 158, 11, 0.2); }
-          .stock-warning-badge { background: rgba(239, 68, 68, 0.15); color: #ef4444; padding: 8px 15px; border-radius: 12px; font-size: 0.75rem; font-weight: 900; border: 1px solid rgba(239, 68, 68, 0.3); }
-
-          .fullscreen-btn { position: fixed; top: 40px; right: 40px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); color: #fff; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 1000; transition: all 0.3s; }
-          .fullscreen-btn:hover { background: rgba(255,255,255,0.1); transform: scale(1.1); border-color: rgba(255,255,255,0.2); }
-
-          @media (max-width: 1024px) {
-            .owner-audit-grid { grid-template-columns: 1fr; }
-          }
-
-          @media (max-width: 768px) {
-            .tv-header { flex-direction: column; align-items: flex-start; gap: 20px; padding: 25px; }
-            .tv-global-stats { width: 100%; text-align: left; }
-            .tv-main-revenue { font-size: 3.5rem; }
-            .tv-grid { grid-template-columns: 1fr; }
-            .tv-header h1 { font-size: 1.8rem !important; }
-          }
-       `}</style>
     </div>
   );
 }
