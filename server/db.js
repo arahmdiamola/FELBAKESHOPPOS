@@ -193,7 +193,9 @@ export async function initDb() {
       "ALTER TABLE products ADD COLUMN IF NOT EXISTS costPrice REAL DEFAULT 0",
       "ALTER TABLE preorders ADD COLUMN IF NOT EXISTS quantity REAL DEFAULT 1",
       "ALTER TABLE branches ADD COLUMN IF NOT EXISTS lastSeen TEXT",
-      "ALTER TABLE raw_materials ADD COLUMN IF NOT EXISTS image TEXT"
+      "ALTER TABLE raw_materials ADD COLUMN IF NOT EXISTS image TEXT",
+      "ALTER TABLE production_logs ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'completed'",
+      "ALTER TABLE production_logs ADD COLUMN IF NOT EXISTS estimatedYield REAL DEFAULT 0"
     ];
 
     for (const sql of migrations) {

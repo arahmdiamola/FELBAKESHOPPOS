@@ -24,6 +24,8 @@ export default function BakingPage() {
   const [quantityToProduce, setQuantityToProduce] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [activeBatches, setActiveBatches] = useState([]);
+  const [selectedBatch, setSelectedBatch] = useState(null);
   
   const [showQtyModal, setShowQtyModal] = useState(false);
   const [showProductModal, setShowProductModal] = useState(false);
@@ -34,6 +36,7 @@ export default function BakingPage() {
   useEffect(() => {
     fetchMaterials();
     fetchHistory();
+    fetchActiveBatches();
   }, []);
 
   const fetchMaterials = async () => {
@@ -49,8 +52,15 @@ export default function BakingPage() {
 
   const fetchHistory = async () => {
     try {
-      const data = await api.get('/production/logs');
+      const data = await api.get('/production/logs?status=completed');
       setHistory(data);
+    } catch (err) {}
+  };
+
+  const fetchActiveBatches = async () => {
+    try {
+      const data = await api.get('/production/logs?status=in_oven');
+      setActiveBatches(data);
     } catch (err) {}
   };
 
@@ -78,7 +88,12 @@ export default function BakingPage() {
     if (!qty || qty <= 0) return addToast('Please enter a valid quantity', 'error');
 
     if (keypadMode === 'production') {
-      setQuantityToProduce(qty);
+      if (selectedBatch) {
+        handleFinalizeBatch(selectedBatch.id, qty);
+        setSelectedBatch(null);
+      } else {
+        setQuantityToProduce(qty);
+      }
       setShowQtyModal(false);
       return;
     }
@@ -120,10 +135,10 @@ export default function BakingPage() {
     setActiveBatch(prev => prev.filter(item => item.materialId !== id));
   };
 
-  const handleFinishBaking = async () => {
-    if (activeBatch.length === 0) return addToast('Please add ingredients to your batch', 'error');
+  const handleStartBatch = async () => {
+    if (activeBatch.length === 0) return addToast('Please add ingredients first', 'error');
     if (!targetProduct) return addToast('Please select what you are baking', 'error');
-    if (!quantityToProduce || quantityToProduce <= 0) return addToast('Quantity produced must be greater than 0', 'error');
+    if (!quantityToProduce || quantityToProduce <= 0) return addToast('Estimated yield must be > 0', 'error');
 
     setIsSaving(true);
     try {
@@ -131,26 +146,49 @@ export default function BakingPage() {
         id: uuidv4(),
         productId: targetProduct.id,
         productName: targetProduct.name,
-        quantityProduced: parseFloat(quantityToProduce),
+        estimatedYield: parseFloat(quantityToProduce),
         items: activeBatch,
         date: new Date().toISOString(),
-        notes: `Baking session for ${targetProduct.name}`
+        notes: `Started batch for ${targetProduct.name}`,
+        status: 'in_oven'
       };
 
       await api.post('/production/log', payload);
+      addToast(`Batch for ${targetProduct.name} is now IN THE OVEN 🥧`, 'success');
       
-      addToast(`Success! Logged production of ${quantityToProduce} ${targetProduct.name}`, 'success');
-      
-      // Reset State
       setActiveBatch([]);
       setTargetProduct(null);
       setQuantityToProduce(1);
-      fetchMaterials(); // Refresh stock levels
-      fetchHistory();   // Refresh history list
+      fetchMaterials();
+      fetchActiveBatches();
     } catch (err) {
       addToast(err.message, 'error');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleFinalizeBatch = async (logId, actual) => {
+    try {
+      await api.post('/production/finalize', { logId, actualYield: actual });
+      addToast('Production Completed & Inventory Synced!', 'success');
+      fetchActiveBatches();
+      fetchHistory();
+    } catch (err) {
+      addToast(err.message, 'error');
+    }
+  };
+
+  const handleVoidBatch = async (logId) => {
+    const reason = prompt("Why is this batch being voided? (Burned, Spilled, etc.)");
+    if (!reason) return;
+
+    try {
+      await api.post('/production/void', { logId, reason });
+      addToast('Batch Ruined. Spoilage Alert sent to Manager/Owner.', 'warning');
+      fetchActiveBatches();
+    } catch (err) {
+      addToast(err.message, 'error');
     }
   };
 
@@ -215,6 +253,52 @@ export default function BakingPage() {
                   </button>
               ))}
             </div>
+
+            {/* Live Oven Subsection */}
+            {activeBatches.length > 0 && (
+              <div className="mt-12 p-6 glass-oven animate-pulse-slow">
+                <h4 className="text-sm font-black uppercase tracking-widest text-mocha mb-6 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="oven-dot" /> 🥧 In the Oven (Live)
+                  </div>
+                  <span className="text-[10px] bg-mocha-light px-2 py-1 rounded-full">{activeBatches.length} active</span>
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {activeBatches.map(batch => (
+                    <div key={batch.id} className="batch-live-card">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <p className="font-black text-mocha text-sm">{batch.productName}</p>
+                          <p className="text-[10px] font-bold opacity-60">Estimated: {batch.estimatedYield} units</p>
+                        </div>
+                        <div className="live-timer">
+                           {new Date(batch.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button 
+                          className="flex-1 btn-lux-green py-3 text-xs font-black uppercase tracking-widest"
+                          onClick={() => {
+                            setSelectedBatch(batch);
+                            setKeypadMode('production');
+                            setTempQty(batch.estimatedYield.toString());
+                            setShowQtyModal(true);
+                          }}
+                        >
+                          Finish
+                        </button>
+                        <button 
+                          className="px-4 btn-lux-ruin"
+                          onClick={() => handleVoidBatch(batch.id)}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Recent History Subsection */}
             {history.length > 0 && (
@@ -340,12 +424,12 @@ export default function BakingPage() {
             <button 
               className={`luxury-submit-btn ${isSaving ? 'loading' : ''}`}
               disabled={activeBatch.length === 0 || !targetProduct || isSaving}
-              onClick={handleFinishBaking}
+              onClick={handleStartBatch}
             >
               {isSaving ? 'Processing...' : (
                 <>
                   <PackageCheck size={20} /> 
-                  <span>Finish & Sync Production</span>
+                  <span>Start & Place in Oven</span>
                 </>
               )}
             </button>
@@ -736,6 +820,63 @@ export default function BakingPage() {
         }
         .lux-confirm-btn:hover { transform: translateY(-3px); box-shadow: 0 15px 35px rgba(230, 141, 80, 0.3); }
         .lux-confirm-btn:active { transform: translateY(0); }
+        .glass-oven {
+          background: rgba(255, 120, 0, 0.05);
+          border: 1px dashed rgba(212, 118, 60, 0.3);
+          border-radius: 24px;
+        }
+        .oven-dot {
+          width: 8px;
+          height: 8px;
+          background: #ff4d00;
+          border-radius: 50%;
+          box-shadow: 0 0 10px #ff4d00;
+          animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+          0% { opacity: 0.4; }
+          50% { opacity: 1; }
+          100% { opacity: 0.4; }
+        }
+        .animate-pulse-slow {
+          animation: pulse 4s infinite ease-in-out;
+        }
+        
+        .batch-live-card {
+           background: white;
+           padding: 20px;
+           border-radius: 20px;
+           box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+           border: 1px solid rgba(0,0,0,0.03);
+        }
+        .live-timer {
+           font-size: 0.65rem;
+           font-weight: 800;
+           color: var(--mocha);
+           background: var(--mocha-light);
+           padding: 4px 10px;
+           border-radius: 20px;
+        }
+        
+        .btn-lux-green {
+           background: var(--sage);
+           color: white;
+           border-radius: 14px;
+           border: none;
+           cursor: pointer;
+           transition: all 0.2s;
+        }
+        .btn-lux-green:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(107, 142, 35, 0.2); }
+        
+        .btn-lux-ruin {
+           background: #fee2e2;
+           color: #ef4444;
+           border: none;
+           border-radius: 14px;
+           cursor: pointer;
+           transition: all 0.2s;
+        }
+        .btn-lux-ruin:hover { background: #ef4444; color: white; }
       `}</style>
     </>
   );

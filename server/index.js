@@ -387,7 +387,12 @@ app.delete('/api/raw-materials/:id', async (req, res) => {
 
 // --- PRODUCTION ---
 app.get('/api/production/logs', async (req, res) => {
-  const logs = await db.all(`SELECT * FROM production_logs WHERE ${branchFilter(req)} ORDER BY date DESC LIMIT 50`);
+  const status = req.query.status;
+  let query = `SELECT * FROM production_logs WHERE ${branchFilter(req)}`;
+  if (status) query += ` AND status = '${status}'`;
+  query += ` ORDER BY date DESC LIMIT 100`;
+  
+  const logs = await db.all(query);
   for (const log of logs) {
     log.items = await db.all("SELECT * FROM production_log_items WHERE productionLogId = ?", [log.id]);
   }
@@ -395,26 +400,28 @@ app.get('/api/production/logs', async (req, res) => {
 });
 
 app.post('/api/production/log', async (req, res) => {
-  const { id, productId, productName, quantityProduced, items, date, notes } = req.body;
+  const { id, productId, productName, quantityProduced, estimatedYield, items, date, notes, status } = req.body;
   const branchId = req.headers['x-branch-id'];
   const userId = req.headers['x-user-id'];
   const userNameToken = req.headers['x-user-name'] || 'User';
 
   if (!branchId || branchId === 'all') {
-    return res.status(400).json({ error: 'Valid Branch ID is required for production logging' });
+    return res.status(400).json({ error: 'Valid Branch ID is required' });
   }
+
+  const finalStatus = status || 'completed';
 
   try {
     await db.run("BEGIN TRANSACTION");
 
     // 1. Create Production Log
     await db.run(
-      "INSERT INTO production_logs (id, branchId, userId, userName, productId, productName, quantityProduced, date, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      [id, branchId, userId, userNameToken, productId, productName, quantityProduced, date, notes]
+      "INSERT INTO production_logs (id, branchId, userId, userName, productId, productName, quantityProduced, estimatedYield, date, notes, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      [id, branchId, userId, userNameToken, productId, productName, quantityProduced || 0, estimatedYield || 0, date, notes, finalStatus]
     );
 
-    // 2. Add Finished Product stock
-    if (productId && quantityProduced > 0) {
+    // 2. Add Finished Product stock (ONLY if completed immediately)
+    if (finalStatus === 'completed' && productId && quantityProduced > 0) {
       await db.run("UPDATE products SET stock = stock + ? WHERE id = ?", [quantityProduced, productId]);
     }
 
@@ -425,17 +432,76 @@ app.post('/api/production/log', async (req, res) => {
           "INSERT INTO production_log_items (id, productionLogId, materialId, materialName, quantityUsed, unit) VALUES (?, ?, ?, ?, ?, ?)",
           [uuidv4(), id, item.materialId, item.materialName, item.quantityUsed, item.unit]
         );
-        // Deduct from raw materials stock
+        // ALWAYS Deduct from raw materials stock
         await db.run("UPDATE raw_materials SET stock = stock - ? WHERE id = ?", [item.quantityUsed, item.materialId]);
       }
     }
 
     await db.run("COMMIT");
-    await logAction(req, 'PRODUCTION_COMPLETED', { product: productName, quantity: quantityProduced });
+    
+    // Audit Log
+    if (finalStatus === 'completed') {
+      await logAction(req, 'PRODUCTION_COMPLETED', { product: productName, quantity: quantityProduced });
+    } else {
+      await logAction(req, 'PRODUCTION_STARTED', { product: productName, estimated: estimatedYield });
+    }
+
     res.json({ success: true });
   } catch (err) {
     try { await db.run("ROLLBACK"); } catch (rbErr) {}
     console.error('[Production Log Failed]', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/production/finalize', async (req, res) => {
+  const { logId, actualYield } = req.body;
+  
+  try {
+    await db.run("BEGIN TRANSACTION");
+
+    const log = await db.get("SELECT * FROM production_logs WHERE id = ?", [logId]);
+    if (!log) throw new Error('Production log not found');
+
+    // 1. Update status and yield
+    await db.run(
+      "UPDATE production_logs SET status = 'completed', quantityProduced = ? WHERE id = ?",
+      [actualYield, logId]
+    );
+
+    // 2. Add to product stock
+    if (log.productId) {
+      await db.run("UPDATE products SET stock = stock + ? WHERE id = ?", [actualYield, log.productId]);
+    }
+
+    await db.run("COMMIT");
+    await logAction(req, 'PRODUCTION_FINALIZED', { product: log.productName, actual: actualYield });
+    res.json({ success: true });
+  } catch (err) {
+    try { await db.run("ROLLBACK"); } catch (rbErr) {}
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/production/void', async (req, res) => {
+  const { logId, reason } = req.body;
+  
+  try {
+    await db.run("BEGIN TRANSACTION");
+
+    const log = await db.get("SELECT * FROM production_logs WHERE id = ?", [logId]);
+    if (!log) throw new Error('Production log not found');
+
+    // 1. Mark as ruined
+    await db.run("UPDATE production_logs SET status = 'ruined' WHERE id = ?", [logId]);
+
+    // 2. Audit Log (Notification for Owner)
+    await logAction(req, 'PRODUCTION_SPOILAGE', `Voided Batch: ${log.productName}. Ingredients lost. Reason: ${reason || 'Not specified'}`);
+
+    await db.run("COMMIT");
+    res.json({ success: true });
+  } catch (err) {
+    try { await db.run("ROLLBACK"); } catch (rbErr) {}
     res.status(500).json({ error: err.message });
   }
 });
