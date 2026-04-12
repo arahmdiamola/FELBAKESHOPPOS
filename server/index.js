@@ -338,6 +338,8 @@ app.post('/api/products/inventory', async (req, res) => {
   }
   res.json({ success: true });
 });
+app.put('/api/products/:id/adjust', async (req, res) => {
+  const { quantity } = req.body;
   await db.run("UPDATE products SET stock = GREATEST(0, stock + ?) WHERE id = ?", [quantity, req.params.id]);
   res.json({ success: true });
 });
