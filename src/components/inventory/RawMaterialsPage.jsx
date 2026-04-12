@@ -41,7 +41,7 @@ export default function RawMaterialsPage() {
       const q = search.toLowerCase();
       list = list.filter(m => m.name.toLowerCase().includes(q));
     }
-    return list.sort((a, b) => a.name.localeCompare(b.name));
+    return [...list].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   }, [materials, search]);
 
   const openAdd = () => {

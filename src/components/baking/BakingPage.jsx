@@ -211,7 +211,7 @@ export default function BakingPage() {
                 style={{ fontWeight: 800 }}
               >
                 <option value="">-- Choose Product --</option>
-                {products.sort((a,b) => a.name.localeCompare(b.name)).map(p => (
+                {[...products].sort((a, b) => (a.name || '').localeCompare(b.name || '')).map(p => (
                   <option key={p.id} value={p.id}>{p.emoji} {p.name}</option>
                 ))}
               </select>
