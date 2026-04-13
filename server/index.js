@@ -130,8 +130,8 @@ app.get('/api/branches', async (req, res) => {
         .filter(d => !isNaN(d.getTime()));
       
       const latestMs = Math.max(
-        branchActivityDate.getTime(),
-        ...sessionDates.map(d => d.getTime()),
+        !isNaN(branchActivityDate.getTime()) ? branchActivityDate.getTime() : 0,
+        ...sessionDates.map(d => d.getTime()).filter(t => !isNaN(t)),
         0
       );
 

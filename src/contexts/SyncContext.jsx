@@ -44,7 +44,7 @@ export function SyncProvider({ children }) {
 
     if (isOnline) {
         sendHeartbeat();
-        const hInterval = setInterval(sendHeartbeat, 60000); // 1 min
+        const hInterval = setInterval(sendHeartbeat, 30000); // 30 seconds
         return () => clearInterval(hInterval);
     }
   }, [isOnline]);

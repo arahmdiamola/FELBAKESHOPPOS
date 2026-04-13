@@ -243,19 +243,34 @@
 }
 
 .card-online-neon {
-  border-color: #00FF00 !important;
+  border: 2px solid #00FF00 !important;
   box-shadow: 
-    0 0 60px rgba(0, 255, 0, 0.2), 
-    inset 0 0 40px rgba(0, 255, 0, 0.1) !important;
-  background: rgba(0, 255, 0, 0.12) !important;
-  border-width: 2px !important;
+    0 0 30px rgba(0, 255, 0, 0.3), 
+    inset 0 0 20px rgba(0, 255, 0, 0.15) !important;
+  background: rgba(0, 255, 0, 0.15) !important;
+  position: relative;
+}
+
+.card-online-neon::after {
+  content: 'LIVE';
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: #00FF00;
+  color: #000;
+  font-size: 0.6rem;
+  font-weight: 900;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 1px;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
 }
 
 .card-online-neon .tv-branch-name {
   color: #00FF00;
   opacity: 1 !important;
-  text-shadow: 0 0 15px rgba(0, 255, 0, 0.6);
-  font-weight: 950;
+  text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+  font-weight: 900;
 }
 
 .tv-ticker-bar {
