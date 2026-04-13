@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently \"node server/index.js\" \"vite\"",
+    "dev:seed": "node server/seed_dev.js",
     "build": "vite build",
     "seed": "node server/seed_live.js",
     "server": "node server/index.js",
