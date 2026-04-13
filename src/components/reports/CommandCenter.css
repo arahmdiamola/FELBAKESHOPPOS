@@ -425,9 +425,14 @@
   font-size: 0.6rem;
   font-weight: 900;
   letter-spacing: 1px;
-  opacity: 0.4;
+  opacity: 1; /* RESTORED VISIBILITY */
   margin-bottom: 5px;
+  color: #fff;
 }
+
+.trend-badge-up { background: rgba(0, 255, 157, 0.15); color: #00ff9d; padding: 2px 6px; border-radius: 4px; font-size: 0.55rem; border: 1px solid rgba(0, 255, 157, 0.3); }
+.trend-badge-down { background: rgba(255, 77, 77, 0.15); color: #ff4d4d; padding: 2px 6px; border-radius: 4px; font-size: 0.55rem; border: 1px solid rgba(255, 77, 77, 0.3); }
+.trend-badge-steady { background: rgba(255, 255, 255, 0.05); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.55rem; border: 1px solid rgba(255, 255, 255, 0.1); }
 
 /* MOBILE OPTIMIZATION (THE 15+ BRANCHES TEST) */
 @media (max-width: 768px) {

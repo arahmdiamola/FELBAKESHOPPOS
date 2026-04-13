@@ -420,18 +420,39 @@ export default function CommandCenter({ isPublic = false }) {
             </div>
           )}
 
-          {/* HOURLY PERFORMANCE CHART - CONDENSED */}
+          {/* DAILY BUSINESS PULSE - Simplified for readability */}
           <div className="tv-sparkline-section">
-            <div className="sparkline-label"><Activity size={14} /> LIVE REVENUE MOMENTUM</div>
-            <ResponsiveContainer width="100%" height={50}>
+            <div className="sparkline-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Activity size={14} /> TODAY'S SALES PULSE
+              </span>
+              {(() => {
+                const data = pulseMetrics.data;
+                if (data.length < 2) return null;
+                const latest = data[data.length - 1].revenue;
+                const prev = data[data.length - 2].revenue;
+                if (latest > prev * 1.1) return <span className="trend-badge-up">🔥 TRENDING UP</span>;
+                if (latest < prev * 0.9) return <span className="trend-badge-down">❄️ COOLING DOWN</span>;
+                return <span className="trend-badge-steady">✨ STEADY</span>;
+              })()}
+            </div>
+            <ResponsiveContainer width="100%" height={60}>
                 <AreaChart data={pulseMetrics.data}>
                     <defs>
                       <linearGradient id="tvPulse" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#D4763C" stopOpacity={0.3}/>
+                        <stop offset="5%" stopColor="#D4763C" stopOpacity={0.4}/>
                         <stop offset="95%" stopColor="#D4763C" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
-                    <Area type="monotone" dataKey="revenue" stroke="#D4763C" strokeWidth={2} fill="url(#tvPulse)" isAnimationActive={false} />
+                    <Area 
+                      type="monotone" 
+                      dataKey="revenue" 
+                      stroke="#D4763C" 
+                      strokeWidth={3} 
+                      fill="url(#tvPulse)" 
+                      isAnimationActive={true}
+                      animationDuration={1500} 
+                    />
                 </AreaChart>
             </ResponsiveContainer>
           </div>
