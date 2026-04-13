@@ -3,20 +3,56 @@ import { v4 as uuidv4 } from 'uuid';
 
 async function syncColumnData(db, table, oldCol, newCol) {
   try {
-    // 1. Check if both columns exist
     const cols = await db.allRaw(`
       SELECT column_name FROM information_schema.columns 
       WHERE table_name = $1 AND table_schema = 'public'
     `, [table]);
     const names = cols.map(c => c.column_name);
 
-    if (names.includes(oldCol.toLowerCase()) && names.includes(newCol)) {
-      console.log(`[Data Rescue] Syncing ${table}.${oldCol} -> ${newCol}...`);
-      // Update newCol with oldCol data where newCol is empty/0
-      await db.run(`UPDATE ${table} SET "${newCol}" = "${oldCol}" WHERE ("${newCol}" IS NULL OR "${newCol}" = 0 OR "${newCol}" = '')`);
+    const oldExists = names.find(n => n.toLowerCase() === oldCol.toLowerCase());
+    if (oldExists && names.includes(newCol)) {
+      console.log(`[Data Rescue] Syncing ${table}.${oldExists} -> ${newCol}...`);
+      await db.run(`UPDATE ${table} SET "${newCol}" = "${oldExists}" WHERE ("${newCol}" IS NULL OR "${newCol}" = 0 OR "${newCol}" = '')`);
     }
   } catch (e) {
     console.warn(`[Sync Warning] Failed to sync ${table}.${oldCol}:`, e.message);
+  }
+}
+
+async function bridgeLegacyData(db, legacyTable, targetTable, columnMap = {}) {
+  try {
+    const tables = await db.allRaw("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'");
+    const tableNames = tables.map(t => t.table_name);
+
+    if (!tableNames.includes(legacyTable) || !tableNames.includes(targetTable)) return;
+
+    const targetCount = await db.get(`SELECT count(*) FROM ${targetTable}`);
+    const legacyCount = await db.get(`SELECT count(*) FROM ${legacyTable}`);
+
+    if (parseInt(targetCount.count) === 0 && parseInt(legacyCount.count) > 0) {
+      console.log(`[Legacy Bridge] Restoring data: ${legacyTable} -> ${targetTable} (${legacyCount.count} records)`);
+      const colsRes = await db.allRaw("SELECT column_name FROM information_schema.columns WHERE table_name = $1", [targetTable]);
+      const targetCols = colsRes.map(c => c.column_name);
+      const legacyData = await db.allRaw(`SELECT * FROM ${legacyTable}`);
+      
+      for (const row of legacyData) {
+        const insertObj = {};
+        for (const legacyKey in row) {
+          const targetKey = columnMap[legacyKey] || targetCols.find(tc => tc === legacyKey.toLowerCase() || tc === legacyKey.replace(/([A-Z])/g, '_$1').toLowerCase());
+          if (targetKey && targetCols.includes(targetKey)) {
+            insertObj[targetKey] = row[legacyKey];
+          }
+        }
+        const keys = Object.keys(insertObj);
+        if (keys.length === 0) continue;
+        const placeholders = keys.map((_, i) => `$${i + 1}`).join(', ');
+        const sql = `INSERT INTO ${targetTable} ("${keys.join('", "')}") VALUES (${placeholders})`;
+        await db.run(sql, Object.values(insertObj));
+      }
+      console.log(`[Legacy Bridge] Successfully restored ${targetTable}`);
+    }
+  } catch (e) {
+    console.warn(`[Bridge Error] Failed to bridge ${legacyTable} to ${targetTable}:`, e.message);
   }
 }
 
@@ -298,6 +334,35 @@ export async function initDb() {
     for (const r of rescueList) {
       await syncColumnData(db, r.t, r.o, r.n);
     }
+
+    // 2.7 Bridged Restoration (Cross-Table Sync)
+    console.log("Executing Legacy Table Bridging...");
+    await bridgeLegacyData(db, 'cs_branches', 'branches');
+    await bridgeLegacyData(db, 'cs_users', 'users');
+    await bridgeLegacyData(db, 'cs_products', 'products', { 
+      'costprice': 'cost_price', 
+      'reorderpoint': 'reorder_point',
+      'categoryid': 'category_id',
+      'branchid': 'branch_id',
+      'istopselling': 'is_top_selling'
+    });
+    await bridgeLegacyData(db, 'cs_transactions', 'transactions', {
+      'receiptnumber': 'receipt_number',
+      'paymentmethod': 'payment_method',
+      'amountpaid': 'amount_paid',
+      'branchid': 'branch_id',
+      'cashierid': 'cashier_id',
+      'cashiername': 'cashier_name',
+      'customerid': 'customer_id',
+      'customername': 'customer_name'
+    });
+    await bridgeLegacyData(db, 'cs_transaction_items', 'transaction_items', {
+      'transactionid': 'transaction_id',
+      'productid': 'product_id'
+    });
+    await bridgeLegacyData(db, 'cs_raw_materials', 'raw_materials');
+    await bridgeLegacyData(db, 'cs_production_logs', 'production_logs');
+    await bridgeLegacyData(db, 'cs_categories', 'categories');
 
     // 3. Guaranteed Column Addition (If transition missed anything)
     const fallbackAdditions = [

@@ -112,22 +112,22 @@ app.get('/api/branches', async (req, res) => {
       const branchSessions = allSessions.filter(s => s.branch_id === b.id);
       const sessionCount = branchSessions.length;
 
+      // Online if any active session in the last 10 minutes (600000ms)
       const activeSessions = branchSessions.filter(s => {
         if (!s.last_seen) return false;
         const lastSeenDate = new Date(s.last_seen);
-        return !isNaN(lastSeenDate.getTime()) && (now - lastSeenDate) < 60000;
+        return !isNaN(lastSeenDate.getTime()) && Math.abs(now - lastSeenDate) < 600000;
       });
 
       const isOnline = activeSessions.length > 0;
       let lastSeenSecondsAgo = null;
 
       if (activeSessions.length > 0) {
-        const lates = activeSessions.map(s => {
+        const diffs = activeSessions.map(s => {
           const d = new Date(s.last_seen);
-          return isNaN(d.getTime()) ? 0 : Math.abs(now - d);
+          return isNaN(d.getTime()) ? 999999 : Math.floor(Math.abs(now - d) / 1000);
         });
-        const mostRecent = Math.min(...lates);
-        lastSeenSecondsAgo = isFinite(mostRecent) ? Math.floor(mostRecent / 1000) : 0;
+        lastSeenSecondsAgo = Math.min(...diffs);
       }
       
       return { ...b, isOnline, sessionCount, lastSeenSecondsAgo };

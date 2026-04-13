@@ -154,15 +154,13 @@ export function OrderProvider({ children }) {
   }, [updatePreOrder]);
 
   const getTodayStats = useCallback(() => {
-    // Robust local midnight calculation
-    const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    // robust midnight calculation in local time
+    const today = new Date().toDateString();
 
     const todayTxns = transactions.filter(t => {
       if (!t.date) return false;
       const d = new Date(t.date);
-      return d >= todayStart && d <= todayEnd;
+      return d.toDateString() === today;
     });
 
     const revenue = todayTxns.reduce((sum, t) => sum + Number(t.total || 0), 0);
@@ -172,7 +170,7 @@ export function OrderProvider({ children }) {
       count: todayTxns.length,
       items: todayTxns.reduce((sum, t) => sum + (t.items || []).reduce((s, i) => s + (i.quantity || 0), 0), 0),
     };
-  }, [transactions, preOrders]);
+  }, [transactions]);
 
   const allSales = useMemo(() => {
     return [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
