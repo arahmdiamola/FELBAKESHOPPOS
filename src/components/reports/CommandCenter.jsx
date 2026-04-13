@@ -147,8 +147,8 @@ export default function CommandCenter({ isPublic = false }) {
        const criticalProducts = globalLowStock.filter(p => p.branchId === b.id);
        const batchesInOven = activeProduction.filter(p => p.branchId === b.id);
        
-       // Explicitly derive online status if not provided or to ensure accuracy
-       const isOnline = b.isOnline || (b.lastSeenSecondsAgo !== null && b.lastSeenSecondsAgo < 60);
+       // Trust the server's tightened 2-minute isOnline signal
+       const isOnline = b.isOnline;
 
        return { 
          ...b, 

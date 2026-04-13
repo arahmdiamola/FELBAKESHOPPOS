@@ -231,9 +231,10 @@
 }
 
 .status-pill.online {
-  color: #00FF00;
-  border: 1px solid rgba(0, 255, 0, 0.3);
-  box-shadow: 0 0 20px rgba(0, 255, 0, 0.1);
+  color: #fff;
+  background: #00CC00;
+  border: 1px solid #00FF00;
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.4);
 }
 
 .status-pill.offline {
@@ -242,14 +243,17 @@
 }
 
 .card-online-neon {
-  border-color: rgba(0, 255, 0, 0.3) !important;
-  box-shadow: 0 0 40px rgba(0, 255, 0, 0.05), inset 0 0 20px rgba(0, 255, 0, 0.02) !important;
-  background: rgba(0, 255, 0, 0.02) !important;
+  border-color: #00FF00 !important;
+  box-shadow: 
+    0 0 50px rgba(0, 255, 0, 0.1), 
+    inset 0 0 30px rgba(0, 255, 0, 0.05) !important;
+  background: rgba(0, 255, 0, 0.08) !important;
 }
 
 .card-online-neon .tv-branch-name {
   color: #00FF00;
-  opacity: 0.8 !important;
+  opacity: 1 !important;
+  text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
 }
 
 .tv-ticker-bar {

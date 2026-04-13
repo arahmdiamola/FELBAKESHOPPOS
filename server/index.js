@@ -133,8 +133,9 @@ app.get('/api/branches', async (req, res) => {
         ...sessionDates.map(d => d.getTime())
       ));
 
-      // Online if any signal in the last 10 minutes
-      const isOnline = !isNaN(latestSignalDate.getTime()) && (now - latestSignalDate) < 600000;
+      // Online if any signal in the last 2 minutes (120000ms)
+      // This tighter window ensures rapid 'Internet Failed' detection for the dashboard.
+      const isOnline = !isNaN(latestSignalDate.getTime()) && (now - latestSignalDate) < 120000;
       
       let lastSeenSecondsAgo = null;
       if (!isNaN(latestSignalDate.getTime()) && latestSignalDate.getTime() > 0) {
