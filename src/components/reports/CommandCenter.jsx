@@ -368,6 +368,45 @@ export default function CommandCenter({ isPublic = false }) {
         </div>
 
         <div className="tv-bottom-metrics">
+          {/* OWNER ONLY: INTELLIGENCE ROW (Restored) */}
+          {!isPublic && (
+            <div className="tv-intelligence-row">
+              <div className="intelligence-card">
+                  <div className="card-title">
+                      <Activity size={14} color="var(--accent-gold)" /> LIVE AUDIT FEED
+                  </div>
+                  <div className="audit-list-mini">
+                      {auditLogs.slice(0, 10).map(log => (
+                        <div key={log.id} className="audit-item-mini">
+                            <div className="audit-time-mini">{new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                            <div className="audit-branch-mini">{log.branchName}</div>
+                            <div className="audit-msg-mini">
+                              <strong style={{ opacity: 0.8 }}>{log.userName}</strong>: {log.action === 'PRODUCTION_SPOILAGE' ? `VOID: ${log.details?.product}` : log.action}
+                            </div>
+                        </div>
+                      ))}
+                      {auditLogs.length === 0 && <div style={{ opacity: 0.3, padding: 10 }}>Scanning...</div>}
+                  </div>
+              </div>
+
+              <div className="intelligence-card">
+                  <div className="card-title">
+                      <AlertTriangle size={14} color="#ff4d4d" /> PRODUCTION LOSS (7D)
+                  </div>
+                  <div className="loss-grid-compact">
+                      <div className="loss-mini-box">
+                        <span className="label">SUNK COST</span>
+                        <span className="value">{formatCurrency(lossStats?.totalSunkCost || 0)}</span>
+                      </div>
+                      <div className="loss-mini-box">
+                        <span className="label">REVENUE VOID</span>
+                        <span className="value">{formatCurrency(lossStats?.totalPotentialLoss || 0)}</span>
+                      </div>
+                  </div>
+              </div>
+            </div>
+          )}
+
           {/* HOURLY PERFORMANCE CHART - CONDENSED */}
           <div className="tv-sparkline-section">
             <div className="sparkline-label"><Activity size={14} /> LIVE REVENUE MOMENTUM</div>
