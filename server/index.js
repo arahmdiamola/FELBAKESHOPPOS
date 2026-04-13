@@ -118,35 +118,31 @@ app.get('/api/branches', async (req, res) => {
     const branches = await db.all("SELECT * FROM branches");
     const allSessions = await db.all("SELECT branch_id, last_seen FROM branch_sessions");
     
-    // Master Session-Based Online Detection
-    const now = new Date();
-    const processed = branches.map(b => {
-      const branchSessions = allSessions.filter(s => s.branch_id === b.id);
+      // MASTER UTC SYNC LOGIC
+      // Standardize everything to UTC milliseconds (Epoch) to prevent timezone bugs.
+      const nowMs = Date.now();
       
-      // Calculate most recent signal across ALL sources (Branch Last Seen vs Session Pulse)
       const branchActivityDate = b.last_seen ? new Date(b.last_seen) : new Date(0);
       const sessionDates = branchSessions.map(s => s.last_seen ? new Date(s.last_seen) : new Date(0))
         .filter(d => !isNaN(d.getTime()));
       
-      const latestSignalDate = new Date(Math.max(
+      const latestMs = Math.max(
         branchActivityDate.getTime(),
-        ...sessionDates.map(d => d.getTime())
-      ));
+        ...sessionDates.map(d => d.getTime()),
+        0
+      );
 
-      // Online if any signal in the last 5 minutes (300,000ms)
-      // Standardized to absolute numeric timestamps (Epoch ms) for total stability 
-      // across different server/client time settings.
-      const nowMs = Date.now();
-      const latestMs = !isNaN(latestSignalDate.getTime()) ? latestSignalDate.getTime() : 0;
+      // 5-Minute Safety Window
       const isOnline = (nowMs - latestMs) < 300000;
       
-      let lastSeenSecondsAgo = null;
-      if (latestMs > 0) {
-        lastSeenSecondsAgo = Math.max(0, Math.floor((nowMs - latestMs) / 1000));
-      }
-      
-      return { ...b, isOnline, sessionCount: branchSessions.length, lastSeenSecondsAgo };
-    });
+      return { 
+        ...b, 
+        isOnline, 
+        sessionCount: branchSessions.length, 
+        lastSeenSecondsAgo: latestMs > 0 ? Math.max(0, Math.floor((nowMs - latestMs) / 1000)) : null,
+        rawLastSeen: b.last_seen,
+        serverTime: new Date(nowMs).toISOString()
+      };
     
     res.json(processed);
   } catch (error) {

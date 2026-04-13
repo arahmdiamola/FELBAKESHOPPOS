@@ -335,13 +335,16 @@ export default function CommandCenter({ isPublic = false }) {
 
                 {branch.lastSeenSecondsAgo !== null && (
                   <div style={{ 
-                    fontSize: '0.8rem', 
-                    opacity: 0.5, 
-                    fontWeight: 800, 
+                    fontSize: '0.75rem', 
+                    opacity: 0.6, 
+                    fontWeight: 700, 
                     marginTop: 10,
+                    lineHeight: 1.2,
                     color: branch.isOnline ? '#00FF00' : '#FE6B6B' 
                   }}>
-                    SIGNAL: {branch.lastSeenSecondsAgo}s AGO
+                    <div>⚡ SIGNAL: {branch.lastSeenSecondsAgo}s AGO</div>
+                    <div style={{ fontSize: '0.65rem', opacity: 0.4 }}>REF: {branch.rawLastSeen || 'N/A'}</div>
+                    <div style={{ fontSize: '0.65rem', opacity: 0.4 }}>NOW: {new Date(branch.serverTime).toLocaleTimeString()}</div>
                   </div>
                 )}
                 
