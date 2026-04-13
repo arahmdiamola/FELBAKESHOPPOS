@@ -275,7 +275,7 @@ export default function CommandCenter({ isPublic = false }) {
 
         <div className="tv-global-stats">
           <div className="tv-revenue-label" style={{ fontSize: '0.85rem', opacity: 0.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', marginBottom: 5 }}>Global Revenue Today</div>
-          <div className="tv-main-revenue" style={{ fontSize: '4.5rem', lineHeight: 0.9, fontWeight: 900, letterSpacing: '-3px' }}>{formatCurrency(pulseMetrics.total)}</div>
+          <div className="tv-main-revenue">{formatCurrency(pulseMetrics.total)}</div>
           <div style={{ fontSize: '0.9rem', opacity: 0.4, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
             <TrendingUp size={16} style={{ color: 'var(--success)' }} />
             {globalSales.length.toLocaleString()} TRANSACTIONS

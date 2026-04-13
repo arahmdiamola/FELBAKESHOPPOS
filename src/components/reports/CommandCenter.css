@@ -19,14 +19,15 @@
 }
 
 .tv-header {
-  padding: 20px 40px;
-  background: rgba(44, 24, 16, 0.4);
+  padding: 12px 24px;
+  background: rgba(44, 24, 16, 0.6);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   display: flex;
   justify-content: space-between;
   align-items: center;
   z-index: 10;
+  box-sizing: border-box;
 }
 
 .header-logo {
@@ -40,9 +41,9 @@
 
 .tv-main-title {
   font-family: 'Outfit', sans-serif;
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 900;
-  letter-spacing: -1px;
+  letter-spacing: -0.5px;
   margin: 0;
   text-transform: uppercase;
 }
@@ -62,32 +63,50 @@
 
 .tv-main-revenue {
   font-family: 'Outfit', sans-serif;
-  font-size: 3.5rem;
-  font-weight: 900;
-  letter-spacing: -3px;
-  line-height: 0.8;
+  font-size: 2.8rem;
+  font-weight: 950;
+  letter-spacing: -2px;
+  line-height: 0.9;
   color: #fff;
+  text-align: right;
 }
 
 .tv-viewport {
   flex: 1;
-  padding: 40px 60px;
+  padding: 20px 30px;
   position: relative;
+  overflow-y: auto;
+}
+
+.tv-slide {
+  display: none;
+  width: 100%;
+}
+
+.tv-slide.active {
+  display: block;
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .tv-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 15px;
+  width: 100%;
 }
 
 /* Glassmorphism Cards */
 .tv-branch-card {
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(15px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 24px;
-  padding: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 20px;
   transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
   position: relative;
 }
@@ -100,21 +119,21 @@
 
 .tv-branch-name {
   font-family: 'Outfit', sans-serif;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 1px;
-  opacity: 0.7;
-  margin-bottom: 8px;
+  opacity: 0.6;
+  margin-bottom: 6px;
 }
 
 .tv-branch-revenue {
   font-family: 'Outfit', sans-serif;
-  font-size: 3.2rem;
+  font-size: 2.6rem;
   font-weight: 950;
-  letter-spacing: -2px;
-  line-height: 0.9;
-  margin-bottom: 12px;
+  letter-spacing: -1.5px;
+  line-height: 1;
+  margin-bottom: 10px;
 }
 
 .status-pill {
