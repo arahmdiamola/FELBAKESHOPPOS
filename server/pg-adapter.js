@@ -11,7 +11,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const { Pool } = pg;
-const isProduction = !!process.env.DATABASE_URL;
+export const isProduction = !!process.env.DATABASE_URL;
 
 let pool = null;
 let sqliteDb = null;
@@ -142,23 +142,20 @@ export const pgAdapter = {
       }
     } else {
       const db = await getSqliteDb();
-      return new Promise((resolve, reject) => {
-        db.run('BEGIN TRANSACTION');
+      try {
+        await db.run('BEGIN TRANSACTION');
         const tx = {
           run: (sql, params = []) => db.run(sql, params),
           all: (sql, params = []) => db.all(sql, params),
           get: (sql, params = []) => db.get(sql, params)
         };
-        callback(tx)
-          .then(res => {
-            db.run('COMMIT');
-            resolve(res);
-          })
-          .catch(err => {
-            db.run('ROLLBACK');
-            reject(err);
-          });
-      });
+        const result = await callback(tx);
+        await db.run('COMMIT');
+        return result;
+      } catch (err) {
+        await db.run('ROLLBACK');
+        throw err;
+      }
     }
   }
 };

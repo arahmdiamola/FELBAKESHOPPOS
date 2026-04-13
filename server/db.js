@@ -364,6 +364,23 @@ export async function initDb() {
       );
     `);
 
+    // Only run complex migrations/bridge logic in production (Postgres)
+    if (!isProduction) {
+      console.log("[Database] Skipping Postgres-specific migrations (Local Mode)");
+      
+      // Ensure local admin exists for dev
+      const devExists = await db.get("SELECT id FROM users WHERE id = 'dev-001'");
+      if (!devExists) {
+        await db.run(
+          "INSERT INTO users (id, name, role, pin, branch_id) VALUES (?, ?, ?, ?, ?)",
+          ["dev-001", "System Developer", "system_admin", "9999", null]
+        );
+      }
+      
+      console.log("Database perfectly connected and synced!");
+      return db;
+    }
+
     // 2. Intelligent Migration (Cross-Referencing information_schema)
     const migrationQueue = [
       { table: 'branches', variants: ['lastSeen', 'lastseen'], target: 'last_seen' },
