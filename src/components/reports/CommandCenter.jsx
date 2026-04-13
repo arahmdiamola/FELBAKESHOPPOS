@@ -39,7 +39,7 @@ export default function CommandCenter({ isPublic = false }) {
   useEffect(() => {
     const slideInterval = setInterval(() => {
       setActiveSlide(prev => (prev === 1 ? 2 : 1));
-    }, 15000);
+    }, 30000);
     return () => clearInterval(slideInterval);
   }, []);
 

@@ -83,6 +83,18 @@ app.post('/api/auth/login', async (req, res) => {
       if (user.branch_id) {
         const branch = await db.get("SELECT * FROM branches WHERE id = ?", [user.branch_id]);
         user.branchName = branch?.name;
+        
+        // --- IMPLICIT LOGIN HEARTBEAT ---
+        // Immediately mark branch as online upon successful login
+        const timestamp = new Date().toISOString();
+        await db.run("UPDATE branches SET last_seen = ? WHERE id = ?", [timestamp, user.branch_id]);
+        
+        // Update user session to ensure dashboard sees the specific active user
+        await db.run("DELETE FROM branch_sessions WHERE branch_id = ? AND user_id = ?", [user.branch_id, user.id]);
+        await db.run(
+          "INSERT INTO branch_sessions (branch_id, user_id, last_seen) VALUES (?, ?, ?)",
+          [user.branch_id, user.id, timestamp]
+        );
       }
       res.json(user);
     } else {
