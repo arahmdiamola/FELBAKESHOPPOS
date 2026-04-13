@@ -537,8 +537,9 @@ export async function initDb() {
         }
       }
     }
+  }
 
-    // 5. System Admin Guarantee
+  // 5. System Admin Guarantee
     const devExists = await db.get("SELECT id FROM users WHERE id = 'dev-001'");
     if (!devExists) {
       await db.run(
