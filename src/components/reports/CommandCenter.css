@@ -57,8 +57,15 @@
   text-align: right;
 }
 
+.header-logo {
+  height: 48px;
+  width: auto;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}
+
 .tv-revenue-label {
-  font-size: 0.6rem;
+  font-size: 0.8rem;
   font-weight: 900;
   text-transform: uppercase;
   color: var(--accent-gold);
@@ -67,9 +74,10 @@
 
 .tv-main-revenue {
   font-family: 'Outfit', sans-serif;
-  font-size: 1.8rem;
+  font-size: 3.2rem;
   font-weight: 950;
   line-height: 1;
+  text-shadow: 0 0 20px rgba(212, 118, 60, 0.3);
 }
 
 /* HIGH-DENSITY VIEWPORT - DYNAMIC SIZING */
