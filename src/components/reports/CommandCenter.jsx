@@ -144,13 +144,15 @@ export default function CommandCenter({ isPublic = false }) {
     })).sort((a, b) => b.revenue - a.revenue);
 
     const finalData = currentRanks.map((b, index) => {
-       const isSyncing = (b.last_seen_seconds_ago === null); 
        const criticalProducts = globalLowStock.filter(p => p.branchId === b.id);
        const batchesInOven = activeProduction.filter(p => p.branchId === b.id);
        
+       // Explicitly derive online status if not provided or to ensure accuracy
+       const isOnline = b.isOnline || (b.lastSeenSecondsAgo !== null && b.lastSeenSecondsAgo < 60);
+
        return { 
          ...b, 
-         isSyncing,
+         isOnline,
          criticalStock: criticalProducts.length > 0 ? criticalProducts : null,
          activeBatches: batchesInOven.length,
          rank: index + 1

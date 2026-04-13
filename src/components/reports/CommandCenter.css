@@ -241,6 +241,17 @@
   border: 1px solid rgba(254, 107, 107, 0.3);
 }
 
+.card-online-neon {
+  border-color: rgba(0, 255, 0, 0.3) !important;
+  box-shadow: 0 0 40px rgba(0, 255, 0, 0.05), inset 0 0 20px rgba(0, 255, 0, 0.02) !important;
+  background: rgba(0, 255, 0, 0.02) !important;
+}
+
+.card-online-neon .tv-branch-name {
+  color: #00FF00;
+  opacity: 0.8 !important;
+}
+
 .tv-ticker-bar {
   height: 80px;
   background: rgba(13, 8, 5, 0.9);
