@@ -251,18 +251,18 @@
 }
 
 @keyframes breathe {
-  0% { box-shadow: 0 0 15px rgba(0, 255, 0, 0.2), inset 0 0 10px rgba(0, 255, 0, 0.1); border-color: rgba(0, 255, 0, 0.4); }
-  50% { box-shadow: 0 0 35px rgba(0, 255, 0, 0.4), inset 0 0 20px rgba(0, 255, 0, 0.2); border-color: rgba(0, 255, 0, 0.9); }
-  100% { box-shadow: 0 0 15px rgba(0, 255, 0, 0.2), inset 0 0 10px rgba(0, 255, 0, 0.1); border-color: rgba(0, 255, 0, 0.4); }
+  0% { box-shadow: 0 0 10px rgba(0, 255, 0, 0.1), inset 0 0 5px rgba(0, 255, 0, 0.05); border-color: rgba(0, 255, 0, 0.3); }
+  50% { box-shadow: 0 0 25px rgba(0, 255, 0, 0.3), inset 0 0 15px rgba(0, 255, 0, 0.1); border-color: rgba(0, 255, 0, 0.7); }
+  100% { box-shadow: 0 0 10px rgba(0, 255, 0, 0.1), inset 0 0 5px rgba(0, 255, 0, 0.05); border-color: rgba(0, 255, 0, 0.3); }
 }
 
 .card-online-neon {
-  border: 2px solid #00FF00 !important;
-  background: rgba(0, 255, 0, 0.08) !important;
-  backdrop-filter: blur(10px) !important;
+  border: 1.5px solid rgba(0, 255, 0, 0.6) !important;
+  background: rgba(0, 255, 0, 0.02) !important; /* Minimal tint for glass look */
+  backdrop-filter: blur(12px) !important;
   position: relative;
   overflow: hidden;
-  animation: breathe 4s ease-in-out infinite;
+  animation: breathe 5s ease-in-out infinite; /* Slower, more elegant pulse */
 }
 
 /* Glass Shimmer Shine */
@@ -276,10 +276,10 @@
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0.08),
     transparent
   );
-  animation: shimmer 4s infinite linear;
+  animation: shimmer 5s infinite linear;
   pointer-events: none;
 }
 
@@ -290,19 +290,19 @@
   right: 15px;
   background: #00FF00;
   color: #000;
-  font-size: 0.65rem;
-  font-weight: 900;
-  padding: 3px 8px;
+  font-size: 0.6rem;
+  font-weight: 950;
+  padding: 2px 8px;
   border-radius: 4px;
-  letter-spacing: 1.5px;
-  box-shadow: 0 0 15px rgba(0, 255, 0, 0.6);
+  letter-spacing: 1px;
+  box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
   z-index: 10;
 }
 
 .card-online-neon .tv-branch-name {
   color: #fff;
   opacity: 1 !important;
-  text-shadow: 0 0 10px rgba(0, 255, 0, 0.8);
+  text-shadow: 0 0 8px rgba(0, 255, 0, 0.5);
   font-weight: 900;
 }
 
