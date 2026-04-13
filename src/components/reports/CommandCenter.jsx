@@ -99,9 +99,9 @@ export default function CommandCenter({ isPublic = false }) {
     };
     
     fetchGlobalData();
-    const interval = setInterval(fetchGlobalData, 10000);
+    const interval = setInterval(fetchGlobalData, 30000); // Relaxed to 30s to be kinder to Free Tier
     return () => clearInterval(interval);
-  }, [isPublic, refetch]);
+  }, [isPublic]); // Removed refetch to prevent infinite update loop
 
   // Calculations for Loss
   const lossStats = useMemo(() => {
