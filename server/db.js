@@ -552,7 +552,9 @@ export async function initDb() {
     try {
       await db.exec(`
         CREATE INDEX IF NOT EXISTS idx_transactions_branch_date ON transactions(branch_id, date);
+        CREATE INDEX IF NOT EXISTS idx_transactions_date_only ON transactions(date);
         CREATE INDEX IF NOT EXISTS idx_logs_branch_time ON system_logs(branch_id, timestamp);
+        CREATE INDEX IF NOT EXISTS idx_logs_timestamp_only ON system_logs(timestamp);
         CREATE INDEX IF NOT EXISTS idx_sessions_branch ON branch_sessions(branch_id);
       `);
     } catch (e) {

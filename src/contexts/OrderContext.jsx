@@ -39,10 +39,10 @@ export function OrderProvider({ children }) {
     let interval;
 
     if (currentUser && isOwnerOrAdmin) {
-      console.log('[OrderContext] Starting 10s background polling...');
+      console.log('[OrderContext] Starting 30s background polling...');
       interval = setInterval(() => {
         fetchData();
-      }, 10000);
+      }, 30000); // Relaxed for stable performance
     }
 
     return () => {

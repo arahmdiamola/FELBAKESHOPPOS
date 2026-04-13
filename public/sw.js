@@ -53,19 +53,12 @@ self.addEventListener('fetch', (event) => {
 
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
-      // If we have it in cache, return it but also refresh from network in background
+      // 1. Cache First: If we have it, use it and STOP. Don't hammer the network.
       if (cachedResponse) {
-        fetch(request).then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, networkResponse);
-            });
-          }
-        }).catch(() => {}); // Network error? No problem, we have the cache.
         return cachedResponse;
       }
 
-      // If not in cache, fetch and then SAVE to cache for next time
+      // 2. Network Fallback: Only fetch if we don't have it yet
       return fetch(request).then((networkResponse) => {
         if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
           return networkResponse;
@@ -79,18 +72,13 @@ self.addEventListener('fetch', (event) => {
         return networkResponse;
       }).catch((err) => {
         // --- NAVIGATION FALLBACK --- 
-        // If a page request (navigation) fails, return the cached index.html (the SPA shell)
         if (request.mode === 'navigate' || (request.method === 'GET' && request.headers.get('accept').includes('text/html'))) {
           return caches.match('/index.html');
         }
         
         console.warn('[SW Fetch Failure]', request.url, err);
-        // Instead of throwing, return a generic network error response
-        return new Response('Offline / Network Error', { 
-          status: 503, 
-          statusText: 'Service Unavailable',
-          headers: new Headers({ 'Content-Type': 'text/plain' })
-        });
+        // Instead of returning a 503 (which looks like a crash), return a neutral fail
+        return new Response('Offline', { status: 200, statusText: 'Offline' });
       });
     })
   );
