@@ -43,7 +43,7 @@ async function seed() {
   ];
 
   for (const u of users) {
-    await pool.query("INSERT INTO users (id, name, role, pin, branchId) VALUES ($1, $2, $3, $4, $5)", [u.id, u.name, u.role, u.pin, u.branchId]);
+    await pool.query("INSERT INTO users (id, name, role, pin, branch_id) VALUES ($1, $2, $3, $4, $5)", [u.id, u.name, u.role, u.pin, u.branchId]);
   }
   console.log("✅ Seeded 7 Users (1 Admin, 1 Manager, 5 Cashiers)");
 
@@ -86,7 +86,7 @@ async function seed() {
   for (const b of branches) {
     for (const p of productData) {
       await pool.query(
-        "INSERT INTO products (id, branchId, name, categoryId, price, costPrice, stock, reorderPoint, emoji) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+        "INSERT INTO products (id, branch_id, name, category_id, price, cost_price, stock, reorder_point, emoji) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
         [uuidv4(), b.id, p.name, p.cat, p.p, p.c, 50, 10, p.e]
       );
       pCount++;

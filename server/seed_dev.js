@@ -5,6 +5,14 @@ import { initDb } from './db.js';
 import { v4 as uuidv4 } from 'uuid';
 
 async function seed() {
+  // SAFETY GUARD: Never run this on a live database
+  if (process.env.DATABASE_URL) {
+    console.error("❌ CRITICAL ERROR: DATABASE_URL detected!");
+    console.error("This is a LOCAL SEED script. It is forbidden to run this against the live database.");
+    console.error("Please unset your DATABASE_URL or remove it from .env before running this script.");
+    process.exit(1);
+  }
+
   console.log("🌱 Starting Local Development Seeding...");
   
   // Ensure DB is initialized (tables created)
