@@ -130,21 +130,31 @@ app.get('/api/branches', async (req, res) => {
     const allSessions = await db.all("SELECT branch_id, last_seen FROM branch_sessions");
     
     const processed = branches.map(b => {
-      const branchSessions = allSessions.filter(s => s.branch_id === b.id);
+      // Find sessions using the most common ID property variations
+      const branchId = b.id || b.ID;
+      const branchSessions = allSessions.filter(s => (s.branch_id || s.branchId || s.branchid) === branchId);
       
-      // MASTER UTC SYNC LOGIC
-      // Standardize everything to UTC milliseconds (Epoch) to prevent timezone bugs.
+      // MASTER UTC SYNC LOGIC (Case-Agnostic)
+      // We look at EVERY possible casing for 'last_seen' to defeat DB redundancy.
       const nowMs = Date.now();
       
-      const branchActivityDate = b.last_seen ? new Date(b.last_seen) : new Date(0);
-      const sessionDates = branchSessions.map(s => s.last_seen ? new Date(s.last_seen) : new Date(0))
-        .filter(d => !isNaN(d.getTime()));
+      const getBestDate = (obj) => {
+        const potentialDates = [
+          obj.last_seen, 
+          obj.lastSeen, 
+          obj.lastseen, 
+          obj.updated_at,
+          obj.updatedAt
+        ].map(val => val ? new Date(val) : new Date(0))
+         .filter(d => !isNaN(d.getTime()));
+        
+        return Math.max(0, ...potentialDates.map(d => d.getTime()));
+      };
+
+      const latestBranchMs = getBestDate(b);
+      const latestSessionMs = Math.max(0, ...branchSessions.map(s => getBestDate(s)));
       
-      const latestMs = Math.max(
-        !isNaN(branchActivityDate.getTime()) ? branchActivityDate.getTime() : 0,
-        ...sessionDates.map(d => d.getTime()).filter(t => !isNaN(t)),
-        0
-      );
+      const latestMs = Math.max(latestBranchMs, latestSessionMs);
 
       // 5-Minute Safety Window
       const isOnline = (nowMs - latestMs) < 300000;
@@ -154,7 +164,7 @@ app.get('/api/branches', async (req, res) => {
         isOnline, 
         sessionCount: branchSessions.length, 
         lastSeenSecondsAgo: latestMs > 0 ? Math.max(0, Math.floor((nowMs - latestMs) / 1000)) : null,
-        rawLastSeen: b.last_seen,
+        rawLastSeen: b.lastSeen || b.last_seen || b.lastseen,
         serverTime: new Date(nowMs).toISOString()
       };
     });
