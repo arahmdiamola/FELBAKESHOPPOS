@@ -11,10 +11,13 @@
     "start": "node server/index.js"
   },
   "devDependencies": {
-    "typescript": "~6.0.2",
-    "vite": "^8.0.4"
+    "typescript": "~5.3.3",
+    "vite": "^5.2.0",
+    "@vitejs/plugin-react": "^4.2.1"
   },
   "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "concurrently": "^9.2.1",
     "cors": "^2.8.6",
     "dotenv": "^17.4.1",

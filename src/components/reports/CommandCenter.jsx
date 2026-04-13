@@ -64,44 +64,41 @@ export default function CommandCenter({ isPublic = false }) {
   // Slide logic removed for high-density one-screen layout
 
   // Master Background Fetcher: Truly Global Data
+  const fetchGlobalData = useCallback(async () => {
+    try {
+      const headers = { 
+        'X-Branch-Id': 'all',
+        'X-User-Role': 'system_admin' // Force full access for dashboard
+      };
+
+      const [tx, branchesData, prodData] = await Promise.all([
+        api.get('/transactions/today', { headers }),
+        api.get('/branches', { headers }),
+        api.get('/production/logs?status=in_oven', { headers })
+      ]);
+
+      setGlobalSales(tx || []);
+      setBranches(branchesData || []);
+      setActiveProduction(prodData || []);
+      
+      // Secure-only fetching
+      const [logs, ruinedData] = await Promise.all([
+        api.get('/logs?limit=50', { headers }),
+        api.get('/production/logs?status=ruined', { headers })
+      ]);
+      setAuditLogs(logs || []);
+      setRuinedProduction(ruinedData || []);
+      setIsLoadingLogs(false);
+    } catch (e) {
+      console.error('[Mission Control Master Fetch Error]', e);
+    }
+  }, [isPublic]);
+
   useEffect(() => {
-    const fetchGlobalData = async () => {
-      try {
-        const headers = { 
-          'X-Branch-Id': 'all',
-          'X-User-Role': 'system_admin' // Force full access for dashboard
-        };
-
-        const [tx, branchesData, prodData] = await Promise.all([
-          api.get('/transactions/today', { headers }),
-          api.get('/branches', { headers }),
-          api.get('/production/logs?status=in_oven', { headers })
-        ]);
-
-        setGlobalSales(tx || []);
-        setBranches(branchesData || []);
-        setActiveProduction(prodData || []);
-        
-        // Secure-only fetching
-        // Ensure Audit & Production Loss data is fetched for the Mission Control view
-        const [logs, ruinedData] = await Promise.all([
-          api.get('/logs?limit=50', { headers }),
-          api.get('/production/logs?status=ruined', { headers })
-        ]);
-        setAuditLogs(logs || []);
-        setRuinedProduction(ruinedData || []);
-        setIsLoadingLogs(false);
-
-        await refetch();
-      } catch (e) {
-        console.error('[Mission Control Master Fetch Error]', e);
-      }
-    };
-    
     fetchGlobalData();
     const interval = setInterval(fetchGlobalData, 30000); // Relaxed to 30s to be kinder to Free Tier
     return () => clearInterval(interval);
-  }, [isPublic]); // Removed refetch to prevent infinite update loop
+  }, [fetchGlobalData]); // Stable dependency
 
   // Calculations for Loss
   const lossStats = useMemo(() => {
