@@ -909,26 +909,29 @@ app.post('/api/restore', async (req, res) => {
 
 app.get('/api/logs', async (req, res) => {
   try {
-    const limit = req.query.limit || 100;
+    const limit = parseInt(req.query.limit) || 100;
     const branchId = req.headers['x-branch-id'];
-    const userRole = req.headers['x-user-role'];
+    const userRole = (req.headers['x-user-role'] || '').toLowerCase();
 
     let logs;
+    const isAdmin = userRole === 'system_admin' || userRole === 'owner';
+    
     const query = `
       SELECT l.*, b.name as branch_name 
       FROM system_logs l 
       LEFT JOIN branches b ON l.branch_id = b.id 
-      ${userRole === 'system_admin' ? '' : 'WHERE l.branch_id = ?'} 
+      ${isAdmin ? '' : 'WHERE l.branch_id = ?'} 
       ORDER BY l.timestamp DESC LIMIT ?
     `;
 
-    if (userRole === 'system_admin') {
+    if (isAdmin) {
       logs = await db.all(query, [limit]);
     } else {
       logs = await db.all(query, [branchId, limit]);
     }
-    res.json(logs);
+    res.json(logs || []);
   } catch (err) {
+    console.error('[GET /api/logs Error]', err);
     res.status(500).json({ error: err.message });
   }
 });

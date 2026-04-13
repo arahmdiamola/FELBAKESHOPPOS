@@ -382,8 +382,17 @@ export default function CommandCenter({ isPublic = false }) {
           {!isPublic && (
             <div className="tv-intelligence-row">
               <div className="intelligence-card">
-                  <div className="card-title">
-                      <Activity size={14} color="var(--accent-gold)" /> LIVE AUDIT FEED
+                  <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Activity size={14} color="var(--accent-gold)" /> LIVE AUDIT FEED
+                      </span>
+                      <button 
+                        onClick={fetchGlobalData}
+                        style={{ background: 'none', border: 'none', color: 'var(--accent-gold)', cursor: 'pointer', opacity: 0.6 }}
+                        title="Sync Now"
+                      >
+                        <Zap size={10} />
+                      </button>
                   </div>
                   <div className="audit-list-mini">
                       {auditLogs.slice(0, 10).map(log => (
