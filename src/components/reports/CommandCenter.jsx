@@ -59,13 +59,7 @@ export default function CommandCenter({ isPublic = false }) {
     }
   };
 
-  // Slide Switcher
-  useEffect(() => {
-    const slideInterval = setInterval(() => {
-      setActiveSlide(prev => (prev === 1 ? 2 : 1));
-    }, 30000);
-    return () => clearInterval(slideInterval);
-  }, []);
+  // Slide logic removed for high-density one-screen layout
 
   // Master Background Fetcher: Truly Global Data
   useEffect(() => {
@@ -326,97 +320,67 @@ export default function CommandCenter({ isPublic = false }) {
         </div>
       </div>
 
-      {/* SLIDE NAVIGATION INDICATOR */}
-      <div className="tv-slide-nav">
-        <button 
-          onClick={() => setActiveSlide(1)} 
-          className={activeSlide === 1 ? 'active' : ''}
-        >
-          <BarChart2 size={18} />
-          <span>UNIT INTEL</span>
-        </button>
-        <button 
-          onClick={() => setActiveSlide(2)} 
-          className={activeSlide === 2 ? 'active' : ''}
-        >
-          <Activity size={18} />
-          <span>OPERATIONS</span>
-        </button>
-      </div>
+      {/* Unified Screen - No Sliders */}
 
-      <div className="tv-viewport">
-        {/* SLIDE 1: BRANCH INTELLIGENCE */}
-        <div className={`tv-slide ${activeSlide === 1 ? 'active' : 'inactive'}`}>
-          <div className="slide-label">
-             <MapPin size={24} /> GLOBAL BRANCH INTELLIGENCE GRID
+      <div className="tv-viewport full-grid-mode">
+        {/* GLOBAL INVENTORY WAR ROOM - Permanent Top Bar */}
+        {globalLowStock.length > 0 && (
+          <div className="tv-compact-alert-bar">
+            <div className="compact-alert-label"><AlertTriangle size={14} /> ALERTS</div>
+            <div className="compact-alert-items">
+              {globalLowStock.slice(0, 10).map(p => (
+                <div key={p.id} className="compact-alert-item">
+                  {p.emoji} {p.name} <span className="branch-tag">@{p.branchName}</span>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="tv-grid">
+        )}
+
+        <div className="tv-grid-header">
+           <MapPin size={18} /> BRANCH PERFORMANCE TILEMAP
+        </div>
+
+        <div className="tv-dense-grid">
             {branchPerformance.map((branch, index) => (
               <div 
                 key={branch.id} 
-                className={`tv-branch-card ${justSoldBranch === branch.id ? 'just-sold' : ''} ${branch.isOnline ? 'card-online-neon' : ''} ${rankedUpBranches[branch.id] ? 'ranked-up' : ''}`}
+                className={`tv-branch-tile ${justSoldBranch === branch.id ? 'just-sold' : ''} ${branch.isOnline ? 'online-glow' : ''} ${rankedUpBranches[branch.id] ? 'ranked-up' : ''}`}
               >
-                <div className="tv-rank-badge">RANK #{branch.rank}</div>
+                <div className="tile-top">
+                  <div className="tile-rank">#{branch.rank}</div>
+                  <div className={`tile-signal ${branch.isOnline ? 'live' : 'dead'}`} />
+                </div>
                 
-                <div className="tv-branch-name">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <MapPin size={18} style={{ color: index === 0 ? '#FFD700' : 'var(--accent)' }} />
-                    {branch.name}
-                  </div>
+                <div className="tile-name">{branch.name}</div>
+                <div className="tile-revenue">{formatCurrency(branch.revenue)}</div>
+                
+                <div className="tile-stats">
+                  <span>{branch.orders} TX</span>
+                  {branch.activeBatches > 0 && <span className="tile-oven">🥧 {branch.activeBatches}</span>}
                 </div>
 
-                <div className="tv-branch-revenue">
-                  {formatCurrency(branch.revenue)}
-                </div>
-                <div className="tv-branch-orders">
-                  {branch.orders} Orders • Avg {formatCurrency(branch.orders > 0 ? branch.revenue/branch.orders : 0)}
-                </div>
-
-                {branch.lastSeenSecondsAgo !== null && (
-                  <div style={{ 
-                    fontSize: '0.75rem', 
-                    opacity: 0.6, 
-                    fontWeight: 700, 
-                    marginTop: 10,
-                    lineHeight: 1.2,
-                    color: branch.isOnline ? '#00FF00' : '#FE6B6B' 
-                  }}>
-                    <div>⚡ SIGNAL: {branch.lastSeenSecondsAgo}s AGO</div>
-                    <div style={{ fontSize: '0.65rem', opacity: 0.4 }}>REF: {branch.rawLastSeen || 'N/A'}</div>
-                    <div style={{ fontSize: '0.65rem', opacity: 0.4 }}>NOW: {new Date(branch.serverTime).toLocaleTimeString()}</div>
-                  </div>
+                {branch.criticalStock && (
+                  <div className="tile-warning-dot"><AlertTriangle size={10} /></div>
                 )}
-                
-                <div style={{ marginTop: 25, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    {branch.activeBatches > 0 && (
-                       <div className="oven-indicator-badge">
-                         🥧 {branch.activeBatches} IN OVEN
-                       </div>
-                    )}
-                    {branch.criticalStock && (
-                      <div className="stock-warning-badge">
-                        LOW STOCK
-                      </div>
-                    )}
-                  </div>
-
-                  <div className={`status-pill ${branch.isOnline ? 'online' : 'offline'}`}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {branch.isOnline ? <Wifi size={18} className="pulse-fast" /> : <WifiOff size={18} />}
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
-                      <span style={{ fontSize: '0.9rem', marginBottom: 2 }}>
-                        {branch.isOnline ? (branch.lastSeenSecondsAgo < 1 ? '<1s' : `${branch.lastSeenSecondsAgo}s`) : 'OFF'}
-                      </span>
-                      <span style={{ fontSize: '0.6rem', opacity: 0.5, letterSpacing: 1 }}>
-                        {branch.isOnline ? 'SYNC' : 'LAST SEEN'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
               </div>
             ))}
+          </div>
+
+          {/* Compact Hourly Chart - Moved to bottom of unified screen */}
+          <div className="tv-condensed-hourly">
+             <div className="hourly-label"><Activity size={14} /> HOURLY GLOBAL MOMENTUM</div>
+             <ResponsiveContainer width="100%" height={60}>
+                  <AreaChart data={pulseMetrics.data}>
+                      <defs>
+                        <linearGradient id="tvPulse" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#D4763C" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#D4763C" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <Area type="monotone" dataKey="revenue" stroke="#D4763C" strokeWidth={2} fill="url(#tvPulse)" isAnimationActive={false} />
+                  </AreaChart>
+              </ResponsiveContainer>
           </div>
         </div>
 

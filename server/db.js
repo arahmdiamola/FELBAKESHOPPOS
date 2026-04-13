@@ -1,4 +1,4 @@
-import { pgAdapter } from './pg-adapter.js';
+import { pgAdapter, isProduction } from './pg-adapter.js';
 import { v4 as uuidv4 } from 'uuid';
 
 async function syncColumnData(db, table, oldCol, newCol) {
@@ -364,7 +364,9 @@ export async function initDb() {
       );
     `);
 
-    // 2. Intelligent Migration (Cross-Referencing information_schema)
+    // --- REPAIR & MIGRATION LOGIC (Postgres Only) ---
+    if (isProduction) {
+      // 2. Intelligent Migration (Cross-Referencing information_schema)
     const migrationQueue = [
       { table: 'branches', variants: ['lastSeen', 'lastseen'], target: 'last_seen' },
       { table: 'users', variants: ['branchId', 'branchid'], target: 'branch_id' },

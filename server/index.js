@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
 import { initDb } from './db.js';
+import { isProduction } from './pg-adapter.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -394,7 +395,7 @@ app.post('/api/products/inventory', async (req, res) => {
   const direction = req.body.direction; // 'deduct' or 'restore'
   for (const item of items) {
     if (direction === 'deduct') {
-      await db.run("UPDATE products SET stock = GREATEST(0, stock - ?) WHERE id = ?", [item.quantity, item.productId]);
+      await db.run(`UPDATE products SET stock = ${isProduction ? 'GREATEST' : 'MAX'}(0, stock - ?) WHERE id = ?`, [item.quantity, item.productId]);
     } else {
       await db.run("UPDATE products SET stock = stock + ? WHERE id = ?", [item.quantity, item.productId]);
     }
@@ -403,7 +404,7 @@ app.post('/api/products/inventory', async (req, res) => {
 });
 app.put('/api/products/:id/adjust', async (req, res) => {
   const { quantity } = req.body;
-  await db.run("UPDATE products SET stock = GREATEST(0, stock + ?) WHERE id = ?", [quantity, req.params.id]);
+  await db.run(`UPDATE products SET stock = ${isProduction ? 'GREATEST' : 'MAX'}(0, stock + ?) WHERE id = ?`, [quantity, req.params.id]);
   res.json({ success: true });
 });
 

@@ -1,0 +1,144 @@
+.quick-pick-btn {
+  background: transparent;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.quick-pick-btn:hover { transform: translateY(-2px); }
+.quick-pick-btn img, .avatar-placeholder {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
+}
+.quick-pick-btn:hover img, .quick-pick-btn:hover .avatar-placeholder { border-color: var(--accent); }
+.avatar-placeholder {
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.2rem;
+}
+.quick-pick-btn span { font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); }
+
+.clear-search {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.user-list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-light);
+  transition: background 0.2s;
+}
+.user-list-item:hover { background: var(--bg-hover); }
+.user-list-item:last-child { border-bottom: none; }
+.item-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: var(--text-tertiary);
+}
+.item-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.item-info { display: flex; flex-direction: column; line-height: 1.2; }
+.item-info .name { font-size: 0.9rem; font-weight: 700; color: var(--text-primary); }
+.item-info .role { font-size: 0.7rem; color: var(--text-muted); text-transform: capitalize; }
+
+.btn-icon {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+}
+.btn-icon:hover { color: var(--danger); }
+
+/* Keypad Styles */
+.numeric-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.key-btn {
+  height: 60px;
+  border-radius: 16px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 1.5rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.key-btn:active {
+  transform: scale(0.92);
+  background: var(--accent-light);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.key-btn.secondary {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+}
+
+.pin-display {
+   height: 48px;
+   align-items: center;
+}
+
+.pin-bubble {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  transition: all 0.2s;
+}
+
+.pin-bubble.filled {
+  background: var(--accent);
+  border-color: var(--accent);
+  transform: scale(1.1);
+  box-shadow: 0 0 10px rgba(212, 118, 60, 0.3);
+}
+
+.shake {
+  animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
+}
