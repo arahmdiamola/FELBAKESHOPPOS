@@ -48,42 +48,52 @@
   letter-spacing: -0.5px;
   margin: 0;
   text-transform: uppercase;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .tv-global-stats {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 5px;
-  margin-right: 60px; /* Clearance for fullscreen button */
+  gap: 2px;
+  margin-right: 65px;
+  flex-shrink: 0;
+  z-index: 20;
 }
 
 .tv-revenue-box {
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(212, 118, 60, 0.3);
-  padding: 8px 16px;
-  border-radius: 12px;
-  box-shadow: 0 0 20px rgba(212, 118, 60, 0.1);
+  background: rgba(0, 0, 0, 0.6);
+  border: 2px solid rgba(212, 118, 60, 0.5);
+  padding: 10px 24px;
+  border-radius: 16px;
+  box-shadow: 0 0 35px rgba(212, 118, 60, 0.2);
   text-align: right;
+  transition: all 0.3s ease;
 }
 
 .tv-revenue-label {
-  font-size: 0.7rem;
-  font-weight: 900;
+  font-size: 1.1rem;
+  font-weight: 950;
   text-transform: uppercase;
-  letter-spacing: 1.5px;
+  letter-spacing: 3px;
   color: #D4763C;
-  margin-bottom: 2px;
-  opacity: 0.8;
+  margin-bottom: 4px;
+  opacity: 1;
+  text-shadow: 0 0 10px rgba(212, 118, 60, 0.5);
 }
 
 .tv-main-revenue {
   font-family: 'Outfit', sans-serif;
-  font-size: 2.2rem;
+  font-size: 3.8rem;
   font-weight: 950;
-  letter-spacing: -1px;
+  letter-spacing: -2px;
   line-height: 1;
   color: #fff;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
 }
 
 .tv-viewport {
@@ -358,6 +368,13 @@
   color: var(--accent);
 }
 
-@media (max-width: 1200px) {
-  .owner-audit-grid { grid-template-columns: 1fr; }
+@media (max-width: 1300px) {
+  .tv-main-title { font-size: 1.2rem; }
+  .header-logo { width: 50px; height: 50px; }
+  .secure-badge { display: none; }
+}
+
+@media (max-width: 1000px) {
+  .tv-main-title { display: none; }
+  .tv-header { justify-content: flex-end; }
 }
