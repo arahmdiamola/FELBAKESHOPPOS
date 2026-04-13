@@ -234,7 +234,10 @@ export default function CommandCenter({ isPublic = false }) {
         revenue
       });
     }
-    return { data, total };
+    const peak = [...data].sort((a, b) => b.revenue - a.revenue)[0];
+    const peakHour = (peak && peak.revenue > 0) ? peak.hourLabel : 'None';
+
+    return { data, total, peakHour };
   }, [globalSales]);
 
   const tickerItems = useMemo(() => {
@@ -431,9 +434,15 @@ export default function CommandCenter({ isPublic = false }) {
                 if (data.length < 2) return null;
                 const latest = data[data.length - 1].revenue;
                 const prev = data[data.length - 2].revenue;
-                if (latest > prev * 1.1) return <span className="trend-badge-up">🔥 TRENDING UP</span>;
-                if (latest < prev * 0.9) return <span className="trend-badge-down">❄️ COOLING DOWN</span>;
-                return <span className="trend-badge-steady">✨ STEADY</span>;
+                
+                return (
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <span className="peak-hour-badge">🏆 PEAK: {pulseMetrics.peakHour}</span>
+                    {latest > prev * 1.1 && <span className="trend-badge-up">🔥 TRENDING UP</span>}
+                    {latest < prev * 0.9 && <span className="trend-badge-down">❄️ COOLING DOWN</span>}
+                    {Math.abs(latest - prev) <= prev * 0.1 && <span className="trend-badge-steady">✨ STEADY</span>}
+                  </div>
+                );
               })()}
             </div>
             <ResponsiveContainer width="100%" height={60}>
