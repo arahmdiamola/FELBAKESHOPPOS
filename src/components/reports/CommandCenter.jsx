@@ -71,11 +71,9 @@ export default function CommandCenter({ isPublic = false }) {
         'X-User-Role': 'system_admin' // Force full access for dashboard
       };
 
-      // Ensure we fetch only for the local today's date
-      const localTodayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
-
+      // FETCH BUFFER: Get the last 500 transactions to ensure we capture everything around midnight
       const [tx, branchesData, prodData] = await Promise.all([
-        api.get(`/transactions/today?date=${localTodayStr}`, { headers }),
+        api.get('/transactions?limit=500', { headers }),
         api.get('/branches', { headers }),
         api.get('/production/logs?status=in_oven', { headers })
       ]);
@@ -159,12 +157,14 @@ export default function CommandCenter({ isPublic = false }) {
   // Branch Performance Analysis
   const branchPerformance = useMemo(() => {
     const map = {};
-    const localTodayStr = new Date().toLocaleDateString('en-CA');
+    const todayStr = new Date().toDateString();
 
     // CALCULATE BRANCH REVENUE (Strictly filtered to Today's Local Date)
     globalSales.forEach(t => {
-      const tDate = t.date?.split('T')[0];
-      if (tDate === localTodayStr) {
+      if (!t.date) return;
+      const tDateStr = new Date(t.date).toDateString();
+      
+      if (tDateStr === todayStr) {
         if (!map[t.branchId]) {
           map[t.branchId] = { revenue: 0, orders: 0 };
         }
