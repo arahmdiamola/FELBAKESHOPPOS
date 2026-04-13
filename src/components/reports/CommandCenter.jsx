@@ -403,6 +403,14 @@ export default function CommandCenter({ isPublic = false }) {
                         <span className="value">{formatCurrency(lossStats?.totalPotentialLoss || 0)}</span>
                       </div>
                   </div>
+                  <div className="ruined-list-mini" style={{ marginTop: 10 }}>
+                    {ruinedProduction.slice(0, 3).map(p => (
+                      <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', opacity: 0.8, borderBottom: '1px solid rgba(255,255,255,0.03)', padding: '2px 0' }}>
+                        <span>{p.productName}</span>
+                        <span className="danger-text">-{formatCurrency((p.quantityProduced || p.estimatedYield) * (products.find(prod => prod.id === p.productId)?.price || 0))}</span>
+                      </div>
+                    ))}
+                  </div>
               </div>
             </div>
           )}

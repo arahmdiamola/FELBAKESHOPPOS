@@ -83,43 +83,60 @@
   min-height: 0;
 }
 
-/* COMPACT ALERTS BAR - WAR ROOM STYLE */
+/* COMPACT ALERTS BAR - MISSION CRITICAL WAR ROOM */
 .tv-compact-alerts {
   background: rgba(255, 77, 77, 0.1);
-  border: 1px solid rgba(255, 77, 77, 0.4);
-  border-radius: 8px;
+  border: 2px solid rgba(255, 77, 77, 0.5);
+  border-radius: 12px;
   display: flex;
   align-items: center;
-  padding: 8px 15px;
-  gap: 15px;
-  box-shadow: 0 0 15px rgba(255, 77, 77, 0.1);
+  padding: 12px 20px;
+  gap: 20px;
+  box-shadow: 0 0 30px rgba(255, 77, 77, 0.2);
+  animation: alerts-pulse 4s infinite ease-in-out;
+}
+
+@keyframes alerts-pulse {
+  0% { border-color: rgba(255, 77, 77, 0.5); box-shadow: 0 0 20px rgba(255, 77, 77, 0.1); }
+  50% { border-color: rgba(255, 77, 77, 0.8); box-shadow: 0 0 40px rgba(255, 77, 77, 0.3); }
+  100% { border-color: rgba(255, 77, 77, 0.5); box-shadow: 0 0 20px rgba(255, 77, 77, 0.1); }
 }
 
 .alerts-label {
-  font-weight: 900;
+  font-weight: 950;
   color: var(--danger-neon);
-  font-size: 0.7rem;
-  letter-spacing: 1px;
-  padding-right: 10px;
-  border-right: 1px solid rgba(255, 77, 77, 0.2);
+  font-size: 0.9rem;
+  letter-spacing: 2px;
+  padding-right: 20px;
+  border-right: 2px solid rgba(255, 77, 77, 0.3);
+  text-shadow: 0 0 10px var(--danger-neon);
 }
 
 .alerts-scroll {
   display: flex;
-  gap: 15px;
+  gap: 20px;
   overflow-x: auto;
   scrollbar-width: none;
+  flex: 1;
 }
 
 .mini-alert-item {
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-size: 0.85rem;
+  font-weight: 800;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0,0,0,0.3);
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.05);
 }
 
 .mini-alert-item span {
-  opacity: 0.5;
-  font-size: 0.65rem;
+  opacity: 0.6;
+  font-size: 0.7rem;
+  color: var(--accent-gold);
 }
 
 /* DENSE UNIT GRID */
@@ -313,25 +330,29 @@
   gap: 6px;
 }
 
-/* AUDIT FEED MINIMAL */
+/* AUDIT FEED MINI */
 .audit-list-mini {
   flex: 1;
-  max-height: 80px;
+  max-height: 120px;
   overflow-y: auto;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
+  padding-right: 5px;
 }
 
 .audit-item-mini {
-  padding: 4px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.03);
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
   display: grid;
-  grid-template-columns: 50px 80px 1fr;
-  gap: 10px;
+  grid-template-columns: 70px 100px 1fr;
+  gap: 15px;
+  align-items: center;
 }
 
-.audit-time-mini { opacity: 0.4; }
-.audit-branch-mini { color: var(--accent-gold); font-weight: 800; }
-.audit-msg-mini { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.audit-time-mini { opacity: 0.4; font-weight: 700; }
+.audit-branch-mini { color: var(--accent-gold); font-weight: 900; }
+.audit-msg-mini { color: #fff; font-weight: 600; }
+.audit-msg-mini strong { color: var(--accent-gold); }
+.danger-text { color: var(--danger-neon); font-weight: 800; }
 
 /* LOSS TRACKER COMPACT */
 .loss-grid-compact {
