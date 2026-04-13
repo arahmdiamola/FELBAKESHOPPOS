@@ -35,9 +35,8 @@ export default function CommandCenter({ isPublic = false }) {
   const prevRanksRef = useRef({});
   const [rankedUpBranches, setRankedUpBranches] = useState({});
   const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem('fel_dashboard_sound') === 'true');
-  const [showWarRoom, setShowWarRoom] = useState(false);
+  const [activeToast, setActiveToast] = useState(null);
   const lastSaleIdRef = useRef(null);
-  const lastAlertCountRef = useRef(0);
 
   // Audio Engine: Custom Anvil Bell MP3
   const playSoftBell = () => {
@@ -132,9 +131,15 @@ export default function CommandCenter({ isPublic = false }) {
       // TRIGGER: If the latest sale is different from what we last saw
       if (lastSaleIdRef.current && topSale.id !== lastSaleIdRef.current) {
         setJustSoldBranch(topSale.branchId);
+        
+        // Trigger Toast
+        const branchName = branches.find(b => b.id === topSale.branchId)?.name || 'Branch';
+        setActiveToast({ branchName, total: topSale.total, id: topSale.id });
+        
         playSoftBell(); // Ring the bell!
-        const timer = setTimeout(() => setJustSoldBranch(null), 3000);
-        return () => clearTimeout(timer);
+        
+        setTimeout(() => setJustSoldBranch(null), 3000);
+        setTimeout(() => setActiveToast(null), 5000); // Toast stays 5 seconds
       }
       
       lastSaleIdRef.current = topSale.id;
@@ -149,20 +154,6 @@ export default function CommandCenter({ isPublic = false }) {
       branchName: branches.find(b => b.id === p.branchId)?.name || 'Unknown'
     }));
   }, [products, branches, getLowStockProducts]);
-  
-  // War Room Auto-Fade Logic
-  useEffect(() => {
-    const currentCount = globalLowStock.length;
-    if (currentCount > 0 && currentCount > lastAlertCountRef.current) {
-      // New alerts detected or first alert detected
-      setShowWarRoom(true);
-      const timer = setTimeout(() => setShowWarRoom(false), 8000); // 8 seconds visibility
-      return () => clearTimeout(timer);
-    } else if (currentCount === 0) {
-      setShowWarRoom(false);
-    }
-    lastAlertCountRef.current = currentCount;
-  }, [globalLowStock.length]);
 
   // Branch Performance Analysis
   const branchPerformance = useMemo(() => {
@@ -339,16 +330,16 @@ export default function CommandCenter({ isPublic = false }) {
       {/* Unified Dashboard Screen */}
 
       <div className="tv-viewport high-density-mode">
-        {/* GLOBAL INVENTORY ALERTS (Restored with Auto-Fade) */}
-        {globalLowStock.length > 0 && (
-          <div className={`tv-compact-alerts ${showWarRoom ? 'fade-in' : 'fade-out'}`}>
-            <div className="alerts-label"><AlertTriangle size={14} /> ALERTS</div>
-            <div className="alerts-scroll">
-              {globalLowStock.slice(0, 12).map(p => (
-                <div key={p.id} className="mini-alert-item">
-                  {p.emoji} {p.name} <span>@{p.branchName}</span>
-                </div>
-              ))}
+        {/* SALES TOAST (Bottom Left) */}
+        {activeToast && (
+          <div className="tv-sales-toast">
+            <div className="toast-icon"><ShoppingCart size={20} /></div>
+            <div className="toast-content">
+              <div className="toast-label">NEW PURCHASE</div>
+              <div className="toast-detail">
+                <span className="toast-branch">{activeToast.branchName}</span>
+                <span className="toast-amount">{formatCurrency(activeToast.total)}</span>
+              </div>
             </div>
           </div>
         )}

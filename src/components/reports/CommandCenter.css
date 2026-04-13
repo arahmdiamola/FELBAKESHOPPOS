@@ -91,79 +91,70 @@
   min-height: 0;
 }
 
-/* COMPACT ALERTS BAR - MISSION CRITICAL WAR ROOM */
-.tv-compact-alerts {
-  background: rgba(255, 77, 77, 0.1);
-  border: 2px solid rgba(255, 77, 77, 0.5);
+/* SALES TOAST - BOTTOM LEFT POPUP */
+.tv-sales-toast {
+  position: fixed;
+  bottom: 60px; /* Above the ticker */
+  left: 20px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--accent-gold);
   border-radius: 12px;
-  display: flex;
-  align-items: center;
   padding: 12px 20px;
-  gap: 20px;
-  box-shadow: 0 0 30px rgba(255, 77, 77, 0.2);
-  animation: alerts-pulse 4s infinite ease-in-out;
-  transition: all 1s ease-in-out;
-}
-
-.tv-compact-alerts.fade-in {
-  opacity: 1;
-  transform: translateY(0);
-  visibility: visible;
-}
-
-.tv-compact-alerts.fade-out {
-  opacity: 0;
-  transform: translateY(-20px);
-  visibility: hidden;
-  height: 0;
-  padding-top: 0;
-  padding-bottom: 0;
-  margin: 0;
-  overflow: hidden;
-  border-width: 0;
-}
-
-@keyframes alerts-pulse {
-  0% { border-color: rgba(255, 77, 77, 0.5); box-shadow: 0 0 20px rgba(255, 77, 77, 0.1); }
-  50% { border-color: rgba(255, 77, 77, 0.8); box-shadow: 0 0 40px rgba(255, 77, 77, 0.3); }
-  100% { border-color: rgba(255, 77, 77, 0.5); box-shadow: 0 0 20px rgba(255, 77, 77, 0.1); }
-}
-
-.alerts-label {
-  font-weight: 950;
-  color: var(--danger-neon);
-  font-size: 0.9rem;
-  letter-spacing: 2px;
-  padding-right: 20px;
-  border-right: 2px solid rgba(255, 77, 77, 0.3);
-  text-shadow: 0 0 10px var(--danger-neon);
-}
-
-.alerts-scroll {
-  display: flex;
-  gap: 20px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  flex: 1;
-}
-
-.mini-alert-item {
-  font-size: 0.85rem;
-  font-weight: 800;
-  white-space: nowrap;
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: rgba(0,0,0,0.3);
-  padding: 4px 12px;
-  border-radius: 6px;
-  border: 1px solid rgba(255,255,255,0.05);
+  gap: 15px;
+  z-index: 2000;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5), 0 0 20px rgba(212, 118, 60, 0.2);
+  animation: toast-up-fade 5s forwards cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.mini-alert-item span {
-  opacity: 0.6;
-  font-size: 0.7rem;
+.toast-icon {
+  width: 40px;
+  height: 40px;
+  background: rgba(212, 118, 60, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--accent-gold);
+}
+
+.toast-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.toast-label {
+  font-size: 0.65rem;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  color: var(--accent-gold);
+  opacity: 0.8;
+}
+
+.toast-detail {
+  display: flex;
+  flex-direction: column;
+}
+
+.toast-branch {
+  font-weight: 800;
+  font-size: 1rem;
+  color: #fff;
+}
+
+.toast-amount {
+  font-weight: 950;
+  font-size: 1.2rem;
+  color: var(--success-neon);
+}
+
+@keyframes toast-up-fade {
+  0% { transform: translateY(50px); opacity: 0; }
+  10% { transform: translateY(0); opacity: 1; }
+  80% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(-30px); opacity: 0; }
 }
 
 /* DENSE UNIT GRID */
