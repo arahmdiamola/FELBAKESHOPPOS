@@ -111,7 +111,7 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 2px;
-  margin-right: 65px;
+  margin-right: 0 !important;
   flex-shrink: 0;
   z-index: 20;
 }
@@ -326,9 +326,9 @@
 /* Slide 2: Audit & Loss Styles */
 .owner-audit-grid {
   display: grid;
-  grid-template-columns: 1.5fr 1fr;
-  gap: 20px;
-  min-height: 400px;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  flex: 1;
 }
 
 .audit-card {
@@ -370,9 +370,9 @@
   font-size: 0.85rem;
 }
 
-.audit-time { opacity: 0.4; font-weight: 700; }
-.audit-branch { color: var(--accent); font-weight: 800; font-size: 0.75rem; }
-.audit-msg { opacity: 0.8; }
+.audit-time { opacity: 0.4; font-weight: 800; font-size: 1rem; }
+.audit-branch { color: var(--accent); font-weight: 900; font-size: 1.1rem; }
+.audit-msg { opacity: 1; font-size: 1.2rem; font-weight: 700; color: #fff; }
 
 .loss-metrics {
   display: grid;
@@ -390,9 +390,9 @@
 .loss-box.sunk { border-left: 4px solid #FE6B6B; }
 .loss-box.potential { border-left: 4px solid #ef4444; }
 
-.loss-box .label { font-size: 0.7rem; font-weight: 900; opacity: 0.5; display: block; margin-bottom: 8px; }
-.loss-box .value { font-size: 1.8rem; font-weight: 950; display: block; margin-bottom: 4px; }
-.loss-box .desc { font-size: 0.75rem; opacity: 0.4; }
+.loss-box .label { font-size: 1rem; font-weight: 900; opacity: 0.6; display: block; margin-bottom: 12px; letter-spacing: 2px; }
+.loss-box .value { font-size: 3.5rem; font-weight: 950; display: block; margin-bottom: 8px; letter-spacing: -2px; line-height: 1; color: #fff; }
+.loss-box .desc { font-size: 1.1rem; opacity: 0.5; font-weight: 700; }
 
 .ruined-item {
   display: flex;
