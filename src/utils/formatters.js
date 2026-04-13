@@ -1,10 +1,11 @@
 // Currency formatter — Philippine Peso
 export const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('en-PH', {
+  const formatted = new Intl.NumberFormat('en-PH', {
     style: 'currency',
     currency: 'PHP',
     minimumFractionDigits: 2,
   }).format(amount || 0);
+  return formatted.replace('₱', '₱ ');
 };
 
 // Date formatter

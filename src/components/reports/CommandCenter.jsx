@@ -3,7 +3,7 @@ import {
   TrendingUp, TrendingDown, ShoppingCart, Users, Award, 
   MapPin, Wifi, WifiOff, Activity, AlertTriangle, Zap,
   ShoppingBag, Minimize, Maximize, Clock, Shield,
-  ChevronRight, ArrowRight, Pizza, BarChart2
+  ChevronRight, ArrowRight, Pizza, BarChart2, Volume2, VolumeX
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, 
@@ -34,6 +34,45 @@ export default function CommandCenter({ isPublic = false }) {
   // Achievement System
   const prevRanksRef = useRef({});
   const [rankedUpBranches, setRankedUpBranches] = useState({});
+  const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem('fel_dashboard_sound') === 'true');
+  const lastSaleIdRef = useRef(null);
+
+  // Audio Engine: Synthesized Soft Bell (Empire Ding)
+  const playSoftBell = () => {
+    if (!soundEnabled) return;
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, ctx.currentTime); // A5 (Crystal Ding)
+      osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.5); // Decay to A4
+
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 0.05); // Rapid attack
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2); // Smooth decay
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start();
+      osc.stop(ctx.currentTime + 1.5);
+    } catch (e) {
+      console.warn('Audio synthesis failed:', e);
+    }
+  };
+
+  const toggleSound = () => {
+    const newState = !soundEnabled;
+    setSoundEnabled(newState);
+    localStorage.setItem('fel_dashboard_sound', newState.toString());
+    // Play a test ding when turning on so user knows it works
+    if (newState) {
+       setTimeout(playSoftBell, 100);
+    }
+  };
 
   // Slide Switcher
   useEffect(() => {
@@ -108,11 +147,18 @@ export default function CommandCenter({ isPublic = false }) {
   useEffect(() => {
     if (globalSales.length > 0) {
       const topSale = globalSales[0];
-      setJustSoldBranch(topSale.branchId);
-      const timer = setTimeout(() => setJustSoldBranch(null), 3000);
-      return () => clearTimeout(timer);
+      
+      // TRIGGER: If the latest sale is different from what we last saw
+      if (lastSaleIdRef.current && topSale.id !== lastSaleIdRef.current) {
+        setJustSoldBranch(topSale.branchId);
+        playSoftBell(); // Ring the bell!
+        const timer = setTimeout(() => setJustSoldBranch(null), 3000);
+        return () => clearTimeout(timer);
+      }
+      
+      lastSaleIdRef.current = topSale.id;
     }
-  }, [globalSales.length]);
+  }, [globalSales[0]?.id, soundEnabled]);
 
   const stats = getTodayStats();
 
@@ -262,7 +308,15 @@ export default function CommandCenter({ isPublic = false }) {
             <div className="sidebar-brand-icon" style={{ width: 70, height: 70, fontSize: '2.5rem' }}>🧁</div>
           )}
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
+              <button 
+                className={`tv-icon-button ${soundEnabled ? 'active-pulse' : ''}`} 
+                onClick={toggleSound}
+                title={soundEnabled ? "Mute Sound" : "Enable Sale Alerts"}
+                style={{ color: soundEnabled ? '#FFD700' : 'rgba(255,255,255,0.3)', background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                {soundEnabled ? <Volume2 size={24} /> : <VolumeX size={24} />}
+              </button>
                <h1 className="tv-main-title">
                  {isPublic ? 'MISSION CONTROL' : 'EXECUTIVE DASHBOARD'}
                </h1>
