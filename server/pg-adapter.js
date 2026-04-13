@@ -1,7 +1,6 @@
 import pg from 'pg';
 import dotenv from 'dotenv';
-import sqlite3 from 'sqlite3';
-import { open } from 'sqlite';
+// sqlite3 and sqlite imports moved to dynamic getSqliteDb to avoid loading native binaries in production
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -27,9 +26,12 @@ export const pool = isProduction ? new Pool({
 let sqliteDb = null;
 const getSqliteDb = async () => {
   if (sqliteDb) return sqliteDb;
-  sqliteDb = await open({
+  const { Database } = await import('sqlite3');
+  const { open: openDb } = await import('sqlite');
+  
+  sqliteDb = await openDb({
     filename: path.join(__dirname, 'dev.db'),
-    driver: sqlite3.Database
+    driver: Database
   });
   return sqliteDb;
 };
