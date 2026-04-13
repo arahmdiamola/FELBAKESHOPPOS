@@ -37,30 +37,15 @@ export default function CommandCenter({ isPublic = false }) {
   const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem('fel_dashboard_sound') === 'true');
   const lastSaleIdRef = useRef(null);
 
-  // Audio Engine: Synthesized Soft Bell (Empire Ding)
+  // Audio Engine: Custom Anvil Bell MP3
   const playSoftBell = () => {
     if (!soundEnabled) return;
     try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      const ctx = new AudioCtx();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(880, ctx.currentTime); // A5 (Crystal Ding)
-      osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.5); // Decay to A4
-
-      gain.gain.setValueAtTime(0, ctx.currentTime);
-      gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 0.05); // Rapid attack
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2); // Smooth decay
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-
-      osc.start();
-      osc.stop(ctx.currentTime + 1.5);
+      const audio = new Audio('/sounds/wingsoarstudio-anvil-bell-2-wav-485668.mp3');
+      audio.volume = 0.5; // Soften to 50% as requested previously
+      audio.play().catch(e => console.warn('Audio playback blocked or failed:', e));
     } catch (e) {
-      console.warn('Audio synthesis failed:', e);
+      console.warn('Audio initialization failed:', e);
     }
   };
 
