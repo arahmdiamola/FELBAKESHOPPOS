@@ -387,7 +387,7 @@ export default function CommandCenter({ isPublic = false }) {
             <div className="tv-intelligence-row">
               <div className="intelligence-card">
                   <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--accent-gold)' }}>
                         <Activity size={14} color="var(--accent-gold)" /> LIVE AUDIT FEED
                       </span>
                       <button 
@@ -446,7 +446,7 @@ export default function CommandCenter({ isPublic = false }) {
               </div>
 
               <div className="intelligence-card">
-                  <div className="card-title">
+                  <div className="card-title" style={{ color: '#ff4d4d' }}>
                       <AlertTriangle size={14} color="#ff4d4d" /> PRODUCTION LOSS (7D)
                   </div>
                   <div className="loss-grid-compact">
