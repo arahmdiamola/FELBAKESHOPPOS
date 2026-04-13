@@ -35,7 +35,9 @@ export default function CommandCenter({ isPublic = false }) {
   const prevRanksRef = useRef({});
   const [rankedUpBranches, setRankedUpBranches] = useState({});
   const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem('fel_dashboard_sound') === 'true');
+  const [showWarRoom, setShowWarRoom] = useState(false);
   const lastSaleIdRef = useRef(null);
+  const lastAlertCountRef = useRef(0);
 
   // Audio Engine: Custom Anvil Bell MP3
   const playSoftBell = () => {
@@ -147,6 +149,20 @@ export default function CommandCenter({ isPublic = false }) {
       branchName: branches.find(b => b.id === p.branchId)?.name || 'Unknown'
     }));
   }, [products, branches, getLowStockProducts]);
+  
+  // War Room Auto-Fade Logic
+  useEffect(() => {
+    const currentCount = globalLowStock.length;
+    if (currentCount > 0 && currentCount > lastAlertCountRef.current) {
+      // New alerts detected or first alert detected
+      setShowWarRoom(true);
+      const timer = setTimeout(() => setShowWarRoom(false), 8000); // 8 seconds visibility
+      return () => clearTimeout(timer);
+    } else if (currentCount === 0) {
+      setShowWarRoom(false);
+    }
+    lastAlertCountRef.current = currentCount;
+  }, [globalLowStock.length]);
 
   // Branch Performance Analysis
   const branchPerformance = useMemo(() => {
@@ -323,9 +339,9 @@ export default function CommandCenter({ isPublic = false }) {
       {/* Unified Dashboard Screen */}
 
       <div className="tv-viewport high-density-mode">
-        {/* GLOBAL INVENTORY ALERTS */}
+        {/* GLOBAL INVENTORY ALERTS (Restored with Auto-Fade) */}
         {globalLowStock.length > 0 && (
-          <div className="tv-compact-alerts">
+          <div className={`tv-compact-alerts ${showWarRoom ? 'fade-in' : 'fade-out'}`}>
             <div className="alerts-label"><AlertTriangle size={14} /> ALERTS</div>
             <div className="alerts-scroll">
               {globalLowStock.slice(0, 12).map(p => (
