@@ -332,6 +332,18 @@ export default function CommandCenter({ isPublic = false }) {
                 <div className="tv-branch-orders">
                   {branch.orders} Orders • Avg {formatCurrency(branch.orders > 0 ? branch.revenue/branch.orders : 0)}
                 </div>
+
+                {branch.lastSeenSecondsAgo !== null && (
+                  <div style={{ 
+                    fontSize: '0.8rem', 
+                    opacity: 0.5, 
+                    fontWeight: 800, 
+                    marginTop: 10,
+                    color: branch.isOnline ? '#00FF00' : '#FE6B6B' 
+                  }}>
+                    SIGNAL: {branch.lastSeenSecondsAgo}s AGO
+                  </div>
+                )}
                 
                 <div style={{ marginTop: 25, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

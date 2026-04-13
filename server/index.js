@@ -133,13 +133,16 @@ app.get('/api/branches', async (req, res) => {
         ...sessionDates.map(d => d.getTime())
       ));
 
-      // Online if any signal in the last 2 minutes (120000ms)
-      // This tighter window ensures rapid 'Internet Failed' detection for the dashboard.
-      const isOnline = !isNaN(latestSignalDate.getTime()) && (now - latestSignalDate) < 120000;
+      // Online if any signal in the last 5 minutes (300,000ms)
+      // Standardized to absolute numeric timestamps (Epoch ms) for total stability 
+      // across different server/client time settings.
+      const nowMs = Date.now();
+      const latestMs = !isNaN(latestSignalDate.getTime()) ? latestSignalDate.getTime() : 0;
+      const isOnline = (nowMs - latestMs) < 300000;
       
       let lastSeenSecondsAgo = null;
-      if (!isNaN(latestSignalDate.getTime()) && latestSignalDate.getTime() > 0) {
-        lastSeenSecondsAgo = Math.max(0, Math.floor((now - latestSignalDate) / 1000));
+      if (latestMs > 0) {
+        lastSeenSecondsAgo = Math.max(0, Math.floor((nowMs - latestMs) / 1000));
       }
       
       return { ...b, isOnline, sessionCount: branchSessions.length, lastSeenSecondsAgo };

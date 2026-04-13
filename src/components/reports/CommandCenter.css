@@ -245,15 +245,17 @@
 .card-online-neon {
   border-color: #00FF00 !important;
   box-shadow: 
-    0 0 50px rgba(0, 255, 0, 0.1), 
-    inset 0 0 30px rgba(0, 255, 0, 0.05) !important;
-  background: rgba(0, 255, 0, 0.08) !important;
+    0 0 60px rgba(0, 255, 0, 0.2), 
+    inset 0 0 40px rgba(0, 255, 0, 0.1) !important;
+  background: rgba(0, 255, 0, 0.12) !important;
+  border-width: 2px !important;
 }
 
 .card-online-neon .tv-branch-name {
   color: #00FF00;
   opacity: 1 !important;
-  text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+  text-shadow: 0 0 15px rgba(0, 255, 0, 0.6);
+  font-weight: 950;
 }
 
 .tv-ticker-bar {
