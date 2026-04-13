@@ -189,7 +189,7 @@
   min-height: 90px;
 }
 
-.tv-unit-tile::after {
+.tv-unit-tile.is-live::after {
   content: "";
   position: absolute;
   top: 0;
