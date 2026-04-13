@@ -118,6 +118,9 @@ app.get('/api/branches', async (req, res) => {
     const branches = await db.all("SELECT * FROM branches");
     const allSessions = await db.all("SELECT branch_id, last_seen FROM branch_sessions");
     
+    const processed = branches.map(b => {
+      const branchSessions = allSessions.filter(s => s.branch_id === b.id);
+      
       // MASTER UTC SYNC LOGIC
       // Standardize everything to UTC milliseconds (Epoch) to prevent timezone bugs.
       const nowMs = Date.now();
@@ -143,6 +146,7 @@ app.get('/api/branches', async (req, res) => {
         rawLastSeen: b.last_seen,
         serverTime: new Date(nowMs).toISOString()
       };
+    });
     
     res.json(processed);
   } catch (error) {
