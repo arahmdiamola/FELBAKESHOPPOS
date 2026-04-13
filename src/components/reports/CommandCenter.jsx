@@ -206,7 +206,7 @@ export default function CommandCenter({ isPublic = false }) {
   }, [globalSales]);
 
   const tickerItems = useMemo(() => {
-      const sales = globalSales.slice(0, 10).map(t => ({
+      const sales = globalSales.slice(0, 5).map(t => ({
           branchName: branches.find(b => b.id === t.branchId)?.name || 'Branch',
           total: t.total,
           id: t.id,
@@ -221,8 +221,16 @@ export default function CommandCenter({ isPublic = false }) {
           type: 'alert'
       }));
 
-      const combined = [...sales, ...alerts];
-      return [...combined, ...combined];
+      // Permanent status items to ensure sliding even with 0 data
+      const status = [
+        { id: 's1', type: 'system', text: 'SATCOM UP', emoji: '🛰️' },
+        { id: 's2', type: 'system', text: 'LIVE SYNC ACTIVE', emoji: '📡' },
+        { id: 's3', type: 'system', text: 'EMPIRE SECURE', emoji: '🛡️' }
+      ];
+
+      const combined = [...sales, ...alerts, ...status];
+      // Triple duplication for perfect infinite loop coverage
+      return [...combined, ...combined, ...combined];
   }, [globalSales, branches, globalLowStock]);
 
   const toggleFullscreen = () => {
@@ -462,6 +470,11 @@ export default function CommandCenter({ isPublic = false }) {
                   <AlertTriangle size={16} style={{ color: '#ef4444' }} />
                   <span style={{ color: '#ef4444', fontWeight: 800 }}>LOW STOCK: {item.itemName.toUpperCase()}</span>
                   <span style={{ opacity: 0.6 }}>@{item.branchName.toUpperCase()}</span>
+                </>
+              ) : item.type === 'system' ? (
+                <>
+                  <Activity size={16} style={{ color: 'var(--success)' }} />
+                  <span style={{ color: 'var(--success)', fontWeight: 800 }}>{item.emoji} {item.text}</span>
                 </>
               ) : (
                 <>
