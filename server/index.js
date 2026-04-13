@@ -96,9 +96,13 @@ app.post('/api/auth/login', async (req, res) => {
         user.branchName = branch?.name;
         
         // --- IMPLICIT LOGIN HEARTBEAT ---
-        // Immediately mark branch as online upon successful login
+        // INSTANT LOGIN: Force branch to 'Active' immediately on login
         const timestamp = new Date().toISOString();
         await db.run("UPDATE branches SET last_seen = ? WHERE id = ?", [timestamp, user.branch_id]);
+        await db.run(
+          "INSERT INTO branch_sessions (branch_id, user_id, last_seen) VALUES (?, ?, ?) ON CONFLICT (branch_id, user_id) DO UPDATE SET last_seen = EXCLUDED.last_seen", 
+          [user.branch_id, user.id, timestamp]
+        );
         
         // Update user session to ensure dashboard sees the specific active user
         await db.run("DELETE FROM branch_sessions WHERE branch_id = ? AND user_id = ?", [user.branch_id, user.id]);
@@ -213,7 +217,11 @@ app.post('/api/branches/:id/disconnect', async (req, res) => {
   const branchId = req.params.id;
   try {
     if (userId) {
+      // Clear user session AND force the branch to sync status
       await db.run("DELETE FROM branch_sessions WHERE branch_id = ? AND user_id = ?", [branchId, userId]);
+      // If we want 'Instant' offline even if others are logged in (per user request), we clear branch last_seen
+      // but usually we check if any other sessions exist. User said 'OFFLINE right after logging out'.
+      await db.run("UPDATE branches SET last_seen = NULL WHERE id = ?", [branchId]);
     } else {
       await db.run("UPDATE branches SET last_seen = NULL WHERE id = ?", [branchId]);
     }
