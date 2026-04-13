@@ -243,44 +243,46 @@
 }
 
 @keyframes shimmer {
-  0% { transform: translateX(-150%) skewX(-20deg); opacity: 0; }
-  20% { opacity: 0.5; }
-  50% { opacity: 0.5; }
-  80% { opacity: 0; }
-  100% { transform: translateX(150%) skewX(-20deg); opacity: 0; }
+  0% { transform: translateX(-200%) skewX(-30deg); opacity: 0; }
+  10% { opacity: 0; }
+  40% { opacity: 0.4; }
+  60% { opacity: 0.4; }
+  90% { opacity: 0; }
+  100% { transform: translateX(200%) skewX(-30deg); opacity: 0; }
 }
 
 @keyframes breathe {
-  0% { box-shadow: 0 0 10px rgba(0, 255, 0, 0.1), inset 0 0 5px rgba(0, 255, 0, 0.05); border-color: rgba(0, 255, 0, 0.3); }
-  50% { box-shadow: 0 0 25px rgba(0, 255, 0, 0.3), inset 0 0 15px rgba(0, 255, 0, 0.1); border-color: rgba(0, 255, 0, 0.7); }
-  100% { box-shadow: 0 0 10px rgba(0, 255, 0, 0.1), inset 0 0 5px rgba(0, 255, 0, 0.05); border-color: rgba(0, 255, 0, 0.3); }
+  0% { box-shadow: 0 0 10px rgba(0, 255, 0, 0.1), inset 0 0 5px rgba(0, 255, 0, 0.05); border-color: rgba(0, 255, 0, 0.2); }
+  50% { box-shadow: 0 0 20px rgba(0, 255, 0, 0.2), inset 0 0 10px rgba(0, 255, 0, 0.08); border-color: rgba(0, 255, 0, 0.5); }
+  100% { box-shadow: 0 0 10px rgba(0, 255, 0, 0.1), inset 0 0 5px rgba(0, 255, 0, 0.05); border-color: rgba(0, 255, 0, 0.2); }
 }
 
 .card-online-neon {
-  border: 1.5px solid rgba(0, 255, 0, 0.6) !important;
-  background: rgba(0, 255, 0, 0.02) !important; /* Minimal tint for glass look */
+  border: 1.5px solid rgba(0, 255, 0, 0.3) !important;
+  background: rgba(0, 255, 0, 0.02) !important;
   backdrop-filter: blur(12px) !important;
   position: relative;
   overflow: hidden;
-  animation: breathe 5s ease-in-out infinite; /* Slower, more elegant pulse */
+  animation: breathe 6s ease-in-out infinite; 
 }
 
-/* Glass Shimmer Shine */
+/* Glass Shimmer Shine - Softened & Fixed Width */
 .card-online-neon::before {
   content: "";
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
+  width: 40%; /* Narrower beam to prevent solid block look */
   height: 100%;
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 255, 255, 0.08),
+    rgba(255, 255, 255, 0.1),
     transparent
   );
-  animation: shimmer 5s infinite linear;
+  animation: shimmer 6s infinite ease-in-out;
   pointer-events: none;
+  z-index: 1;
 }
 
 .card-online-neon::after {
