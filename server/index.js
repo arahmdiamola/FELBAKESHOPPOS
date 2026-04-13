@@ -112,6 +112,9 @@ app.post('/api/auth/login', async (req, res) => {
           [user.branch_id, user.id, timestamp]
         );
       }
+      
+      // LOG LOGIN ACTION
+      await logAction(req, 'LOGIN', { userId: user.id, name: user.name });
       res.json(user);
     } else {
       res.status(401).json({ error: 'Invalid PIN' });
@@ -600,10 +603,12 @@ app.get('/api/transactions', async (req, res) => {
 app.get('/api/transactions/today', async (req, res) => {
   try {
     const { query, params } = getBranchFilter(req);
-    const today = new Date().toISOString().split('T')[0];
+    // Use the explicit date from query if provided (for local time alignment), otherwise fallback to UTC today
+    const dateStr = req.query.date || new Date().toISOString().split('T')[0];
+    
     const txns = await db.all(
       `SELECT * FROM transactions WHERE ${query} AND date LIKE ? ORDER BY date DESC`,
-      [...params, `${today}%`]
+      [...params, `${dateStr}%`]
     );
     res.json(txns);
   } catch (error) {
@@ -742,6 +747,8 @@ app.post('/api/preorders', async (req, res) => {
       "INSERT INTO preorders (id, branch_id, customer_name, customer_phone, items, total_price, deposit, status, due_date, notes, quantity, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       [p.id, branchId, p.customerName, p.customerPhone, JSON.stringify(p.items), p.totalPrice, p.deposit, p.status, p.dueDate, p.notes, p.quantity || 1, p.createdAt]
     );
+
+    await logAction(req, 'PREORDER_CREATED', { customer: p.customerName, total: p.totalPrice });
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });

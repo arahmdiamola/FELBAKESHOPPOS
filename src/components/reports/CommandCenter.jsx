@@ -71,8 +71,11 @@ export default function CommandCenter({ isPublic = false }) {
         'X-User-Role': 'system_admin' // Force full access for dashboard
       };
 
+      // Ensure we fetch only for the local today's date
+      const localTodayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+
       const [tx, branchesData, prodData] = await Promise.all([
-        api.get('/transactions/today', { headers }),
+        api.get(`/transactions/today?date=${localTodayStr}`, { headers }),
         api.get('/branches', { headers }),
         api.get('/production/logs?status=in_oven', { headers })
       ]);
@@ -156,14 +159,18 @@ export default function CommandCenter({ isPublic = false }) {
   // Branch Performance Analysis
   const branchPerformance = useMemo(() => {
     const map = {};
-    // CALCULATE BRANCH REVENUE
+    const localTodayStr = new Date().toLocaleDateString('en-CA');
+
+    // CALCULATE BRANCH REVENUE (Strictly filtered to Today's Local Date)
     globalSales.forEach(t => {
-      // Endpoint /transactions/today already pre-filters to the correct date
-      if (!map[t.branchId]) {
-        map[t.branchId] = { revenue: 0, orders: 0 };
+      const tDate = t.date?.split('T')[0];
+      if (tDate === localTodayStr) {
+        if (!map[t.branchId]) {
+          map[t.branchId] = { revenue: 0, orders: 0 };
+        }
+        map[t.branchId].revenue += t.total;
+        map[t.branchId].orders += 1;
       }
-      map[t.branchId].revenue += t.total;
-      map[t.branchId].orders += 1;
     });
 
     const currentRanks = branches.map(b => ({
