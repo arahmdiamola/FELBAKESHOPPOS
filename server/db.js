@@ -56,6 +56,46 @@ async function bridgeLegacyData(db, legacyTable, targetTable, columnMap = {}) {
   }
 }
 
+async function robustColumnRepair(db, table, oldColVariants, newColName, isNotNull = false) {
+  try {
+    const columnsRes = await db.all(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = $1 AND table_schema = 'public'
+    `, [table]);
+    const cols = columnsRes.map(c => c.columnName || c.column_name);
+
+    const match = oldColVariants.find(v => cols.includes(v.toLowerCase()));
+    if (!match && !cols.includes(newColName)) return;
+
+    if (match && match !== newColName) {
+      console.log(`--- ROBUST REPAIR: ${table}.${match} -> ${newColName} ---`);
+      
+      // 1. Drop constraints that might block the drop
+      try { await db.run(`ALTER TABLE ${table} DROP CONSTRAINT IF EXISTS "${table}_${match}_fkey"`); } catch (e) {}
+      
+      // 2. Ensure new column exists
+      if (!cols.includes(newColName)) {
+        await db.run(`ALTER TABLE ${table} ADD COLUMN "${newColName}" TEXT`);
+      }
+      
+      // 3. Migrate data
+      await db.run(`UPDATE ${table} SET "${newColName}" = "${match}" WHERE "${newColName}" IS NULL AND "${match}" IS NOT NULL`);
+      
+      // 4. Drop legacy column
+      try { await db.run(`ALTER TABLE ${table} DROP COLUMN "${match}"`); } catch (e) {}
+      
+      // 5. Enforce NOT NULL if requested
+      if (isNotNull) {
+        await db.run(`ALTER TABLE ${table} ALTER COLUMN "${newColName}" SET NOT NULL`);
+      }
+      console.log(`--- ${table}.${newColName} standardizing complete ---`);
+    }
+  } catch (err) {
+    console.warn(`[Repair Notice] Skipping ${table}.${newColName} robust repair:`, err.message);
+  }
+}
+
 async function ensureColumnRenamed(db, table, oldColNames, newColName) {
   try {
     // 1. Get all columns for this table
@@ -437,6 +477,16 @@ export async function initDb() {
     for (const sql of fallbackAdditions) {
       try { await db.run(sql); } catch (e) { }
     }
+
+    // 3.2 Robust System-Wide Repair (Fixes 500 errors on checkout and heartbeat)
+    console.log("Starting Critical Column Sanitization...");
+    await robustColumnRepair(db, 'transactions', ['branchid'], 'branch_id', true);
+    await robustColumnRepair(db, 'transactions', ['receiptnumber'], 'receipt_number', true);
+    await robustColumnRepair(db, 'transactions', ['paymentmethod'], 'payment_method', true);
+    await robustColumnRepair(db, 'products', ['branchid'], 'branch_id', true);
+    await robustColumnRepair(db, 'products', ['categoryid'], 'category_id');
+    await robustColumnRepair(db, 'system_logs', ['branchid'], 'branch_id');
+    await robustColumnRepair(db, 'system_logs', ['userid'], 'user_id');
 
     // 3.4 Cleanup Duplicates in branch_sessions (Universal approach)
     try {
