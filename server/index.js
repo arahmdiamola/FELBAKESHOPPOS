@@ -161,8 +161,8 @@ app.get('/api/branches', async (req, res) => {
       
       const latestMs = Math.max(latestBranchMs, latestSessionMs);
 
-      // 5-Minute Safety Window
-      const isOnline = (nowMs - latestMs) < 300000;
+      // 2-Minute Safety Window (Tightened from 5m for Dashboard Accuracy)
+      const isOnline = (nowMs - latestMs) < 120000;
       
       return { 
         ...b, 
@@ -218,12 +218,18 @@ app.post('/api/branches/:id/disconnect', async (req, res) => {
   const branchId = req.params.id;
   try {
     if (userId) {
-      // Clear user session AND force the branch to sync status
+      // Clear specific user session
       await db.run("DELETE FROM branch_sessions WHERE branch_id = ? AND user_id = ?", [branchId, userId]);
-      // If we want 'Instant' offline even if others are logged in (per user request), we clear branch last_seen
-      // but usually we check if any other sessions exist. User said 'OFFLINE right after logging out'.
-      await db.run("UPDATE branches SET last_seen = NULL WHERE id = ?", [branchId]);
+      
+      // Check if any other sessions remain for this branch
+      const remaining = await db.get("SELECT COUNT(*) as count FROM branch_sessions WHERE branch_id = ?", [branchId]);
+      if (remaining && remaining.count === 0) {
+        // Only if NO sessions left, nuke the branch last_seen for instant dashboard feedback
+        await db.run("UPDATE branches SET last_seen = NULL WHERE id = ?", [branchId]);
+      }
     } else {
+      // Force whole branch offline
+      await db.run("DELETE FROM branch_sessions WHERE branch_id = ?", [branchId]);
       await db.run("UPDATE branches SET last_seen = NULL WHERE id = ?", [branchId]);
     }
     res.json({ success: true });

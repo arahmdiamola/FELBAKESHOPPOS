@@ -72,7 +72,7 @@ export default function CommandCenter({ isPublic = false }) {
         };
 
         const [tx, branchesData, prodData] = await Promise.all([
-          api.get('/transactions?limit=500', { headers }),
+          api.get('/transactions/today', { headers }),
           api.get('/branches', { headers }),
           api.get('/production/logs?status=in_oven', { headers })
         ]);
@@ -158,10 +158,9 @@ export default function CommandCenter({ isPublic = false }) {
   // Branch Performance Analysis
   const branchPerformance = useMemo(() => {
     const map = {};
-    const today = new Date().toDateString();
-
+    // CALCULATE BRANCH REVENUE
     globalSales.forEach(t => {
-      if (new Date(t.date).toDateString() !== today) return;
+      // Endpoint /transactions/today already pre-filters to the correct date
       if (!map[t.branchId]) {
         map[t.branchId] = { revenue: 0, orders: 0 };
       }
