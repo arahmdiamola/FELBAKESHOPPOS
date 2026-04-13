@@ -110,27 +110,26 @@ app.get('/api/branches', async (req, res) => {
     const now = new Date();
     const processed = branches.map(b => {
       const branchSessions = allSessions.filter(s => s.branch_id === b.id);
-      const sessionCount = branchSessions.length;
+      
+      // Calculate most recent signal across ALL sources (Branch Last Seen vs Session Pulse)
+      const branchActivityDate = b.last_seen ? new Date(b.last_seen) : new Date(0);
+      const sessionDates = branchSessions.map(s => s.last_seen ? new Date(s.last_seen) : new Date(0))
+        .filter(d => !isNaN(d.getTime()));
+      
+      const latestSignalDate = new Date(Math.max(
+        branchActivityDate.getTime(),
+        ...sessionDates.map(d => d.getTime())
+      ));
 
-      // Online if any active session in the last 10 minutes (600000ms)
-      const activeSessions = branchSessions.filter(s => {
-        if (!s.last_seen) return false;
-        const lastSeenDate = new Date(s.last_seen);
-        return !isNaN(lastSeenDate.getTime()) && Math.abs(now - lastSeenDate) < 600000;
-      });
-
-      const isOnline = activeSessions.length > 0;
+      // Online if any signal in the last 10 minutes
+      const isOnline = !isNaN(latestSignalDate.getTime()) && (now - latestSignalDate) < 600000;
+      
       let lastSeenSecondsAgo = null;
-
-      if (activeSessions.length > 0) {
-        const diffs = activeSessions.map(s => {
-          const d = new Date(s.last_seen);
-          return isNaN(d.getTime()) ? 999999 : Math.floor(Math.abs(now - d) / 1000);
-        });
-        lastSeenSecondsAgo = Math.min(...diffs);
+      if (!isNaN(latestSignalDate.getTime()) && latestSignalDate.getTime() > 0) {
+        lastSeenSecondsAgo = Math.max(0, Math.floor((now - latestSignalDate) / 1000));
       }
       
-      return { ...b, isOnline, sessionCount, lastSeenSecondsAgo };
+      return { ...b, isOnline, sessionCount: branchSessions.length, lastSeenSecondsAgo };
     });
     
     res.json(processed);
