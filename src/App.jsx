@@ -37,7 +37,17 @@ function AppRoutes() {
     return <LoginScreen />;
   }
 
-
+  // --- STANDALONE FULLSCREEN DASHBOARD (NO SIDEBAR) ---
+  if (location.pathname === '/command-center') {
+    return (
+      <>
+        <Routes>
+          <Route path="/command-center" element={<CommandCenter isPublic={false} />} />
+        </Routes>
+        <ToastContainer />
+      </>
+    );
+  }
 
   // --- STANDARD POS LAYOUT WITH SIDEBAR ---
   return (
@@ -57,8 +67,6 @@ function AppRoutes() {
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/baking" element={<BakingPage />} />
           <Route path="/raw-materials" element={<RawMaterialsPage />} />
-          {/* We keep this here too for completeness, but it will be handled by the branch above */}
-          <Route path="/command-center" element={<CommandCenter isPublic={false} />} />
           <Route path="*" element={<Navigate to={currentUser.role === 'baker' ? '/baking' : '/pos'} replace />} />
         </Routes>
       </div>
