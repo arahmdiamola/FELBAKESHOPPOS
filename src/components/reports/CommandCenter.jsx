@@ -490,8 +490,6 @@ export default function CommandCenter({ isPublic = false }) {
                       <Area type="monotone" dataKey="revenue" stroke="#D4763C" strokeWidth={3} fill="url(#tvPulse)" />
                   </AreaChart>
               </ResponsiveContainer>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -522,6 +520,7 @@ export default function CommandCenter({ isPublic = false }) {
           ))}
         </div>
       </div>
+    </div>
 
     </div>
   );
