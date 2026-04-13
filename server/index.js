@@ -42,12 +42,14 @@ async function logAction(req, action, details = null) {
     }
 
     const branchId = req.headers['x-branch-id'] || null;
+    
+    // Log write with more descriptive failure catch
     await db.run(
       "INSERT INTO system_logs (id, timestamp, user_id, user_name, action, details, branch_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
       [uuidv4(), new Date().toISOString(), userId, finalName, action, typeof details === 'object' ? JSON.stringify(details) : details, branchId]
     );
   } catch (e) {
-    console.error('[Logging Failed]', e);
+    console.error(`[Logging Failed] Action: ${action} | Error: ${e.message}`);
   }
 }
 
