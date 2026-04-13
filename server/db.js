@@ -489,6 +489,7 @@ export async function initDb() {
     await robustColumnRepair(db, 'products', ['categoryid'], 'category_id');
     await robustColumnRepair(db, 'system_logs', ['branchid', 'branchId'], 'branch_id');
     await robustColumnRepair(db, 'system_logs', ['userid', 'userId'], 'user_id');
+    await robustColumnRepair(db, 'system_logs', ['username'], 'user_name');
 
     // 3.4 Cleanup Duplicates in branch_sessions (Universal approach)
     try {

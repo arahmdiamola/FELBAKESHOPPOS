@@ -404,7 +404,7 @@ export default function CommandCenter({ isPublic = false }) {
                             <div className="audit-time-mini">{new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                           <div className="audit-branch-mini">{log.branchName || log.branch_name || 'System'}</div>
                           <div className="audit-msg-mini">
-                            <strong style={{ opacity: 0.9 }}>{log.userName || log.user_name}</strong>: {(() => {
+                            <strong style={{ opacity: 0.9 }}>{log.userName || log.user_name || log.username}</strong>: {(() => {
                               const details = typeof log.details === 'string' ? JSON.parse(log.details) : log.details;
                               switch(log.action) {
                                 case 'SALE_COMPLETED':
