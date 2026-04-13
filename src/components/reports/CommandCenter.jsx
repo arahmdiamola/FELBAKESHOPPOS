@@ -82,14 +82,13 @@ export default function CommandCenter({ isPublic = false }) {
         setActiveProduction(prodData || []);
         
         // Secure-only fetching
-        if (!isPublic) {
-          const [logs, ruinedData] = await Promise.all([
-            api.get('/logs?limit=50', { headers }),
-            api.get('/production/logs?status=ruined', { headers })
-          ]);
-          setAuditLogs(logs || []);
-          setRuinedProduction(ruinedData || []);
-        }
+        // Ensure Audit & Production Loss data is fetched for the Mission Control view
+        const [logs, ruinedData] = await Promise.all([
+          api.get('/logs?limit=50', { headers }),
+          api.get('/production/logs?status=ruined', { headers })
+        ]);
+        setAuditLogs(logs || []);
+        setRuinedProduction(ruinedData || []);
 
         await refetch();
       } catch (e) {
