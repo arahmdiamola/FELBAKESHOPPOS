@@ -20,14 +20,16 @@
 
 .tv-header {
   padding: 12px 24px;
-  background: rgba(44, 24, 16, 0.6);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(26, 13, 8, 0.9);
+  backdrop-filter: blur(25px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  z-index: 10;
+  z-index: 1000;
   box-sizing: border-box;
+  position: sticky;
+  top: 0;
 }
 
 .header-logo {
@@ -241,3 +243,108 @@
 }
 
 .pulse-fast { animation: pulse-neon 1s infinite; }
+
+/* Slide 2: Audit & Loss Styles */
+.owner-audit-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 20px;
+  min-height: 400px;
+}
+
+.audit-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.audit-card .card-title {
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 0.9rem;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  opacity: 0.8;
+}
+
+.audit-list {
+  flex: 1;
+  max-height: 350px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.audit-item {
+  padding: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  display: grid;
+  grid-template-columns: 60px 100px 1fr;
+  gap: 15px;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.audit-time { opacity: 0.4; font-weight: 700; }
+.audit-branch { color: var(--accent); font-weight: 800; font-size: 0.75rem; }
+.audit-msg { opacity: 0.8; }
+
+.loss-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.loss-box {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 20px;
+  border-radius: 16px;
+  text-align: center;
+}
+
+.loss-box.sunk { border-left: 4px solid #FE6B6B; }
+.loss-box.potential { border-left: 4px solid #ef4444; }
+
+.loss-box .label { font-size: 0.7rem; font-weight: 900; opacity: 0.5; display: block; margin-bottom: 8px; }
+.loss-box .value { font-size: 1.8rem; font-weight: 950; display: block; margin-bottom: 4px; }
+.loss-box .desc { font-size: 0.75rem; opacity: 0.4; }
+
+.ruined-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+}
+
+.tv-hourly-section {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  padding: 24px;
+  margin-top: 10px;
+}
+
+.slide-label {
+  font-weight: 900;
+  font-size: 1.2rem;
+  letter-spacing: 2px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  opacity: 0.9;
+  color: var(--accent);
+}
+
+@media (max-width: 1200px) {
+  .owner-audit-grid { grid-template-columns: 1fr; }
+}
