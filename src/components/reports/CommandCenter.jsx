@@ -3,7 +3,7 @@ import {
   TrendingUp, TrendingDown, ShoppingCart, Users, Award, 
   MapPin, Wifi, WifiOff, Activity, AlertTriangle, Zap,
   ShoppingBag, Minimize, Maximize, Clock, Shield,
-  ChevronRight, ArrowRight, Pizza
+  ChevronRight, ArrowRight, Pizza, BarChart2
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, 
@@ -287,8 +287,20 @@ export default function CommandCenter({ isPublic = false }) {
 
       {/* SLIDE NAVIGATION INDICATOR */}
       <div className="tv-slide-nav">
-        <button onClick={() => setActiveSlide(1)} className={activeSlide === 1 ? 'active' : ''}>1</button>
-        <button onClick={() => setActiveSlide(2)} className={activeSlide === 2 ? 'active' : ''}>2</button>
+        <button 
+          onClick={() => setActiveSlide(1)} 
+          className={activeSlide === 1 ? 'active' : ''}
+        >
+          <BarChart2 size={18} />
+          <span>UNIT INTEL</span>
+        </button>
+        <button 
+          onClick={() => setActiveSlide(2)} 
+          className={activeSlide === 2 ? 'active' : ''}
+        >
+          <Activity size={18} />
+          <span>OPERATIONS</span>
+        </button>
       </div>
 
       <div className="tv-viewport">

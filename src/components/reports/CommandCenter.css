@@ -32,6 +32,57 @@
   top: 0;
 }
 
+.tv-slide-nav {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  position: sticky;
+  top: 90px;
+  z-index: 15;
+  padding: 15px 0;
+  background: linear-gradient(to bottom, rgba(13, 8, 5, 0.95), transparent);
+  pointer-events: none;
+}
+
+.tv-slide-nav button {
+  pointer-events: auto;
+  background: rgba(44, 24, 16, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.5);
+  padding: 10px 24px;
+  border-radius: 100px;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: 0.8rem;
+  letter-spacing: 1.5px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+  text-transform: uppercase;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.tv-slide-nav button:hover {
+  background: rgba(212, 118, 60, 0.15);
+  color: #fff;
+  transform: translateY(-2px);
+  border-color: rgba(212, 118, 60, 0.4);
+}
+
+.tv-slide-nav button.active {
+  background: #D4763C;
+  color: #000;
+  border-color: #D4763C;
+  box-shadow: 0 0 30px rgba(212, 118, 60, 0.5);
+}
+
+.tv-slide-nav button.active span {
+  font-weight: 950;
+}
+
 .header-logo {
   width: 60px;
   height: 60px;
