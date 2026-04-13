@@ -25,6 +25,7 @@ export default function CommandCenter({ isPublic = false }) {
   const [branches, setBranches] = useState([]);
   const [globalSales, setGlobalSales] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
+  const [isLoadingLogs, setIsLoadingLogs] = useState(true);
   const [ruinedProduction, setRuinedProduction] = useState([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [justSoldBranch, setJustSoldBranch] = useState(null);
@@ -89,6 +90,7 @@ export default function CommandCenter({ isPublic = false }) {
         ]);
         setAuditLogs(logs || []);
         setRuinedProduction(ruinedData || []);
+        setIsLoadingLogs(false);
 
         await refetch();
       } catch (e) {
@@ -387,13 +389,26 @@ export default function CommandCenter({ isPublic = false }) {
                       {auditLogs.slice(0, 10).map(log => (
                         <div key={log.id} className="audit-item-mini">
                             <div className="audit-time-mini">{new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                            <div className="audit-branch-mini">{log.branchName}</div>
+                            <div className="audit-branch-mini">{log.branch_name || 'System'}</div>
                             <div className="audit-msg-mini">
-                              <strong style={{ opacity: 0.8 }}>{log.userName}</strong>: {log.action === 'PRODUCTION_SPOILAGE' ? `VOID: ${log.details?.product}` : log.action}
+                              <strong style={{ opacity: 0.9 }}>{log.user_name}</strong>: {
+                                log.action === 'PRODUCTION_SPOILAGE' 
+                                  ? `VOID: ${typeof log.details === 'string' ? JSON.parse(log.details).product : log.details?.product}` 
+                                  : log.action.replace(/_/g, ' ')
+                              }
                             </div>
                         </div>
                       ))}
-                      {auditLogs.length === 0 && <div style={{ opacity: 0.3, padding: 10 }}>Scanning...</div>}
+                      {auditLogs.length === 0 && !isLoadingLogs && (
+                        <div style={{ opacity: 0.4, padding: '20px 10px', fontSize: '0.75rem', textAlign: 'center', letterSpacing: '1px' }}>
+                          NO RECENT ACTIVITY DETECTED
+                        </div>
+                      )}
+                      {isLoadingLogs && (
+                        <div style={{ opacity: 0.4, padding: '20px 10px', fontSize: '0.75rem', textAlign: 'center' }}>
+                          SCANNING EMPIRE...
+                        </div>
+                      )}
                   </div>
               </div>
 
