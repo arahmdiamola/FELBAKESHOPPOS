@@ -59,13 +59,7 @@ export default function CommandCenter({ isPublic = false }) {
     }
   };
 
-  // Slide Switcher
-  useEffect(() => {
-    const slideInterval = setInterval(() => {
-      setActiveSlide(prev => (prev === 1 ? 2 : 1));
-    }, 30000);
-    return () => clearInterval(slideInterval);
-  }, []);
+  // Slide logic removed for high-density one-screen layout
 
   // Master Background Fetcher: Truly Global Data
   useEffect(() => {
@@ -326,207 +320,68 @@ export default function CommandCenter({ isPublic = false }) {
         </div>
       </div>
 
-      {/* SLIDE NAVIGATION INDICATOR */}
-      <div className="tv-slide-nav">
-        <button 
-          onClick={() => setActiveSlide(1)} 
-          className={activeSlide === 1 ? 'active' : ''}
-        >
-          <BarChart2 size={18} />
-          <span>UNIT INTEL</span>
-        </button>
-        <button 
-          onClick={() => setActiveSlide(2)} 
-          className={activeSlide === 2 ? 'active' : ''}
-        >
-          <Activity size={18} />
-          <span>OPERATIONS</span>
-        </button>
-      </div>
+      {/* Unified Dashboard Screen */}
 
-      <div className="tv-viewport">
-        {/* SLIDE 1: BRANCH INTELLIGENCE */}
-        <div className={`tv-slide ${activeSlide === 1 ? 'active' : 'inactive'}`}>
-          <div className="slide-label">
-             <MapPin size={24} /> GLOBAL BRANCH INTELLIGENCE GRID
+      <div className="tv-viewport high-density-mode">
+        {/* GLOBAL INVENTORY ALERTS */}
+        {globalLowStock.length > 0 && (
+          <div className="tv-compact-alerts">
+            <div className="alerts-label"><AlertTriangle size={14} /> ALERTS</div>
+            <div className="alerts-scroll">
+              {globalLowStock.slice(0, 12).map(p => (
+                <div key={p.id} className="mini-alert-item">
+                  {p.emoji} {p.name} <span>@{p.branchName}</span>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="tv-grid">
-            {branchPerformance.map((branch, index) => (
-              <div 
-                key={branch.id} 
-                className={`tv-branch-card ${justSoldBranch === branch.id ? 'just-sold' : ''} ${branch.isOnline ? 'card-online-neon' : ''} ${rankedUpBranches[branch.id] ? 'ranked-up' : ''}`}
-              >
-                <div className="tv-rank-badge">RANK #{branch.rank}</div>
-                
-                <div className="tv-branch-name">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <MapPin size={18} style={{ color: index === 0 ? '#FFD700' : 'var(--accent)' }} />
-                    {branch.name}
-                  </div>
-                </div>
+        )}
 
-                <div className="tv-branch-revenue">
-                  {formatCurrency(branch.revenue)}
-                </div>
-                <div className="tv-branch-orders">
-                  {branch.orders} Orders • Avg {formatCurrency(branch.orders > 0 ? branch.revenue/branch.orders : 0)}
-                </div>
-
-                {branch.lastSeenSecondsAgo !== null && (
-                  <div style={{ 
-                    fontSize: '0.75rem', 
-                    opacity: 0.6, 
-                    fontWeight: 700, 
-                    marginTop: 10,
-                    lineHeight: 1.2,
-                    color: branch.isOnline ? '#00FF00' : '#FE6B6B' 
-                  }}>
-                    <div>⚡ SIGNAL: {branch.lastSeenSecondsAgo}s AGO</div>
-                    <div style={{ fontSize: '0.65rem', opacity: 0.4 }}>REF: {branch.rawLastSeen || 'N/A'}</div>
-                    <div style={{ fontSize: '0.65rem', opacity: 0.4 }}>NOW: {new Date(branch.serverTime).toLocaleTimeString()}</div>
-                  </div>
-                )}
-                
-                <div style={{ marginTop: 25, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    {branch.activeBatches > 0 && (
-                       <div className="oven-indicator-badge">
-                         🥧 {branch.activeBatches} IN OVEN
-                       </div>
-                    )}
-                    {branch.criticalStock && (
-                      <div className="stock-warning-badge">
-                        LOW STOCK
-                      </div>
-                    )}
-                  </div>
-
-                  <div className={`status-pill ${branch.isOnline ? 'online' : 'offline'}`}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {branch.isOnline ? <Wifi size={18} className="pulse-fast" /> : <WifiOff size={18} />}
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
-                      <span style={{ fontSize: '0.9rem', marginBottom: 2 }}>
-                        {branch.isOnline ? (branch.lastSeenSecondsAgo < 1 ? '<1s' : `${branch.lastSeenSecondsAgo}s`) : 'OFF'}
-                      </span>
-                      <span style={{ fontSize: '0.6rem', opacity: 0.5, letterSpacing: 1 }}>
-                        {branch.isOnline ? 'SYNC' : 'LAST SEEN'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+        {/* MAIN BRANCH GRID */}
+        <div className="tv-dense-grid-header">
+           <MapPin size={18} /> GLOBAL UNIT PERFORMANCE (LIVE)
         </div>
 
-        {/* SLIDE 2: OPERATIONS & LOSS AUDIT */}
-        <div className={`tv-slide ${activeSlide === 2 ? 'active' : 'inactive'}`}>
-           <div className="slide-label">
-             <Activity size={24} /> SHIPMENT & OPERATIONS COMMAND
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20, flex: 1 }}>
-            {/* INVENTORY ALERTS */}
-            {globalLowStock.length > 0 && (
-              <div className="tv-inventory-alert-bar">
-                <div className="alert-badge"><AlertTriangle size={20} /> INVENTORY WAR ROOM</div>
-                <div className="alert-content">
-                  {globalLowStock.slice(0, 8).map(p => (
-                    <div key={p.id} className="alert-item">
-                      <span>{p.emoji}</span>
-                      <span className="name">{p.name}</span>
-                      <span className="branch">@{p.branchName}</span>
-                      <span className="level">STOCK: {p.stock}</span>
-                    </div>
-                  ))}
+        <div className="tv-branch-grid-compact">
+          {branchPerformance.map((branch, index) => (
+            <div 
+              key={branch.id} 
+              className={`tv-unit-tile ${justSoldBranch === branch.id ? 'just-sold' : ''} ${branch.isOnline ? 'is-live' : 'is-offline'} ${rankedUpBranches[branch.id] ? 'ranked-up' : ''}`}
+            >
+              <div className="tile-header">
+                <span className="tile-rank">#{branch.rank}</span>
+                <div className={`tile-status-orb ${branch.isOnline ? 'pulse' : ''}`} />
+              </div>
+              
+              <div className="tile-body">
+                <div className="tile-name">{branch.name}</div>
+                <div className="tile-revenue">{formatCurrency(branch.revenue)}</div>
+                <div className="tile-meta">
+                  <span>{branch.orders} TX</span>
+                  {branch.activeBatches > 0 && <span className="tile-oven">🥧 {branch.activeBatches}</span>}
                 </div>
               </div>
-            )}
 
-            {/* OWNER ONLY AUDIT FEED & LOSS TRACKER */}
-            {!isPublic && (
-              <div className="owner-audit-grid">
-                <div className="audit-card feed-panel">
-                    <div className="card-title">
-                        <Activity size={18} color="var(--accent)" /> LIVE AUDIT FEED
-                    </div>
-                    <div className="audit-list">
-                        {auditLogs.slice(0, 15).map(log => (
-                          <div key={log.id} className="audit-item">
-                              <div className="audit-time">{new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                              <div className="audit-branch">{log.branchName}</div>
-                              <div className="audit-msg">
-                                <strong style={{ color: 'var(--accent)' }}>{log.userName}</strong>
-                                <span style={{ margin: '0 8px', opacity: 0.5 }}>•</span>
-                                {log.action === 'PRODUCTION_SPOILAGE' ? (
-                                  <span className="danger-text">VOIDED BATCH: {log.details?.product} ({log.details?.reason})</span>
-                                ) : log.action}
-                              </div>
-                          </div>
-                        ))}
-                        {auditLogs.length === 0 && <div style={{ opacity: 0.3, padding: 20 }}>No system activity detected...</div>}
-                    </div>
-                </div>
-
-                <div className="audit-card loss-panel">
-                    <div className="card-title">
-                        <AlertTriangle size={18} color="#ef4444" /> RECENT PRODUCTION LOSS (7D)
-                    </div>
-                    <div className="loss-metrics">
-                        <div className="loss-box sunk">
-                          <span className="label">SUNK COST</span>
-                          <span className="value">{formatCurrency(lossStats?.totalSunkCost || 0)}</span>
-                          <span className="desc">Materials Lost</span>
-                        </div>
-                        <div className="loss-box potential">
-                          <span className="label">REVENUE VOID</span>
-                          <span className="value">{formatCurrency(lossStats?.totalPotentialLoss || 0)}</span>
-                          <span className="desc">Potential Sales</span>
-                        </div>
-                    </div>
-                    <div className="ruined-list" style={{ marginTop: 20 }}>
-                      {ruinedProduction.slice(0, 5).map(p => (
-                        <div key={p.id} className="ruined-item">
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ opacity: 0.5 }}>{new Date(p.date).toLocaleDateString()}</span>
-                            <span style={{ fontWeight: 700 }}>{p.productName}</span>
-                          </div>
-                          <span style={{ color: '#ef4444', fontWeight: 900 }}>
-                            - {formatCurrency((p.quantityProduced || p.estimatedYield) * (products.find(prod => prod.id === p.productId)?.price || 0))}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                </div>
-              </div>
-            )}
-
-            {/* HOURLY PERFORMANCE */}
-            <div className="tv-hourly-section">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center', textTransform: 'uppercase', letterSpacing: 2, fontSize: '0.8rem', fontWeight: 800, opacity: 0.6 }}>
-                    <Activity size={16} color="var(--accent)" /> Global Daily Sales Activity
-                </div>
-                <div style={{ color: 'var(--success)', fontWeight: 900 }}>
-                  TODAY: <span style={{ fontSize: '1.2rem' }}>{formatCurrency(pulseMetrics.total)}</span>
-                </div>
-              </div>
-              <ResponsiveContainer width="100%" height={150}>
-                  <AreaChart data={pulseMetrics.data}>
-                      <defs>
-                        <linearGradient id="tvPulse" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#D4763C" stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor="#D4763C" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <XAxis dataKey="hourLabel" axisLine={false} tickLine={false} tick={{ fill: '#fff', fontSize: 10, opacity: 0.4 }} interval={3} />
-                      <YAxis hide domain={[0, 'auto']} />
-                      <Tooltip contentStyle={{ background: '#2C1810', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8 }} itemStyle={{ color: '#fff' }} />
-                      <Area type="monotone" dataKey="revenue" stroke="#D4763C" strokeWidth={3} fill="url(#tvPulse)" />
-                  </AreaChart>
-              </ResponsiveContainer>
+              {branch.criticalStock && <div className="tile-alert-badge"><AlertTriangle size={10} /></div>}
             </div>
+          ))}
+        </div>
+
+        <div className="tv-bottom-metrics">
+          {/* HOURLY PERFORMANCE CHART - CONDENSED */}
+          <div className="tv-sparkline-section">
+            <div className="sparkline-label"><Activity size={14} /> LIVE REVENUE MOMENTUM</div>
+            <ResponsiveContainer width="100%" height={50}>
+                <AreaChart data={pulseMetrics.data}>
+                    <defs>
+                      <linearGradient id="tvPulse" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#D4763C" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#D4763C" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <Area type="monotone" dataKey="revenue" stroke="#D4763C" strokeWidth={2} fill="url(#tvPulse)" isAnimationActive={false} />
+                </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>
