@@ -89,6 +89,58 @@ async function ensureColumnRenamed(db, table, oldColNames, newColName) {
   }
 }
 
+export async function fixBranchSessionsTable(db) {
+  try {
+    const columnsRes = await db.all(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'branch_sessions'
+    `);
+    const cols = columnsRes.map(c => c.columnName || c.column_name);
+
+    if (cols.includes('branchid') || cols.includes('userid')) {
+      console.log('--- PERFORMING ROBUST REPAIR ON branch_sessions ---');
+      
+      // 1. Drop existing constraints if they exist
+      try { await db.run('ALTER TABLE branch_sessions DROP CONSTRAINT IF EXISTS branch_sessions_pkey'); } catch (e) {}
+      try { await db.run('ALTER TABLE branch_sessions DROP CONSTRAINT IF EXISTS branch_sessions_branchid_fkey'); } catch (e) {}
+      
+      // 2. Ensure new columns exist
+      if (!cols.includes('branch_id')) await db.run('ALTER TABLE branch_sessions ADD COLUMN branch_id UUID');
+      if (!cols.includes('user_id')) await db.run('ALTER TABLE branch_sessions ADD COLUMN user_id UUID');
+      
+      // 3. Migrate data using name-matching
+      if (cols.includes('branchid')) {
+        await db.run('UPDATE branch_sessions SET branch_id = branchid WHERE branch_id IS NULL AND branchid IS NOT NULL');
+      }
+      if (cols.includes('userid')) {
+        await db.run('UPDATE branch_sessions SET user_id = userid WHERE user_id IS NULL AND userid IS NOT NULL');
+      }
+
+      // 4. Drop old columns
+      if (cols.includes('branchid')) await db.run('ALTER TABLE branch_sessions DROP COLUMN branchid');
+      if (cols.includes('userid')) await db.run('ALTER TABLE branch_sessions DROP COLUMN userid');
+
+      // 5. Cleanup NULLs (safety)
+      await db.run('DELETE FROM branch_sessions WHERE branch_id IS NULL OR user_id IS NULL');
+
+      // 6. Enforce NOT NULL
+      await db.run('ALTER TABLE branch_sessions ALTER COLUMN branch_id SET NOT NULL');
+      await db.run('ALTER TABLE branch_sessions ALTER COLUMN user_id SET NOT NULL');
+      
+      // 7. Restore Primary Key
+      try {
+        await db.run('ALTER TABLE branch_sessions ADD PRIMARY KEY (branch_id, user_id)');
+        console.log('--- branch_sessions Repair Complete ---');
+      } catch (e) {
+        console.warn('[Fix Warning] branch_sessions PK restoral:', e.message);
+      }
+    }
+  } catch (err) {
+    console.warn('[Repair Failure] branch_sessions:', err.message);
+  }
+}
+
 export async function initDb() {
   const db = pgAdapter;
 
@@ -363,6 +415,9 @@ export async function initDb() {
     await bridgeLegacyData(db, 'cs_raw_materials', 'raw_materials');
     await bridgeLegacyData(db, 'cs_production_logs', 'production_logs');
     await bridgeLegacyData(db, 'cs_categories', 'categories');
+
+    // 2.8 Repair Pulse table schema (Resolves 'branchid' not-null constraint error)
+    await fixBranchSessionsTable(db);
 
     // 3. Guaranteed Column Addition (If transition missed anything)
     const fallbackAdditions = [
