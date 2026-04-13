@@ -400,11 +400,29 @@ export default function CommandCenter({ isPublic = false }) {
                             <div className="audit-time-mini">{new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                             <div className="audit-branch-mini">{log.branch_name || 'System'}</div>
                             <div className="audit-msg-mini">
-                              <strong style={{ opacity: 0.9 }}>{log.user_name}</strong>: {
-                                log.action === 'PRODUCTION_SPOILAGE' 
-                                  ? `VOID: ${typeof log.details === 'string' ? JSON.parse(log.details).product : log.details?.product}` 
-                                  : log.action.replace(/_/g, ' ')
-                              }
+                              <strong style={{ opacity: 0.9 }}>{log.user_name}</strong>: {(() => {
+                                const details = typeof log.details === 'string' ? JSON.parse(log.details) : log.details;
+                                switch(log.action) {
+                                  case 'SALE_COMPLETED':
+                                    return `Sold items worth ${formatCurrency(details?.total || 0)}`;
+                                  case 'PRODUCT_UPDATED':
+                                    return `Modified ${details?.name || 'a product'}`;
+                                  case 'EXPENSE_RECORDED':
+                                    return `Recorded ${formatCurrency(details?.amount || 0)} for ${details?.category || 'expenses'}`;
+                                  case 'PRODUCTION_SPOILAGE':
+                                    return `Recorded waste (${details?.reason || 'damaged'}): ${details?.product || 'Unknown'}`;
+                                  case 'LOGIN':
+                                    return 'Signed into the system';
+                                  case 'LOGOUT':
+                                    return 'Signed out';
+                                  case 'PRODUCTION_STARTED':
+                                    return `Started baking ${details?.product || 'items'}`;
+                                  case 'PRODUCTION_FINISHED':
+                                    return `Finished baking ${details?.product || 'items'}`;
+                                  default:
+                                    return log.action.replace(/_/g, ' ').toLowerCase();
+                                }
+                              })()}
                             </div>
                         </div>
                       ))}
