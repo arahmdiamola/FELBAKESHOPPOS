@@ -9,7 +9,7 @@ import Modal from '../shared/Modal';
 import { 
   Plus, Minus, ChefHat, Check, Trash2, Search, Scale, 
   PackageCheck, Info, RotateCcw, ArrowRight, Save,
-  Clock, CircleUser, TrendingUp, X, Sparkles
+  Clock, CircleUser, TrendingUp, X, Sparkles, AlertTriangle
 } from 'lucide-react';
 import './BakingPage.css';
 
@@ -395,10 +395,21 @@ export default function BakingPage() {
            </div>
 
            {alerts.length > 0 && (
-              <div className="alerts-strip-studio">
-                 <div className="alert-count"><Info size={16} /> Spoilage Alerts</div>
-                 <div className="alert-ticker">
-                    {alerts.map(a => <span key={a.id} className="ticker-item"><strong>{a.productName}</strong>: {a.notes || 'Ruined'}</span>)}
+              <div className="alerts-war-room">
+                 <div className="alert-signal">
+                    <div className="signal-icon"><AlertTriangle size={18} /></div>
+                    <div className="signal-count"><b className="val">[{alerts.length}]</b> <span>SPOILAGES</span></div>
+                 </div>
+                 <div className="marquee-container">
+                    <div className="marquee-content">
+                       {/* Duplicated for infinite loop effect if items are few */}
+                       {[...alerts, ...alerts].map((a, i) => (
+                          <div key={`${a.id}-${i}`} className="ticker-item">
+                             <span className="ticker-product">{a.productName}</span>
+                             <span className="ticker-reason">{a.notes || 'Batch Ruined'}</span>
+                          </div>
+                       ))}
+                    </div>
                  </div>
               </div>
            )}

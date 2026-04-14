@@ -151,11 +151,117 @@
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes pop-up { from { transform: scale(0.8) translateY(40px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
 
-.alerts-strip-studio { background: #2C1810; border-radius: 32px; padding: 20px 32px; display: flex; align-items: center; gap: 40px; box-shadow: 0 20px 50px rgba(44, 24, 16, 0.3); color: white; flex-shrink: 0; }
-.alert-count { font-weight: 900; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.15em; color: rgba(255,255,255,0.6); display: flex; align-items: center; gap: 8px; white-space: nowrap; }
-.alert-ticker { flex: 1; overflow: hidden; display: flex; gap: 32px; }
-.ticker-item { font-weight: 700; font-size: 10px; white-space: nowrap; }
-.ticker-item strong { color: #E74C3C; }
+/* ALERTS WAR ROOM - PREMIUM TICKER */
+.alerts-war-room {
+  background: rgba(44, 24, 16, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 40px;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.05);
+  overflow: hidden;
+  position: relative;
+  z-index: 100;
+  flex-shrink: 0;
+}
+
+.alert-signal {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-right: 24px;
+  border-right: 1px solid rgba(255,255,255,0.1);
+  flex-shrink: 0;
+}
+
+.signal-icon {
+  width: 36px;
+  height: 36px;
+  background: rgba(231, 76, 60, 0.2);
+  color: #E74C3C;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: signal-pulse 2s infinite;
+}
+
+.signal-count {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.signal-count .val {
+  font-size: 16px;
+  font-weight: 950;
+  color: #E74C3C;
+}
+
+.signal-count span {
+  font-size: 8px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.7;
+}
+
+.marquee-container {
+  flex: 1;
+  overflow: hidden;
+  mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+}
+
+.marquee-content {
+  display: flex;
+  gap: 48px;
+  width: max-content;
+  animation: marquee-scroll 30s linear infinite;
+}
+
+.alerts-war-room:hover .marquee-content {
+  animation-play-state: paused;
+}
+
+.ticker-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ticker-product {
+  font-weight: 950;
+  font-size: 0.85rem;
+  color: #E74C3C;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ticker-reason {
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: white;
+  opacity: 0.9;
+  background: rgba(255,255,255,0.05);
+  padding: 4px 12px;
+  border-radius: 50px;
+}
+
+@keyframes marquee-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes signal-pulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.4); }
+  70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(231, 76, 60, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
+}
 
 .pulse-text { animation: pulse-opacity 1.5s infinite; }
 @keyframes pulse-opacity { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
@@ -274,12 +380,42 @@
     .tab-btn { padding: 16px 0; }
     .history-list { padding: 0 20px 20px; max-height: none; }
 
-    .alerts-strip-studio {
-        border-radius: 24px;
-        flex-direction: column;
-        gap: 12px;
-        padding: 16px;
-        text-align: center;
-        margin-top: 16px;
+    .alerts-war-room {
+      position: fixed;
+      bottom: 12px;
+      left: 12px;
+      right: 12px;
+      border-radius: 20px;
+      padding: 10px 16px;
+      gap: 16px;
+      box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+    }
+
+    .alert-signal {
+      padding-right: 12px;
+      gap: 8px;
+    }
+
+    .signal-icon {
+      width: 28px;
+      height: 28px;
+    }
+
+    .signal-count .val {
+      font-size: 14px;
+    }
+
+    .ticker-product {
+      font-size: 0.75rem;
+    }
+
+    .ticker-reason {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+    }
+
+    /* Provide space for the fixed ticker at the bottom of screens */
+    .workspace-studio {
+      padding-bottom: 80px;
     }
 }
