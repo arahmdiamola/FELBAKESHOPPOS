@@ -93,30 +93,12 @@ export default function ReportsPage() {
     const end = new Date(dateRange.end);
     end.setHours(23, 59, 59, 999);
 
-    const tx = transactions.filter(t => {
+      const tx = transactions.filter(t => {
       const d = new Date(t.date);
       return d >= start && d <= end;
     });
 
-    const pre = preOrders
-      .filter(o => {
-        if (o.status !== 'picked_up') return false;
-        const d = new Date(o.dueDate);
-        return d >= start && d <= end;
-      })
-      .map(o => ({
-        id: o.id,
-        date: o.dueDate,
-        receiptNumber: `PRE-${o.id.slice(0, 4)}`,
-        customerName: o.customerName,
-        cashierName: 'Pre-order System',
-        paymentMethod: 'prepaid',
-        total: o.totalPrice,
-        items: Array.isArray(o.items) ? o.items : [{ name: o.items, price: o.totalPrice, quantity: 1, productId: 'custom' }],
-        isPreorder: true
-      }));
-
-    return [...tx, ...pre].sort((a, b) => new Date(b.date) - new Date(a.date));
+    return [...tx].sort((a, b) => new Date(b.date) - new Date(a.date));
   }, [transactions, preOrders, dateRange]);
 
   const filteredExpenses = useMemo(() => {
