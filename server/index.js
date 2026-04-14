@@ -14,7 +14,7 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
 // --- Server Shield: Deployment Version Marker ---
-console.log('--- BAKERY POS SERVER V1.2.20: DATA RECOVERY ACTIVE ---');
+console.log('--- BAKERY POS SERVER V1.2.21: SIGNAL RESTORATION ACTIVE ---');
 
 app.use((req, res, next) => {
   res.set('Cache-Control', 'no-store');
@@ -621,7 +621,6 @@ app.post('/api/production/void', async (req, res) => {
 
 app.get('/api/production/active-batches', async (req, res) => {
   try {
-    // v1.2.19: UNIVERSAL UNLOCK - Bypassing branch filter to resolve 'Empty Oven' 
     const batches = await db.all(`
       SELECT 
         id, 
@@ -639,7 +638,17 @@ app.get('/api/production/active-batches', async (req, res) => {
       WHERE status = 'in_oven'
       ORDER BY date DESC
     `);
-    res.json(batches);
+    
+    // v1.2.21 DIAGNOSTIC: Raw count from DB
+    const totalRaw = await db.get("SELECT COUNT(*) as count FROM production_logs_v2 WHERE status = 'in_oven'");
+    
+    res.json({ 
+      batches, 
+      debug: { 
+        rawCount: totalRaw.count,
+        timestamp: new Date().toISOString()
+      } 
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

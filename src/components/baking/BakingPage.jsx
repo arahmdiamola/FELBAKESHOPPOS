@@ -70,8 +70,10 @@ export default function BakingPage() {
 
   const fetchActiveBatches = async () => {
     try {
-      const data = await api.get('/production/logs?status=in_oven');
-      setActiveBatches(data);
+      const res = await api.get('/production/active-batches');
+      // v1.2.21: Handle both raw array and diagnostic object structure
+      const data = res.batches || res; 
+      setActiveBatches(Array.isArray(data) ? data : []);
       const recentRuined = await api.get('/production/logs?status=ruined&limit=5');
       setAlerts(recentRuined);
     } catch (err) {}
@@ -280,7 +282,15 @@ export default function BakingPage() {
                  <div className="oven-status">
                     <div className="pulse-dot" /> LIVE OVEN MONITOR
                  </div>
-                 <span className="oven-count">{activeBatches.length} BATCHES</span>
+                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '10px', background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px' }}>
+                       SIGNAL: {activeBatches.length}
+                    </span>
+                    <button 
+                       onClick={fetchActiveBatches}
+                       style={{ background: 'none', border: 'none', color: '#3b82f6', fontSize: '10px', cursor: 'pointer', textDecoration: 'underline' }}
+                    >RE-SYNC</button>
+                 </div>
               </div>
               
               <div className="oven-grid">
