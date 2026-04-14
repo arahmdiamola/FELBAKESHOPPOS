@@ -74,8 +74,27 @@
 
 .cat-badge { font-size: 9px; font-weight: 900; background: #E7EEF5; color: #356695; padding: 4px 10px; border-radius: 4px; text-transform: uppercase; }
 
-@keyframes scaleIn {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+@media (max-width: 768px) {
+  .studio-reports-container { height: auto; overflow: visible; }
+  .studio-control-bar { padding: 20px 16px; flex-direction: column; align-items: stretch; gap: 16px; }
+  .control-left { width: 100%; }
+  .range-selector-lux { margin-top: 16px; width: 100%; }
+  .preset-buttons { overflow-x: auto; padding: 4px; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+  .preset-buttons::-webkit-scrollbar { display: none; }
+  .studio-export-btn { width: 100%; justify-content: center; }
+
+  .studio-summary-grid { grid-template-columns: 1fr; padding: 16px; gap: 16px; }
+  .summary-card-lux { height: auto; border-radius: 24px; padding: 24px; }
+  .card-val { font-size: 1.6rem; }
+
+  .studio-reports-workspace { padding: 16px; overflow: visible; }
+  .workspace-header { flex-direction: column; align-items: stretch; gap: 16px; }
+  .studio-tabs { overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; padding-bottom: 8px; margin-bottom: -8px; border-bottom: 1px solid rgba(0,0,0,0.05); }
+  .studio-tabs::-webkit-scrollbar { display: none; }
+  .studio-tabs button { padding-bottom: 12px; }
+  .workspace-meta { width: 100%; justify-content: center; }
+
+  .studio-table-glass { border-radius: 20px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .lux-table { min-width: 600px; }
+  .lux-table th, .lux-table td { padding: 16px; }
 }
-.animate-scale-in { animation: scaleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) both; }

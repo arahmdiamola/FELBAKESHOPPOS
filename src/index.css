@@ -1897,7 +1897,17 @@ td.primary {
 }
 
 /* ---------- Mobile Responsive Overhaul ---------- */
+.sidebar-footer-actions {
+  display: flex;
+  gap: 8px;
+  padding: 0 16px;
+  margin-bottom: 8px;
+}
+
 @media (max-width: 768px) {
+  .desktop-only { display: none !important; }
+  .mobile-only { display: block !important; }
+  .sidebar-footer-actions { flex-direction: column; }
   .app-layout {
     flex-direction: row; /* Keep sidebar on the left but minimized */
   }

@@ -70,7 +70,7 @@ export default function CustomersPage() {
           </div>
         </div>
 
-        <div className="table-container">
+        <div className="table-container luxury-table-shield">
           <table className="table">
             <thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Total Spent</th><th>Visits</th><th>Balance</th><th>Since</th><th>Actions</th></tr></thead>
             <tbody>

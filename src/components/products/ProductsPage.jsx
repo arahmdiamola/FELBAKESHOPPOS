@@ -18,8 +18,8 @@ const BAKERY_EMOJIS = [
 
 function EmojiSelector({ selected, onSelect }) {
   return (
-    <div className="emoji-grid-container">
-      <div className="emoji-grid">
+    <div className="emoji-grid-container luxury-mobile-scroll">
+      <div className="emoji-grid" style={{ display: 'flex', width: 'max-content', gap: 8, padding: 4 }}>
         {BAKERY_EMOJIS.map(emoji => (
           <button 
             key={emoji} 
@@ -184,7 +184,7 @@ export default function ProductsPage() {
         title="Products"
         subtitle={`${products.length} products in catalog`}
         actions={
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap justify-end">
             <button className="btn btn-secondary btn-sm" onClick={() => setShowBatchModal(true)}>Upload CSV</button>
             <button className="btn btn-secondary btn-sm" onClick={() => setShowCatForm(true)}>+ Category</button>
             <button className="btn btn-primary" onClick={openAdd}><Plus size={16} /> Add Product</button>
@@ -203,7 +203,8 @@ export default function ProductsPage() {
           </select>
         </div>
 
-        <div className="table-container">
+        </div>
+        <div className="table-container luxury-table-shield">
           <table className="table">
             <thead>
               <tr>

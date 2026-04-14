@@ -185,7 +185,7 @@ export default function Sidebar() {
 
       <div className="sidebar-footer">
         {!isCollapsed && (
-          <div style={{ display: 'flex', gap: 8, padding: '0 16px', marginBottom: 8 }}>
+          <div className="sidebar-footer-actions">
             <button 
               onClick={() => triggerBackupDownload('UNIVERSAL_SECURE')} 
               title="Secure Terminal Now"
