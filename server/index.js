@@ -486,13 +486,13 @@ app.get('/api/production/logs', async (req, res) => {
   res.json(logs);
 });
 
-// v1.2.50: ABSOLUTE EMPIRE SIGNAL - URL Mirror & Force Sync
+// v1.2.53: ABSOLUTE SESSION BRIDGE - Port 6543 Optimization
 app.get('/api/diag/vault-status', async (req, res) => {
   try {
-    const isPostgres = !!process.env.DATABASE_URL;
     const rawUrl = process.env.DATABASE_URL || '';
-    const isPooler = rawUrl.includes('pooler.supabase.com');
-    // Mirror the start of the URL for comparison (Masked)
+    const isPostgres = !!rawUrl;
+    const isTransactionPooler = rawUrl.includes('pooler') && rawUrl.includes(':5432');
+    const isSessionPooler = rawUrl.includes('pooler') && rawUrl.includes(':6543');
     const urlMirror = rawUrl.substring(0, 15) + '...';
     
     let allTables = [];
@@ -505,18 +505,30 @@ app.get('/api/diag/vault-status', async (req, res) => {
          const rows = await db.all("SELECT tablename as table_name FROM pg_catalog.pg_tables WHERE schemaname = 'public'");
          allTables = rows.map(t => t.table_name || '').filter(Boolean);
       }
-    } catch (e) { console.error('Mirror Scan Fail:', e); }
+    } catch (e) { console.error('Bridge Scan Fail:', e); }
+
+    // 2. AUTO-INIT (Allow on Session Pooler or Direct)
+    let initStatus = 'STANDBY';
+    if (!allTables.includes('production_logs_v2') && !isTransactionPooler) {
+       try {
+         await db.run(`CREATE TABLE IF NOT EXISTS production_logs_v2 (id TEXT PRIMARY KEY, branch_id TEXT, product_id TEXT, product_name TEXT, quantity_produced REAL, estimated_yield REAL, date TEXT, status TEXT DEFAULT 'in_oven', unit TEXT, notes TEXT)`);
+         await db.run(`CREATE TABLE IF NOT EXISTS production_log_items_v2 (id SERIAL PRIMARY KEY, log_id TEXT, material_id TEXT, material_name TEXT, quantity_used REAL, unit TEXT)`);
+         initStatus = 'SUCCESS: Vault Rebuilt';
+       } catch (e) { initStatus = 'INIT FAIL: ' + e.message; }
+    }
 
     res.json({
-      version: '1.2.50 (MIRROR)',
-      dbType: isPostgres ? 'POSTGRES' : 'SQLITE',
-      isPooler: isPooler,
+      version: '1.2.53 (SESSION)',
+      isPostgres,
+      isTransactionPooler,
+      isSessionPooler,
       identity: identity,
       urlMirror: urlMirror,
-      recommendation: isPooler ? 'RENDER URL MISMATCH: Update Render Env to Direct' : 'SIGNAL OPTIMAL: Using Direct'
+      initStatus: initStatus,
+      recommendation: isTransactionPooler ? 'CRITICAL: Port 5432 Pooler blocks data! Swap to Port 6543 (Session Mode)' : 'SIGNAL OPTIMAL'
     });
   } catch (err) {
-    res.status(500).json({ error: err.message, forensic: 'Crash in v1.2.50 mirror' });
+    res.status(500).json({ error: err.message, forensic: 'Crash in v1.2.53 bridge' });
   }
 });
 
