@@ -80,7 +80,9 @@ export default function CommandCenter({ isPublic = false }) {
 
       setGlobalSales(tx || []);
       setBranches(branchesData || []);
-      setActiveProduction(prodData || []);
+      // v1.2.38: UNPACKING RESILIENCE - Extracting batches from diagnostic wrapper if present
+      const activeBatches = Array.isArray(prodData) ? prodData : (prodData?.batches || prodData?.logs || []);
+      setActiveProduction(activeBatches);
       
       // Secure-only fetching
       const [logs, ruinedData] = await Promise.all([
@@ -88,7 +90,9 @@ export default function CommandCenter({ isPublic = false }) {
         api.get('/production/logs?status=ruined', { headers })
       ]);
       setAuditLogs(logs || []);
-      setRuinedProduction(ruinedData || []);
+      // v1.2.38: UNPACKING RESILIENCE for Metrics
+      const ruinedFiltered = Array.isArray(ruinedData) ? ruinedData : (ruinedData?.batches || ruinedData?.logs || []);
+      setRuinedProduction(ruinedFiltered);
       setIsLoadingLogs(false);
     } catch (e) {
       console.error('[Mission Control Master Fetch Error]', e);

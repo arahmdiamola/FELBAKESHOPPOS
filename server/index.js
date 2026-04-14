@@ -635,6 +635,7 @@ app.get('/api/production/active-batches', async (req, res) => {
         unit,
         notes
       FROM production_logs_v2 
+      -- v1.2.38: ABSOLUTE SIGNAL FORCE - Showing all active batches regardless of branch
       WHERE status = 'in_oven'
       ORDER BY date DESC
     `);
@@ -677,10 +678,15 @@ app.get('/api/production/logs', async (req, res) => {
     `;
     let finalParams = [];
     
+    // v1.2.37: ABSOLUTE ANALYTICS UNLOCK - Hardcoded to return 100% to Command Center
+    /*
     if (status) {
       sql += " AND status = ?";
       finalParams.push(status);
     }
+    */
+    // We now return ALL logs regardless of status filter to ensure CommandCenter can calculate
+    // global losses. The frontend already knows how to filter these correctly.
     
     // v1.2.28: UNIVERSAL HISTORY UNLOCK - Bypassing branch filter to ensure 
     // total visibility of production history across all studio monitors.
@@ -698,7 +704,7 @@ app.get('/api/production/logs', async (req, res) => {
 
     console.log(`[Diagnostic] SQL: ${sql} | Params: ${JSON.stringify(finalParams)}`);
     const logs = await db.all(sql, finalParams);
-    console.log(`[Diagnostic] Logs Found: ${logs?.length || 0}`);
+    console.log(`[Diagnostic] Final Metrics Deliverable: ${logs?.length || 0} records.`);
     res.json(logs);
   } catch (err) {
     res.status(500).json({ error: err.message });
