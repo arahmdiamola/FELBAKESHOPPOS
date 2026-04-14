@@ -488,8 +488,11 @@ app.get('/api/production/logs', async (req, res) => {
 app.post('/api/production/log', async (req, res) => {
     const {
       id, productId, productName, quantityProduced, estimatedYield,
-      items, date, notes, status, branchId, bakerId, bakerName
+      items, date, notes, status, branchId: bodyBranchId, bakerId, bakerName
     } = req.body;
+
+    // SELF-HEALING: Use branchId from body OR fallback to header
+    const branchId = bodyBranchId || req.headers['x-branch-id'];
 
     const finalStatus = quantityProduced > 0 ? 'completed' : (status || 'in_oven');
   const userId = req.headers['x-user-id'];
