@@ -122,30 +122,14 @@ async function robustColumnRepair(db, table, oldColVariants, newColName, isNotNu
   }
 }
 
-async function forceRebuildIfBroken(db) {
+async function forceNuclearReset(db) {
   try {
-    const tableToCheck = 'production_log_items';
-    const brokenColumns = ['materialid', 'materialId', 'quantityused', 'quantityUsed', 'productionlogid'];
-    
-    const result = await db.all(`
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_name = $1 
-      AND table_schema = 'public'
-    `, [tableToCheck]);
-    
-    if (result.length === 0) return; // Table not created yet
-    const actualCols = result.map(r => r.column_name);
-    const hasGhost = brokenColumns.some(ghost => actualCols.includes(ghost));
-
-    if (hasGhost) {
-      console.log(`[Factory Reset] DETECTED BROKEN SCHEMA in ${tableToCheck}. Incinerating...`);
-      await db.run('DROP TABLE IF EXISTS production_log_items CASCADE');
-      await db.run('DROP TABLE IF EXISTS production_logs CASCADE');
-      console.log('[Factory Reset] Tables cleared. Re-initializing fresh schema...');
-    }
+    console.log('[Giga-Nuclear] FORCIBLY CLEARING PATH: production_logs & production_log_items...');
+    await db.run('DROP TABLE IF EXISTS production_log_items CASCADE');
+    await db.run('DROP TABLE IF EXISTS production_logs CASCADE');
+    console.log('[Giga-Nuclear] Infrastructure cleared. Re-initializing fresh factory schema...');
   } catch (err) {
-    console.warn('[Factory Reset Warning] Reset check failed:', err.message);
+    console.warn('[Giga-Nuclear Warning] Reset attempt failed:', err.message);
   }
 }
 
@@ -482,8 +466,8 @@ export async function initDb() {
       { table: 'branch_sessions', variants: ['lastSeen', 'lastseen', '"lastSeen"'], target: 'last_seen' }
     ];
 
-    // 1.5 Absolute Factory Reset (v1.2.0)
-    await forceRebuildIfBroken(db);
+    // 1.5 Absolute Factory Reset (v1.2.1 Giga-Nuclear)
+    await forceNuclearReset(db);
 
     // Initial table creation
     await db.run(`
