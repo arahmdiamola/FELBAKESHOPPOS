@@ -14,7 +14,7 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
 // --- Server Shield: Deployment Version Marker ---
-console.log('--- BAKERY POS SERVER V1.2.3: FAST-BOOT ACTIVE ---');
+console.log('--- BAKERY POS SERVER V1.2.4: SELF-HEALING SYNC ACTIVE ---');
 
 app.use((req, res, next) => {
   res.set('Cache-Control', 'no-store');
@@ -513,13 +513,14 @@ app.post('/api/production/log', async (req, res) => {
       // 3. Process Raw Materials usage
       if (Array.isArray(items)) {
         for (const item of items) {
-          // Fetch current cost price to lock it in for audit
-          const material = await tx.get("SELECT cost_price FROM raw_materials WHERE id = ?", [item.materialId]);
+          // SELF-HEALING: Fetch current name and cost price if missing from payload
+          const material = await tx.get("SELECT name, cost_price FROM raw_materials WHERE id = ?", [item.materialId]);
+          const resolvedName = item.materialName || item.material_name || material?.name || 'Unknown Ingredient';
           const costPrice = material?.cost_price || 0;
 
           await tx.run(
             "INSERT INTO production_log_items_v2 (id, production_log_id, material_id, material_name, quantity_used, unit, cost_price) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            [uuidv4(), id, item.materialId, item.materialName, item.quantityUsed, item.unit, costPrice]
+            [uuidv4(), id, item.materialId, resolvedName, item.quantityUsed, item.unit, costPrice]
           );
           // ALWAYS Deduct from raw materials stock
           await tx.run("UPDATE raw_materials SET stock = stock - ? WHERE id = ?", [item.quantityUsed, item.materialId]);
