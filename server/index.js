@@ -485,6 +485,7 @@ app.get('/api/production/logs', async (req, res) => {
   res.json(logs);
 });
 
+app.post('/api/production/log', async (req, res) => {
     const {
       id, productId, productName, quantityProduced, estimatedYield,
       items, date, notes, status, branchId, bakerId, bakerName
