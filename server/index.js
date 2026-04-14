@@ -14,7 +14,7 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
 // --- Server Shield: Deployment Version Marker ---
-console.log('--- BAKERY POS SERVER V1.2.11: ALIA-SYNC ACTIVE ---');
+console.log('--- BAKERY POS SERVER V1.2.12: TOTAL RESTORATION ACTIVE ---');
 
 app.use((req, res, next) => {
   res.set('Cache-Control', 'no-store');
@@ -488,11 +488,20 @@ app.get('/api/production/logs', async (req, res) => {
 app.post('/api/production/log', async (req, res) => {
     const {
       id, productId, productName, quantityProduced, estimatedYield,
-      items, date, notes, status, branchId: bodyBranchId, bakerId, bakerName
+      items, date, notes, status, branchId: bodyBranchId, bakerId, bakerName,
+      estimatedReadyTime
     } = req.body;
 
     // SELF-HEALING: Use branchId from body OR fallback to header
     const branchId = bodyBranchId || req.headers['x-branch-id'];
+
+    // TIMER INTELLIGENCE: Default to 30 mins if missing
+    let finalReadyTime = estimatedReadyTime;
+    if (!finalReadyTime) {
+      const readyDate = new Date();
+      readyDate.setMinutes(readyDate.getMinutes() + 30);
+      finalReadyTime = readyDate.toISOString();
+    }
 
     const finalStatus = quantityProduced > 0 ? 'completed' : (status || 'in_oven');
   const userId = req.headers['x-user-id'];
@@ -502,13 +511,13 @@ app.post('/api/production/log', async (req, res) => {
     return res.status(400).json({ error: 'Valid Branch ID is required' });
   }
 
-  try {
-    await db.transaction(async (tx) => {
-      // 1. Create Production Log
-      await tx.run(
-        "INSERT INTO production_logs_v2 (id, branch_id, user_id, user_name, product_id, product_name, quantity_produced, estimated_yield, date, notes, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        [id, branchId, userId, userNameToken, productId, productName, quantityProduced || 0, estimatedYield || 0, date, notes, finalStatus]
-      );
+    try {
+      await db.transaction(async (tx) => {
+        // 1. Create Production Log
+        await tx.run(
+          "INSERT INTO production_logs_v2 (id, branch_id, user_id, user_name, product_id, product_name, quantity_produced, estimated_yield, date, notes, status, estimated_ready_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          [id, branchId, userId, userNameToken, productId, productName, quantityProduced || 0, estimatedYield || 0, date, notes, finalStatus, finalReadyTime]
+        );
 
       // 2. Add Finished Product stock (ONLY if completed immediately)
       if (finalStatus === 'completed' && productId && quantityProduced > 0) {
@@ -620,6 +629,7 @@ app.get('/api/production/active-batches', async (req, res) => {
         product_name AS "productName", 
         quantity_produced AS "quantityProduced", 
         estimated_yield AS "estimatedYield", 
+        estimated_ready_time AS "estimatedReadyTime",
         date, 
         status,
         unit,
@@ -647,6 +657,7 @@ app.get('/api/production/logs', async (req, res) => {
         product_name AS "productName", 
         quantity_produced AS "quantityProduced", 
         estimated_yield AS "estimatedYield", 
+        estimated_ready_time AS "estimatedReadyTime",
         date, 
         status,
         unit,

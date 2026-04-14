@@ -475,19 +475,18 @@ export async function initDb() {
     await db.run(`
       CREATE TABLE IF NOT EXISTS production_logs_v2 (
         id TEXT PRIMARY KEY,
-        branch_id TEXT NOT NULL,
+        branch_id TEXT,
         user_id TEXT,
         user_name TEXT,
-        product_id TEXT NOT NULL,
-        product_name TEXT NOT NULL,
-        quantity_produced INTEGER DEFAULT 0,
-        actual_yield INTEGER DEFAULT 0,
-        estimated_yield INTEGER DEFAULT 0,
+        product_id TEXT,
+        product_name TEXT,
+        quantity_produced REAL DEFAULT 0,
+        estimated_yield REAL DEFAULT 0,
         date TEXT,
         notes TEXT,
-        status TEXT DEFAULT 'started',
-        start_time TEXT,
-        end_time TEXT
+        status TEXT,
+        unit TEXT,
+        estimated_ready_time TEXT
       )
     `);
 
