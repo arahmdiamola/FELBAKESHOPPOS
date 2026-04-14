@@ -486,41 +486,44 @@ app.get('/api/production/logs', async (req, res) => {
   res.json(logs);
 });
 
-// v1.2.42: MASTER DIAGNOSTIC - Bulletproof Multi-DB Probe
+// v1.2.43: ABSOLUTE RECOVERY - Null-Safe Multi-DB Probe
 app.get('/api/diag/vault-status', async (req, res) => {
   try {
     const isPostgres = !!process.env.DATABASE_URL;
-    let tables = [];
+    let rawTables = [];
     
     if (isPostgres) {
-       const res = await db.all("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'");
-       tables = res.map(t => t.table_name || t.TABLE_NAME);
+       const rows = await db.all("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'");
+       rawTables = rows.map(t => t.table_name || t.TABLE_NAME || '');
     } else {
-       const res = await db.all("SELECT name as table_name FROM sqlite_master WHERE type='table'");
-       tables = res.map(t => t.table_name);
+       const rows = await db.all("SELECT name as table_name FROM sqlite_master WHERE type='table'");
+       rawTables = rows.map(t => t.table_name || '');
     }
     
+    // Safety check for empty or non-string table names
+    const tables = rawTables.filter(t => typeof t === 'string' && t.trim() !== '');
+
     let stats = {
       isProduction: isPostgres,
       dbType: isPostgres ? 'POSTGRES' : 'SQLITE (LOCAL)',
-      tables: tables.filter(t => t.toLowerCase().includes('production')),
+      productionTables: tables.filter(t => t.toLowerCase().includes('production')),
       counts: {},
-      envPresent: {
-        DATABASE_URL: !!process.env.DATABASE_URL,
-        PORT: !!process.env.PORT
+      env: {
+        DATABASE_URL_PRESENT: !!process.env.DATABASE_URL,
+        NODE_ENV: process.env.NODE_ENV || 'not set'
       }
     };
 
-    for (const table of stats.tables) {
+    for (const table of stats.productionTables) {
        try {
          const c = await db.get(`SELECT COUNT(*) as count FROM ${table}`);
          stats.counts[table] = c.count;
-       } catch (e) { stats.counts[table] = `Error: ${e.message}`; }
+       } catch (e) { stats.counts[table] = `Scan Error: ${e.message}`; }
     }
 
     res.json(stats);
   } catch (err) {
-    res.status(500).json({ error: err.message, stack: err.stack });
+    res.status(500).json({ error: err.message, forensic: 'Crash in vault-status scan' });
   }
 });
 
