@@ -5,7 +5,7 @@ import { api } from '../../utils/api';
 import { v4 as uuidv4 } from 'uuid';
 import Header from '../layout/Header';
 import Modal from '../shared/Modal';
-import { Search, Wheat, Plus, Edit3, Trash2, AlertTriangle, ArrowUpDown, Scale, Star } from 'lucide-react';
+import { Search, Wheat, Plus, Minus, Edit3, Trash2, AlertTriangle, ArrowUpDown, Scale, Star } from 'lucide-react';
 
 const BAKING_EMOJIS = [
   '🌾', '🧪', '🍚', '🧉', '🍶', '🧂', '🧊', '🥣', '🥢', '🥄', '🔪', 
