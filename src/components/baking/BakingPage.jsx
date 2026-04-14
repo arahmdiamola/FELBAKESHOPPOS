@@ -340,18 +340,18 @@ export default function BakingPage() {
                    <button className={`tab-btn ${historyTab === 'ruined' ? 'active' : ''}`} onClick={() => setHistoryTab('ruined')}>Spoilage Logs</button>
                 </div>
                 
-                {/* v1.2.47: STUDIO HEALTH SIGNAL - Force Discovery */}
+                {/* v1.2.48: STUDIO HEALTH SIGNAL - Absolute Unmasking */}
                 <div 
                    onClick={async () => {
                       try {
                          const diag = await api.get('/diag/vault-status');
-                         alert(`EMPIRE VAULT 1.2.47:\nDB: ${diag.dbType}\nHost: ${diag.env?.DB_HOST}\nTables: ${(diag.allTablesFound || []).slice(0,10).join(', ')}\nInit Error: ${diag.initError || 'NONE'}`);
-                      } catch (e) { alert(`DIAG FAIL (Check Deployment): ${e.message}`); }
+                         alert(`EMPIRE VAULT 1.2.48:\nDB: ${diag.dbType}\nIdentity: ${diag.identity?.user}@${diag.identity?.db}\nHost: ${diag.env?.DB_HOST}\nTables: ${(diag.allTablesFound || []).slice(0,10).join(', ')}\nInit Error: ${diag.initError || 'NONE'}`);
+                      } catch (e) { alert(`DIAG FAIL (Still Deploying): ${e.message}`); }
                    }}
                    style={{ padding: '4px 12px', background: 'rgba(76,175,80,0.1)', color: '#4CAF50', fontSize: '10px', fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'help' }}
                 >
                    <div style={{ width: 6, height: 6, background: history.length > 0 ? '#4CAF50' : '#f44336', borderRadius: '50%', boxShadow: history.length > 0 ? '0 0 5px #4CAF50' : '0 0 5px #f44336' }} />
-                   STUDIO SYNC [v1.2.47]: {history.length} RECORDS IN VAULT (CLICK TO REBUILD)
+                   STUDIO SYNC [v1.2.48]: {history.length} RECORDS IN VAULT (CLICK TO UNMASK)
                 </div>
 
                <div className="history-list">
