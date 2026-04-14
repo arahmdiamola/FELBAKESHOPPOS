@@ -8,7 +8,8 @@ import Header from '../layout/Header';
 import Modal from '../shared/Modal';
 import { 
   Plus, Minus, ChefHat, Check, Trash2, Search, Scale, 
-  PackageCheck, Info, RotateCcw, ArrowRight, Save
+  PackageCheck, Info, RotateCcw, ArrowRight, Save,
+  Clock, CircleUser, TrendingUp, X, Sparkles
 } from 'lucide-react';
 import './BakingPage.css';
 
@@ -37,6 +38,9 @@ export default function BakingPage() {
   const [keypadMode, setKeypadMode] = useState('material'); 
   const [tempQty, setTempQty] = useState('');
   const [activeTab, setActiveTab] = useState('prep'); // 'prep' or 'oven'
+  const [selectedLog, setSelectedLog] = useState(null);
+  const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
+  const [lastBakeInfo, setLastBakeInfo] = useState(null);
 
   useEffect(() => {
     fetchMaterials();
@@ -118,7 +122,7 @@ export default function BakingPage() {
         }];
       });
     } else if (keypadMode === 'production' && selectedBatch) {
-      handleFinalizeBatch(selectedBatch.id, parseFloat(tempQty) || 0);
+      handleFinalizeBatch(selectedBatch, parseFloat(tempQty) || 0);
     }
     setShowQtyModal(false);
     setSelectedMaterial(null);
@@ -162,9 +166,19 @@ export default function BakingPage() {
     }
   };
 
-  const handleFinalizeBatch = async (logId, actual) => {
+  const handleFinalizeBatch = async (batch, actual) => {
     try {
-      await api.post('/production/finalize', { logId, actualYield: actual });
+      await api.post('/production/finalize', { logId: batch.id, actualYield: actual });
+      
+      // Post-Bake Success Flow
+      setLastBakeInfo({
+        ...batch,
+        actualYield: actual,
+        efficiency: Math.round((actual / batch.estimatedYield) * 100)
+      });
+      setShowSuccessOverlay(true);
+      setTimeout(() => setShowSuccessOverlay(false), 5000); // Hide after 5s
+
       addToast('Production Completed!', 'success');
       fetchActiveBatches();
       fetchHistory();
@@ -360,22 +374,34 @@ export default function BakingPage() {
                   ) : (
                      history
                         .filter(log => (historyTab === 'success' ? log.status === 'completed' : log.status === 'ruined'))
-                        .map(log => (
-                        <div key={log.id} className="history-row">
-                           <span className="history-emoji">{products.find(p => p.id === log.productId)?.emoji || '🥧'}</span>
-                           <div className="history-main">
-                              <div className="history-top">
-                                 <span className="history-name">{log.productName}</span>
-                                 <span className={`history-badge ${log.status}`}>{log.status === 'ruined' ? 'WASTE' : 'PRODUCED'}</span>
-                              </div>
-                              <div className="history-meta">
-                                 <span>Yield: {log.quantityProduced} {log.unit}</span>
-                                 <span>•</span>
-                                 <span>{new Date(log.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                              </div>
-                           </div>
-                        </div>
-                     ))
+                        .map(log => {
+                            const efficiency = log.estimatedYield > 0 ? Math.round((log.quantityProduced / log.estimatedYield) * 100) : 100;
+                            return (
+                               <div key={log.id} className="history-row" onClick={() => setSelectedLog(log)}>
+                                  <span className="history-emoji">{products.find(p => p.id === log.productId)?.emoji || '🥧'}</span>
+                                  <div className="history-main">
+                                     <div className="history-top">
+                                        <span className="history-name">{log.productName}</span>
+                                        <div className="history-badges">
+                                          {log.status === 'completed' && (
+                                            <span className={`eff-badge ${efficiency >= 95 ? 'perfect' : efficiency >= 80 ? 'good' : 'low'}`}>
+                                              {efficiency}% PRECISION
+                                            </span>
+                                          )}
+                                          <span className={`history-badge ${log.status}`}>{log.status === 'ruined' ? 'WASTE' : 'PRODUCED'}</span>
+                                        </div>
+                                     </div>
+                                     <div className="history-meta">
+                                        <div className="meta-group"><CircleUser size={12} /> {log.userName || 'Baker'}</div>
+                                        <span>•</span>
+                                        <div className="meta-group"><TrendingUp size={12} /> {log.quantityProduced} {log.unit}</div>
+                                        <span>•</span>
+                                        <div className="meta-group"><Clock size={12} /> {new Date(log.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                     </div>
+                                  </div>
+                               </div>
+                            );
+                         })
                   )}
                </div>
            </div>
@@ -414,6 +440,87 @@ export default function BakingPage() {
             <button className="confirm-btn-ux" style={{ marginTop: '20px' }} onClick={handleConfirmQuantity}>Confirm Action</button>
          </div>
       </Modal>
+
+      {/* BATCH DETAIL MODAL */}
+      <Modal isOpen={!!selectedLog} onClose={() => setSelectedLog(null)} title="Batch Birth Certificate">
+         {selectedLog && (
+            <div className="batch-detail-view">
+               <div className="detail-header">
+                  <div className="detail-hero">
+                     <span className="hero-emoji">{products.find(p => p.id === selectedLog.productId)?.emoji || '🧁'}</span>
+                     <div className="hero-info">
+                        <h2>{selectedLog.productName}</h2>
+                        <span className="batch-id">ID: {selectedLog.id.slice(0,8).toUpperCase()}</span>
+                     </div>
+                  </div>
+                  <div className={`detail-status-pill ${selectedLog.status}`}>
+                     {selectedLog.status === 'completed' ? <Check size={16}/> : <Info size={16}/>}
+                     {selectedLog.status.toUpperCase()}
+                  </div>
+               </div>
+
+               <div className="detail-grid-v2">
+                  <div className="detail-stat">
+                     <label>Actual Yield</label>
+                     <div className="val">{selectedLog.quantityProduced} {selectedLog.unit}</div>
+                  </div>
+                  <div className="detail-stat">
+                     <label>Target Yield</label>
+                     <div className="val">{selectedLog.estimatedYield} {selectedLog.unit}</div>
+                  </div>
+                  <div className="detail-stat">
+                     <label>Baker</label>
+                     <div className="val">{selectedLog.userName || 'System'}</div>
+                  </div>
+                  <div className="detail-stat">
+                     <label>Time</label>
+                     <div className="val">{new Date(selectedLog.date).toLocaleString()}</div>
+                  </div>
+               </div>
+
+               <div className="detail-ingredients">
+                  <h3><Scale size={16} /> Ingredients Used</h3>
+                  <div className="ing-list">
+                     {selectedLog.items && selectedLog.items.length > 0 ? (
+                        selectedLog.items.map((item, idx) => (
+                           <div key={idx} className="ing-row">
+                              <span className="ing-name">{item.material_name || item.materialName}</span>
+                              <span className="ing-qty">{item.quantity_used || item.quantityUsed} {item.unit}</span>
+                           </div>
+                        ))
+                     ) : (
+                        <div className="empty-ing">No ingredient data available for this batch.</div>
+                     )}
+                  </div>
+               </div>
+
+               {selectedLog.notes && (
+                  <div className="detail-notes">
+                     <h3><Info size={16} /> Production Notes</h3>
+                     <p>{selectedLog.notes}</p>
+                  </div>
+               )}
+
+               <button className="close-detail-btn" onClick={() => setSelectedLog(null)}>Close Record</button>
+            </div>
+         )}
+      </Modal>
+
+      {/* SUCCESS OVERLAY */}
+      {showSuccessOverlay && lastBakeInfo && (
+         <div className="bake-success-overlay">
+            <div className="success-content">
+               <div className="success-icon"><Sparkles size={40} color="#FFD700" /></div>
+               <h2>BATCH SUCCESSFUL!</h2>
+               <p><strong>{lastBakeInfo.productName}</strong> is ready for display.</p>
+               <div className="success-stats">
+                  <div className="s-stat"><span>Yield</span><strong>{lastBakeInfo.actualYield}</strong></div>
+                  <div className="s-stat"><span>Efficiency</span><strong>{lastBakeInfo.efficiency}%</strong></div>
+               </div>
+               <button onClick={() => setShowSuccessOverlay(false)}>AWESOME</button>
+            </div>
+         </div>
+      )}
     </>
   );
 }

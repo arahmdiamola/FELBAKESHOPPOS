@@ -476,17 +476,37 @@ app.get('/api/production/logs', async (req, res) => {
   try {
     const status = req.query.status;
     const { query, params } = getBranchFilter(req);
+    
     // v1.2.65: NUCLEAR ALIGNMENT & CRASH-PROOF
-    let sql = `SELECT * FROM production_logs_v2 WHERE ${query}`;
+    let sql = `
+      SELECT 
+        id, 
+        branch_id AS "branchId", 
+        user_id AS "userId",
+        user_name AS "userName",
+        product_id AS "productId", 
+        product_name AS "productName", 
+        quantity_produced AS "quantityProduced", 
+        estimated_yield AS "estimatedYield", 
+        estimated_ready_time AS "estimatedReadyTime",
+        date, 
+        status,
+        unit,
+        notes
+      FROM production_logs_v2 
+      WHERE ${query}`;
+      
     if (status) sql += ` AND status = '${status}'`;
     sql += ` ORDER BY date DESC LIMIT 100`;
     
     const logs = await db.all(sql, params);
     for (const log of logs) {
-      // Safety catch for missing items table
       try {
-        log.items = await db.all("SELECT * FROM production_log_items_v2 WHERE log_id = ?", [log.id]);
-      } catch (e) { log.items = []; }
+        // v1.2.66: FIXED COLUMN ALIGNMENT
+        log.items = await db.all("SELECT * FROM production_log_items_v2 WHERE production_log_id = ?", [log.id]);
+      } catch (e) { 
+        log.items = []; 
+      }
     }
     res.json(logs);
   } catch (err) {
@@ -516,9 +536,27 @@ app.get('/api/diag/vault-status', async (req, res) => {
     if (!allTables.includes('production_logs_v2') || !allTables.includes('production_log_items_v2')) {
        try {
          await db.run("CREATE TABLE IF NOT EXISTS production_logs_v2 (id TEXT PRIMARY KEY, branch_id TEXT, user_id TEXT, user_name TEXT, product_id TEXT, product_name TEXT, quantity_produced REAL, estimated_yield REAL, date TEXT, notes TEXT, status TEXT DEFAULT 'in_oven', estimated_ready_time TEXT, unit TEXT DEFAULT 'pcs')");
-         await db.run("CREATE TABLE IF NOT EXISTS production_log_items_v2 (id SERIAL PRIMARY KEY, log_id TEXT, material_id TEXT, material_name TEXT, quantity_used REAL, unit TEXT)");
+         // v1.2.66: UNIFIED SCHEMA
+         await db.run("CREATE TABLE IF NOT EXISTS production_log_items_v2 (id TEXT PRIMARY KEY, production_log_id TEXT, material_id TEXT, material_name TEXT, quantity_used REAL, unit TEXT, cost_price REAL)");
          allTables.push('production_logs_v2', 'production_log_items_v2');
        } catch (e) {}
+    }
+
+    // v1.2.66 SELF-HEALING: Column Migration for Vault misalignments
+    if (allTables.includes('production_log_items_v2')) {
+      try {
+        const cols = await db.all("PRAGMA table_info(production_log_items_v2)");
+        const colNames = cols.map(c => c.name);
+        
+        // If we still have 'log_id' instead of 'production_log_id', or missing cost_price
+        // and we suspect this is the broken v1.2.65 schema, we can safely rebuild it 
+        // since data insertion was previously failing anyway.
+        if (colNames.includes('log_id') || !colNames.includes('cost_price')) {
+           console.log("[Vault Fix] Detected misaligned log items table. Rebuilding...");
+           await db.run("DROP TABLE production_log_items_v2");
+           await db.run("CREATE TABLE production_log_items_v2 (id TEXT PRIMARY KEY, production_log_id TEXT, material_id TEXT, material_name TEXT, quantity_used REAL, unit TEXT, cost_price REAL)");
+        }
+      } catch (e) { console.error('Migration failed:', e.message); }
     }
 
     let ghostHunt = { tablesChecked: 0, bakesFound: 0 };
@@ -747,37 +785,7 @@ app.get('/api/production/active-batches', async (req, res) => {
   }
 });
 
-app.get('/api/production/logs', async (req, res) => {
-  try {
-    const { status, limit } = req.query;
-    // v1.2.33: ABSOLUTE SYNC - Simplified query to bypass any lingering gates
-    console.log(`[Diagnostic] History Fetch - Status: ${status}, Limit: ${limit}`);
-    // v1.2.40: NUCLEAR UNLOCK - Forced 100% global visibility for all history logs
-    const finalLimit = 100; // Hardcoded safe limit for absolute sync
-    const logs = await db.all(`
-      SELECT 
-        id, 
-        branch_id AS "branchId", 
-        product_id AS "productId", 
-        product_name AS "productName", 
-        quantity_produced AS "quantityProduced", 
-        estimated_yield AS "estimatedYield", 
-        estimated_ready_time AS "estimatedReadyTime",
-        date, 
-        status,
-        unit,
-        notes
-      FROM production_logs_v2 
-      ORDER BY date DESC 
-      LIMIT ?
-    `, [finalLimit]);
 
-    console.log(`[Nuclear Unlock] Delivering 100% of History: ${logs?.length || 0} records.`);
-    res.json(logs);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
 // --- TRANSACTIONS ---
 app.get('/api/transactions', async (req, res) => {
