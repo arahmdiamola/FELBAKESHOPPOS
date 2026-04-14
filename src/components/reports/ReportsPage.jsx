@@ -52,9 +52,15 @@ export default function ReportsPage() {
       end = new Date();
     }
     
+    const formatDate = (date) => {
+      const d = new Date(date);
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      return d.toISOString().split('T')[0];
+    };
+    
     setDateRange({
-      start: start.toISOString().split('T')[0],
-      end: end.toISOString().split('T')[0]
+      start: formatDate(start),
+      end: formatDate(end)
     });
   };
 
