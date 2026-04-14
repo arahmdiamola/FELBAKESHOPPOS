@@ -3,6 +3,7 @@ import { useOrders } from '../../contexts/OrderContext';
 import { useProducts } from '../../contexts/ProductContext';
 import { useExpenses } from '../../contexts/ExpenseContext';
 import { useSettings } from '../../contexts/SettingsContext';
+import { api } from '../../utils/api';
 import { formatCurrency, formatDateTime, exportToCSV } from '../../utils/formatters';
 import Header from '../layout/Header';
 import ReceiptPreview from '../pos/ReceiptPreview';
