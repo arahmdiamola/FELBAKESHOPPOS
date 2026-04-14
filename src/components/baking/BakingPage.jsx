@@ -140,6 +140,7 @@ export default function BakingPage() {
       setActiveBatch([]);
       setTargetProduct(null);
       setQuantityToProduce(1);
+      setActiveTab('oven'); // v1.2.18 AUTO-SWITCH: Show the oven immediately
       fetchMaterials();
       fetchActiveBatches();
     } catch (err) {
