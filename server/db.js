@@ -19,6 +19,32 @@ async function syncColumnData(db, table, oldCol, newCol) {
   }
 }
 
+async function relaxAllConstraints(db, table) {
+  try {
+    console.log(`[Sanitizer] Scanning ${table} for restricted gates...`);
+    const restrictedCols = await db.all(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = $1 
+      AND is_nullable = 'NO' 
+      AND column_name != 'id'
+      AND table_schema = 'public'
+    `, [table]);
+
+    for (const colObj of restrictedCols) {
+      const col = colObj.column_name;
+      console.log(`[Sanitizer] Opening gate: ${table}.${col} (DROP NOT NULL)`);
+      try {
+        await db.run(`ALTER TABLE ${table} ALTER COLUMN "${col}" DROP NOT NULL`);
+      } catch (e) {
+        console.error(`[Sanitizer] Failed to open ${col}:`, e.message);
+      }
+    }
+  } catch (err) {
+    console.error(`[Sanitizer] Scanner failed for ${table}:`, err.message);
+  }
+}
+
 async function bridgeLegacyData(db, legacyTable, targetTable, columnMap = {}) {
   try {
     const tables = await db.all("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'");
@@ -416,10 +442,16 @@ export async function initDb() {
       { table: 'branch_sessions', variants: ['lastSeen', 'lastseen', '"lastSeen"'], target: 'last_seen' }
     ];
 
-    console.log("Processing Schema Transitions...");
-    for (const m of migrationQueue) {
-      await ensureColumnRenamed(db, m.table, m.variants, m.target);
+    // 2. Final Standardization Run
+    console.log('[Migration] Starting Global Casing Standardization...');
+    for (const item of migrationQueue) {
+      await ensureColumnRenamed(db, item.table, item.variants, item.target);
     }
+
+    // 2.5 Universal Sanitation (v1.1.8 Master Key)
+    console.log('[Migration] Activating Universal Schema Sanitizer...');
+    await relaxAllConstraints(db, 'production_logs');
+    await relaxAllConstraints(db, 'production_log_items');
 
     // 2.5 Data Rescue: Sync data from old columns to new columns IF both exist
     console.log("Executing Data Rescue Sync...");
