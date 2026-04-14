@@ -476,6 +476,8 @@ export async function initDb() {
       "ALTER TABLE production_logs ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'completed'",
       "ALTER TABLE production_logs ADD COLUMN IF NOT EXISTS estimated_yield REAL DEFAULT 0",
       "ALTER TABLE production_logs ADD COLUMN IF NOT EXISTS unit TEXT",
+      "ALTER TABLE production_logs ADD COLUMN IF NOT EXISTS user_name TEXT",
+      "ALTER TABLE production_logs ADD COLUMN IF NOT EXISTS user_id TEXT",
       "ALTER TABLE branch_sessions ADD COLUMN IF NOT EXISTS last_seen TEXT"
     ];
 
@@ -490,9 +492,10 @@ export async function initDb() {
     await robustColumnRepair(db, 'transactions', ['paymentmethod'], 'payment_method', true);
     await robustColumnRepair(db, 'products', ['branchid'], 'branch_id', true);
     await robustColumnRepair(db, 'products', ['categoryid'], 'category_id');
-    await robustColumnRepair(db, 'system_logs', ['branchid', 'branchId'], 'branch_id');
-    await robustColumnRepair(db, 'system_logs', ['userid', 'userId'], 'user_id');
     await robustColumnRepair(db, 'system_logs', ['username'], 'user_name');
+    await robustColumnRepair(db, 'production_logs', ['branchid', 'branchId'], 'branch_id');
+    await robustColumnRepair(db, 'production_logs', ['userid', 'userId'], 'user_id');
+    await robustColumnRepair(db, 'production_logs', ['username'], 'user_name');
 
     // 3.4 Cleanup Duplicates in branch_sessions (Universal approach)
     try {
