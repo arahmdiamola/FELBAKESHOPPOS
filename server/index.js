@@ -486,35 +486,68 @@ app.get('/api/production/logs', async (req, res) => {
   res.json(logs);
 });
 
-// v1.2.43: ABSOLUTE RECOVERY - Null-Safe Multi-DB Probe
+// v1.2.45: ABSOLUTE EMPIRE RESTORATION - Forensic Scan & Force Initialize
 app.get('/api/diag/vault-status', async (req, res) => {
   try {
     const isPostgres = !!process.env.DATABASE_URL;
-    let rawTables = [];
+    let allTables = [];
     
+    // 1. SCAN FOR EVERY TABLE
     if (isPostgres) {
        const rows = await db.all("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'");
-       rawTables = rows.map(t => t.table_name || t.TABLE_NAME || '');
+       allTables = rows.map(t => t.table_name || t.TABLE_NAME || '');
     } else {
        const rows = await db.all("SELECT name as table_name FROM sqlite_master WHERE type='table'");
-       rawTables = rows.map(t => t.table_name || '');
+       allTables = rows.map(t => t.table_name || '');
     }
     
-    // Safety check for empty or non-string table names
-    const tables = rawTables.filter(t => typeof t === 'string' && t.trim() !== '');
+    // 2. FORCE INITIALIZE IF V2 IS MISSING
+    if (!allTables.includes('production_logs_v2')) {
+       console.log('[Forensic] v2 Tables missing. Initializing Ghost Vault...');
+       await db.run(`
+          CREATE TABLE IF NOT EXISTS production_logs_v2 (
+            id TEXT PRIMARY KEY,
+            branch_id TEXT,
+            product_id TEXT,
+            product_name TEXT,
+            quantity_produced REAL,
+            estimated_yield REAL,
+            estimated_ready_time TEXT,
+            date TEXT,
+            status TEXT DEFAULT 'in_oven',
+            unit TEXT,
+            notes TEXT
+          )
+       `);
+       await db.run(`
+          CREATE TABLE IF NOT EXISTS production_log_items_v2 (
+            id SERIAL PRIMARY KEY,
+            log_id TEXT,
+            material_id TEXT,
+            material_name TEXT,
+            quantity_used REAL,
+            unit TEXT
+          )
+       `);
+       // Re-scan after init
+       const rows = isPostgres 
+          ? await db.all("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'")
+          : await db.all("SELECT name as table_name FROM sqlite_master WHERE type='table'");
+       allTables = rows.map(t => t.table_name || t.TABLE_NAME || '');
+    }
+
+    const tables = allTables.filter(t => typeof t === 'string' && t.trim() !== '');
 
     let stats = {
       isProduction: isPostgres,
       dbType: isPostgres ? 'POSTGRES' : 'SQLITE (LOCAL)',
-      productionTables: tables.filter(t => t.toLowerCase().includes('production')),
+      allTablesFound: tables,
       counts: {},
-      env: {
-        DATABASE_URL_PRESENT: !!process.env.DATABASE_URL,
-        NODE_ENV: process.env.NODE_ENV || 'not set'
-      }
+      env: { DATABASE_URL_PRESENT: !!process.env.DATABASE_URL }
     };
 
-    for (const table of stats.productionTables) {
+    const targetTables = tables.filter(t => t.toLowerCase().includes('production'));
+    for (const table of targetTables) {
        try {
          const c = await db.get(`SELECT COUNT(*) as count FROM ${table}`);
          stats.counts[table] = c.count;
@@ -523,7 +556,7 @@ app.get('/api/diag/vault-status', async (req, res) => {
 
     res.json(stats);
   } catch (err) {
-    res.status(500).json({ error: err.message, forensic: 'Crash in vault-status scan' });
+    res.status(500).json({ error: err.message, forensic: 'Crash in forensic vault scan' });
   }
 });
 
@@ -965,9 +998,7 @@ app.post('/api/reset', requireSystemAdmin, async (req, res) => {
       console.log("[Reset] Wiped Pre-orders");
     }
 
-    // Special: Clear system sync state if everything is wiped
-    if (targets.length >= 5) {
-       await db.run("DELETE FROM settings WHERE key LIKE 'sync_%'");
+      await db.run("DELETE FROM settings WHERE key LIKE 'sync_%'");
     }
 
     res.json({ success: true, message: `Successfully wiped: ${targets.join(', ')}` });
