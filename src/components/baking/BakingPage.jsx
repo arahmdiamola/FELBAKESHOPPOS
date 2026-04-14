@@ -97,12 +97,19 @@ export default function BakingPage() {
       setQuantityToProduce(parseFloat(tempQty) || 1);
     } else if (selectedMaterial) {
       // Material ingredient case
+      const qtyUsed = parseFloat(tempQty) || 0;
       setActiveBatch(prev => {
-        const existing = prev.find(i => i.id === selectedMaterial.id);
+        const existing = prev.find(i => (i.materialId || i.id) === selectedMaterial.id);
         if (existing) {
-          return prev.map(i => i.id === selectedMaterial.id ? { ...i, quantity: parseFloat(tempQty) || 0 } : i);
+          return prev.map(i => (i.materialId || i.id) === selectedMaterial.id ? { ...i, quantityUsed: qtyUsed } : i);
         }
-        return [...prev, { ...selectedMaterial, quantity: parseFloat(tempQty) || 0 }];
+        return [...prev, { 
+          materialId: selectedMaterial.id, 
+          materialName: selectedMaterial.name,
+          quantityUsed: qtyUsed,
+          unit: selectedMaterial.unit,
+          emoji: selectedMaterial.emoji
+        }];
       });
     }
     setShowQtyModal(false);
@@ -256,10 +263,9 @@ export default function BakingPage() {
                       className="yield-num" 
                       style={{ cursor: 'pointer' }}
                       onClick={() => {
-                        setSelectedMaterial({ productName: targetProduct?.name || 'Batch', unit: 'pcs' });
+                        setSelectedMaterial({ productName: targetProduct?.name || 'Batch', unit: targetProduct?.unit || 'pcs' });
                         setTempQty(quantityToProduce.toString());
                         setShowQtyModal(true);
-                        setKeypadMode('material'); // Reuse material keypad UI
                       }}
                     >
                       {quantityToProduce}
