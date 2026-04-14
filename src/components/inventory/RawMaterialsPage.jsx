@@ -635,8 +635,14 @@ export default function RawMaterialsPage() {
            .step-val .num { font-weight: 950; font-size: 1.1rem; color: var(--mocha); }
            .step-val .unit { font-size: 8px; font-weight: 900; opacity: 0.5; text-transform: uppercase; }
 
-           .emoji-grid-mobile-wrap { overflow-x: auto; padding-bottom: 8px; }
-           .emoji-grid { grid-template-columns: repeat(12, 1fr); width: max-content; }
+           .emoji-grid-mobile-wrap { overflow-x: auto; padding-bottom: 8px; margin: 0 -16px; padding: 0 16px; }
+           .emoji-grid { display: flex; gap: 8px; background: none; padding: 4px; width: max-content; }
+           .emoji-btn { font-size: 1.4rem; padding: 8px; }
+           .image-upload-zone { height: 100px; border-radius: 16px; }
+           .upload-placeholder-lux { gap: 4px; font-size: 0.7rem; }
+           .upload-placeholder-lux svg { width: 14px; height: 14px; }
+           .form-grid { gap: 12px; margin-top: 12px !important; }
+           .input-group label { font-size: 0.7rem; margin-bottom: 4px; }
         }
       `}</style>
     </>
