@@ -466,8 +466,10 @@ export async function initDb() {
       { table: 'branch_sessions', variants: ['lastSeen', 'lastseen', '"lastSeen"'], target: 'last_seen' }
     ];
 
-    // 1.5 Absolute Factory Reset (v1.2.1 Giga-Nuclear)
+    /* 
+    // Legacy Cleanup (v1.2.1) - Temporarily disabled for startup speed
     await forceNuclearReset(db);
+    */
 
     // Initial table creation (Legacy cleanup still active for old tables)
     await db.run(`
@@ -501,7 +503,8 @@ export async function initDb() {
       )
     `);
 
-    // 2. Final Standardization Run
+    /*
+    // 2. Final Standardization Run - Temporarily disabled for startup speed
     console.log('[Migration] Starting Global Casing Standardization...');
     for (const item of migrationQueue) {
       await ensureColumnRenamed(db, item.table, item.variants, item.target);
@@ -511,7 +514,9 @@ export async function initDb() {
     console.log('[Migration] Activating Universal Schema Sanitizer...');
     await relaxAllConstraints(db, 'production_logs');
     await relaxAllConstraints(db, 'production_log_items');
+    */
 
+    /*
     // 2.5 Data Rescue: Sync data from old columns to new columns IF both exist
     console.log("Executing Data Rescue Sync...");
     const rescueList = [
@@ -593,54 +598,10 @@ export async function initDb() {
       "ALTER TABLE production_log_items ADD COLUMN IF NOT EXISTS material_name TEXT",
       "ALTER TABLE production_log_items ADD COLUMN IF NOT EXISTS quantity_used REAL DEFAULT 0",
       "ALTER TABLE production_log_items ADD COLUMN IF NOT EXISTS unit TEXT",
-      "ALTER TABLE production_log_items ADD COLUMN IF NOT EXISTS cost_price REAL DEFAULT 0",
-      "ALTER TABLE branch_sessions ADD COLUMN IF NOT EXISTS last_seen TEXT"
+      "ALTER TABLE production_log_items ADD COLUMN IF NOT EXISTS cost_price REAL DEFAULT 0"
     ];
-
     for (const sql of fallbackAdditions) {
-      try { await db.run(sql); } catch (e) { }
-    }
-
-    // 3.2 Robust System-Wide Repair (Fixes 500 errors on checkout and heartbeat)
-    console.log("Starting Critical Column Sanitization...");
-    await robustColumnRepair(db, 'transactions', ['branchid'], 'branch_id', true);
-    await robustColumnRepair(db, 'transactions', ['receiptnumber'], 'receipt_number', true);
-    await robustColumnRepair(db, 'transactions', ['paymentmethod'], 'payment_method', true);
-    await robustColumnRepair(db, 'products', ['branchid'], 'branch_id', true);
-    await robustColumnRepair(db, 'products', ['categoryid'], 'category_id');
-    await robustColumnRepair(db, 'system_logs', ['username'], 'user_name');
-    await robustColumnRepair(db, 'production_logs', ['username'], 'user_name');
-    await robustColumnRepair(db, 'production_log_items', ['materialname', 'materialName'], 'material_name');
-    await robustColumnRepair(db, 'production_log_items', ['costprice', 'costPrice'], 'cost_price');
-    await robustColumnRepair(db, 'production_logs', ['branchid', 'branchId'], 'branch_id');
-    await robustColumnRepair(db, 'production_logs', ['userid', 'userId'], 'user_id');
-    await robustColumnRepair(db, 'production_logs', ['username'], 'user_name');
-
-    // 3.4 Cleanup Duplicates in branch_sessions (Universal approach)
-    try {
-      console.log("[Migration] Cleaning duplicate sessions...");
-      await db.run(`
-        DELETE FROM branch_sessions 
-        WHERE (branch_id, user_id, last_seen) NOT IN (
-          SELECT branch_id, user_id, MAX(last_seen)
-          FROM branch_sessions
-          GROUP BY branch_id, user_id
-        )
-      `);
-    } catch (e) {
-      console.warn("[Migration] Duplicate cleanup failed or table empty:", e.message);
-    }
-
-    // 3.5 Force Primary Key on branch_sessions (Required for ON CONFLICT in Postgres)
-    try {
-      // In Postgres, adding a PK requires a UNIQUE constraint. 
-      // We use a safe check to see if we already have a PK to avoid "already exists" errors.
-      await db.run("ALTER TABLE branch_sessions ADD PRIMARY KEY (branch_id, user_id)");
-      console.log("[Migration] branch_sessions PK added successfully.");
-    } catch (e) {
-      if (!e.message.includes('already exists')) {
-        console.warn("[PK Guard] Could not add PK to branch_sessions:", e.message);
-      }
+      try { await db.run(sql); } catch (e) {}
     }
 
     // 4. Verification Check: Critical Columns Must Exist
@@ -654,15 +615,28 @@ export async function initDb() {
 
     for (const check of checkColumns) {
       try {
-        // Use a faster check-then-ignore approach
         await db.run(`ALTER TABLE ${check.t} ADD COLUMN IF NOT EXISTS "${check.c}" TEXT`);
       } catch (e) {
-        // Silently fail if column already exists (fallback for older DB versions)
         if (!e.message.includes('already exists')) {
            console.warn(`[Migration Warning] Column check fail: ${check.t}.${check.c}`, e.message);
         }
       }
     }
+
+    // 6. Basic Performance Indexes (With safety catch)
+    try {
+      await db.exec(`
+        CREATE INDEX IF NOT EXISTS idx_transactions_branch_date ON transactions(branch_id, date);
+        CREATE INDEX IF NOT EXISTS idx_transactions_date_only ON transactions(date);
+        CREATE INDEX IF NOT EXISTS idx_logs_branch_time ON system_logs(branch_id, timestamp);
+        CREATE INDEX IF NOT EXISTS idx_logs_timestamp_only ON system_logs(timestamp);
+        CREATE INDEX IF NOT EXISTS idx_sessions_branch ON branch_sessions(branch_id);
+      `);
+    } catch (e) {
+      console.warn("[Index Catch]", e.message);
+    }
+    */
+    // End of legacy migrations
   }
 
   // 5. System Admin Guarantee
