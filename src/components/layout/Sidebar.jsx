@@ -8,6 +8,7 @@ import { api } from '../../utils/api';
 import SyncStatus from '../shared/SyncStatus';
 import {
   ShoppingBag, LayoutDashboard, Package, ClipboardList,
+  BarChart3,
   Users, Wallet, Settings, LogOut, CalendarClock, Boxes, Menu, ChevronsLeft, Activity, Shield, RotateCcw,
   ChefHat, Wheat
 } from 'lucide-react';
@@ -16,7 +17,7 @@ const navItems = [
   { to: '/pos', icon: ShoppingBag, label: 'POS Register' },
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/baking', icon: ChefHat, label: 'Baking Batch' },
-  { to: '/reports', icon: ClipboardList, label: 'Reports' },
+  { to: '/reports', icon: BarChart3, label: 'Analytics Studio' },
   { section: 'Management' },
   { to: '/products', icon: Package, label: 'Products' },
   { to: '/inventory', icon: Boxes, label: 'Inventory' },
