@@ -82,8 +82,8 @@
 
 @media (max-width: 768px) {
    .studio-reports-container { 
-      height: 100vh; 
-      overflow-y: auto !important; 
+      min-height: 100vh; 
+      overflow-y: initial;
       -webkit-overflow-scrolling: touch; 
       background: #FDFBF8;
    }
