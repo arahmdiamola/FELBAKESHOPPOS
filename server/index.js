@@ -475,13 +475,14 @@ app.delete('/api/raw-materials/:id', async (req, res) => {
 app.get('/api/production/logs', async (req, res) => {
   const status = req.query.status;
   const { query, params } = getBranchFilter(req);
-  let sql = `SELECT * FROM production_logs WHERE ${query}`;
+  // v1.2.64: ALIGNED WITH V2 VAULT
+  let sql = `SELECT * FROM production_logs_v2 WHERE ${query}`;
   if (status) sql += ` AND status = '${status}'`;
   sql += ` ORDER BY date DESC LIMIT 100`;
   
   const logs = await db.all(sql, params);
   for (const log of logs) {
-    log.items = await db.all("SELECT * FROM production_log_items WHERE production_log_id = ?", [log.id]);
+    log.items = await db.all("SELECT * FROM production_log_items_v2 WHERE log_id = ?", [log.id]);
   }
   res.json(logs);
 });
