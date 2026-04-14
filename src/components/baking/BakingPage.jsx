@@ -340,18 +340,18 @@ export default function BakingPage() {
                    <button className={`tab-btn ${historyTab === 'ruined' ? 'active' : ''}`} onClick={() => setHistoryTab('ruined')}>Spoilage Logs</button>
                 </div>
                 
-                {/* v1.2.49: STUDIO HEALTH SIGNAL - Direct Check */}
+                {/* v1.2.50: STUDIO HEALTH SIGNAL - URL Mirror */}
                 <div 
                    onClick={async () => {
                       try {
                          const diag = await api.get('/diag/vault-status');
-                         alert(`EMPIRE VAULT 1.2.49:\nDB: ${diag.dbType}\nPooler: ${diag.isPooler ? 'YES (BANNED)' : 'NO (DIRECT)'}\nIdentity: ${diag.identity?.user}@${diag.identity?.db}\nInit Status: ${diag.initError || 'READY'}\n\nACTION: ${diag.recommendation}`);
+                         alert(`EMPIRE VAULT 1.2.50 (MIRROR):\nDB: ${diag.dbType}\nActive URL: ${diag.urlMirror}\nPooler: ${diag.isPooler ? 'YES (BANNED)' : 'NO (DIRECT)'}\n\nREASON: ${diag.recommendation}`);
                       } catch (e) { alert(`DIAG FAIL (Check Render): ${e.message}`); }
                    }}
                    style={{ padding: '4px 12px', background: 'rgba(76,175,80,0.1)', color: '#4CAF50', fontSize: '10px', fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'help' }}
                 >
                    <div style={{ width: 6, height: 6, background: history.length > 0 ? '#4CAF50' : '#f44336', borderRadius: '50%', boxShadow: history.length > 0 ? '0 0 5px #4CAF50' : '0 0 5px #f44336' }} />
-                   STUDIO SYNC [v1.2.49]: {history.length} RECORDS IN VAULT (CLICK FOR GUIDANCE)
+                   STUDIO SYNC [v1.2.50]: {history.length} RECORDS IN VAULT (CLICK FOR MIRROR)
                 </div>
 
                <div className="history-list">

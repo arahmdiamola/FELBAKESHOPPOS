@@ -486,13 +486,16 @@ app.get('/api/production/logs', async (req, res) => {
   res.json(logs);
 });
 
-// v1.2.49: EMPIRE DIRECT CONNECTION - Pooler Bypass & Native Sync
+// v1.2.50: ABSOLUTE EMPIRE SIGNAL - URL Mirror & Force Sync
 app.get('/api/diag/vault-status', async (req, res) => {
   try {
     const isPostgres = !!process.env.DATABASE_URL;
-    const isPooler = process.env.DATABASE_URL?.includes('pooler.supabase.com');
+    const rawUrl = process.env.DATABASE_URL || '';
+    const isPooler = rawUrl.includes('pooler.supabase.com');
+    // Mirror the start of the URL for comparison (Masked)
+    const urlMirror = rawUrl.substring(0, 15) + '...';
+    
     let allTables = [];
-    let initError = isPooler ? 'POOLER DETECTED: Migration Blocked' : null;
     let identity = { user: 'Unknown', db: 'Unknown' };
     
     try {
@@ -501,31 +504,19 @@ app.get('/api/diag/vault-status', async (req, res) => {
          identity = idRes || identity;
          const rows = await db.all("SELECT tablename as table_name FROM pg_catalog.pg_tables WHERE schemaname = 'public'");
          allTables = rows.map(t => t.table_name || '').filter(Boolean);
-      } else {
-         const rows = await db.all("SELECT name as table_name FROM sqlite_master WHERE type='table'");
-         allTables = rows.map(t => t.table_name || '').filter(Boolean);
       }
-    } catch (e) { console.error('Deep Scan Fail:', e); }
-
-    // 2. ABSOLUTE INITIALIZATION (Only if not pooler)
-    if (!allTables.includes('production_logs_v2') && !isPooler) {
-       try {
-         await db.run(`CREATE TABLE IF NOT EXISTS production_logs_v2 (id TEXT PRIMARY KEY, branch_id TEXT, product_id TEXT, product_name TEXT, quantity_produced REAL, estimated_yield REAL, date TEXT, status TEXT DEFAULT 'in_oven', unit TEXT, notes TEXT)`);
-         await db.run(`CREATE TABLE IF NOT EXISTS production_log_items_v2 (id SERIAL PRIMARY KEY, log_id TEXT, material_id TEXT, material_name TEXT, quantity_used REAL, unit TEXT)`);
-       } catch (e) { initError = e.message; }
-    }
+    } catch (e) { console.error('Mirror Scan Fail:', e); }
 
     res.json({
-      version: '1.2.49 (DIRECT)',
-      isProduction: isPostgres,
+      version: '1.2.50 (MIRROR)',
+      dbType: isPostgres ? 'POSTGRES' : 'SQLITE',
       isPooler: isPooler,
       identity: identity,
-      allTablesFound: allTables,
-      initError: initError,
-      recommendation: isPooler ? 'SWAP TO DIRECT CONNECTION IN RENDER (Port 5432/db.supabase.co)' : 'Signal Stable'
+      urlMirror: urlMirror,
+      recommendation: isPooler ? 'RENDER URL MISMATCH: Update Render Env to Direct' : 'SIGNAL OPTIMAL: Using Direct'
     });
   } catch (err) {
-    res.status(500).json({ error: err.message, forensic: 'Crash in v1.2.49 direct-check' });
+    res.status(500).json({ error: err.message, forensic: 'Crash in v1.2.50 mirror' });
   }
 });
 
