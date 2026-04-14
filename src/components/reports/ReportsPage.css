@@ -1,10 +1,9 @@
 .studio-reports-container {
-   height: calc(100vh - 80px);
+   min-height: calc(100vh - 80px);
    display: flex;
    flex-direction: column;
    background: #FDFBF8;
    font-family: 'Inter', sans-serif;
-   overflow: hidden;
 }
 
 .studio-control-bar {
@@ -50,7 +49,7 @@
 .studio-tabs button.active { color: #4A3728; border-bottom-color: #4A3728; }
 .workspace-meta { font-size: 11px; font-weight: 800; color: #A0938A; display: flex; align-items: center; gap: 10px; background: white; padding: 8px 16px; border-radius: 50px; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
 
-.workspace-scroller { flex: 1; overflow-y: auto; }
+.workspace-scroller { flex: 1; }
 .studio-table-glass { background: white; border-radius: 32px; border: 1px solid rgba(74, 55, 40, 0.06); overflow: hidden; }
 .lux-table { width: 100%; border-collapse: collapse; }
 .lux-table th { padding: 24px; background: #FAF7F4; text-align: left; font-size: 0.65rem; font-weight: 950; color: #A0938A; letter-spacing: 0.1em; }
@@ -82,8 +81,8 @@
 .usage-col-danger { color: #C62828; font-weight: 900; background: rgba(198, 40, 40, 0.05); padding: 4px 12px; border-radius: 50px; display: inline-block; }
 
 @media (max-width: 768px) {
-  .studio-reports-container { height: auto; overflow: visible; }
-  .studio-control-bar { padding: 20px 16px; flex-direction: column; align-items: stretch; gap: 16px; }
+   .studio-reports-container { height: auto; min-height: 100vh; overflow: visible; }
+   .studio-control-bar { padding: 20px 16px; flex-direction: column; align-items: stretch; gap: 16px; }
   .control-left { width: 100%; }
   .range-selector-lux { margin-top: 16px; width: 100%; }
   .preset-buttons { overflow-x: auto; padding: 4px; white-space: nowrap; -webkit-overflow-scrolling: touch; }
