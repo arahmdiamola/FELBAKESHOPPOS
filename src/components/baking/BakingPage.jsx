@@ -91,29 +91,23 @@ export default function BakingPage() {
     setShowQtyModal(true);
   };
 
-  const confirmAdd = () => {
-    const qty = parseFloat(tempQty);
-    if (isNaN(qty) || qty <= 0) return addToast('Please enter a valid quantity', 'error');
-
-    if (keypadMode === 'material') {
+  const handleConfirmQuantity = () => {
+    if (selectedMaterial && selectedMaterial.productName) {
+      // Expected Yield case
+      setQuantityToProduce(parseFloat(tempQty) || 1);
+    } else if (selectedMaterial) {
+      // Material ingredient case
       setActiveBatch(prev => {
-        const existing = prev.find(i => i.materialId === selectedMaterial.id);
+        const existing = prev.find(i => i.id === selectedMaterial.id);
         if (existing) {
-          return prev.map(i => i.materialId === selectedMaterial.id ? { ...i, quantity: i.quantity + qty } : i);
+          return prev.map(i => i.id === selectedMaterial.id ? { ...i, quantity: parseFloat(tempQty) || 0 } : i);
         }
-        return [...prev, {
-          materialId: selectedMaterial.id,
-          name: selectedMaterial.name,
-          quantity: qty,
-          unit: selectedMaterial.unit,
-          emoji: selectedMaterial.emoji
-        }];
+        return [...prev, { ...selectedMaterial, quantity: parseFloat(tempQty) || 0 }];
       });
-      addToast(`${selectedMaterial.name} added to assembly`, 'success');
-    } else {
-      handleFinalizeBatch(selectedBatch.id, qty);
     }
     setShowQtyModal(false);
+    setSelectedMaterial(null);
+    setTempQty('');
   };
 
   const handleStartBatch = async () => {
@@ -258,17 +252,18 @@ export default function BakingPage() {
                     <label>Expected Yield</label>
                     <div className="yield-stepper">
                       <button onClick={() => setQuantityToProduce(Math.max(1, quantityToProduce - 1))}><Minus size={14} /></button>
-                      <div 
-                        className="yield-num" 
-                        style={{ cursor: 'pointer' }}
-                        onClick={() => {
-                          setEditingMaterial({ productName: targetProduct?.name || 'Batch', unit: 'pcs' });
-                          setKeypadValue(quantityToProduce.toString());
-                          setIsKeypadOpen(true);
-                        }}
-                      >
-                        {quantityToProduce}
-                      </div>
+                    <div 
+                      className="yield-num" 
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => {
+                        setSelectedMaterial({ productName: targetProduct?.name || 'Batch', unit: 'pcs' });
+                        setTempQty(quantityToProduce.toString());
+                        setShowQtyModal(true);
+                        setKeypadMode('material'); // Reuse material keypad UI
+                      }}
+                    >
+                      {quantityToProduce}
+                    </div>
                       <button onClick={() => setQuantityToProduce(quantityToProduce + 1)}><Plus size={14} /></button>
                     </div>
 
@@ -404,16 +399,19 @@ export default function BakingPage() {
       <Modal isOpen={showQtyModal} onClose={() => setShowQtyModal(false)} title={keypadMode === 'production' ? 'Confirm Final Yield' : 'Enter Quantity'}>
          <div className="keypad-ux">
             <div className="keypad-screen">
-               <span className="val">{tempQty || '0'}</span>
-               <span className="unit">{keypadMode === 'production' ? targetProduct?.unit : selectedMaterial?.unit}</span>
+               <div className="val">{tempQty || '0'}<span className="unit">{selectedMaterial?.unit || 'kg'}</span></div>
             </div>
             <div className="keypad-btns">
-               {[1,2,3,4,5,6,7,8,9,'.',0].map(v => (
-                  <button key={v} onClick={() => setTempQty(p => p + v)}>{v}</button>
+               {[1,2,3,4,5,6,7,8,9,'.',0].map(n => (
+                  <button key={n} onClick={() => setTempQty(prev => prev + n)}>{n}</button>
                ))}
-               <button className="key-clear" onClick={() => setTempQty('')}><RotateCcw size={18} /></button>
+               <button className="key-clear" onClick={() => setTempQty('')}>
+                 <RotateCcw size={20} />
+               </button>
             </div>
-            <button className="confirm-btn-ux" onClick={confirmAdd}>Confirm Action</button>
+            <button className="confirm-btn-ux" style={{ marginTop: '20px' }} onClick={handleConfirmQuantity}>
+              Confirm Action
+            </button>
          </div>
       </Modal>
 
