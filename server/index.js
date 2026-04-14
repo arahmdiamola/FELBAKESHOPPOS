@@ -682,12 +682,15 @@ app.get('/api/production/logs', async (req, res) => {
       finalParams.push(status);
     }
     
-    // Strict branch filtering only for general history, not for active monitors
+    // v1.2.28: UNIVERSAL HISTORY UNLOCK - Bypassing branch filter to ensure 
+    // total visibility of production history across all studio monitors.
+    /*
     if (!status || status === 'completed') {
        const { query: v_query, params: v_params } = getBranchFilter(req);
        sql += ` AND ${v_query}`;
        finalParams.push(...v_params);
     }
+    */
 
     sql += " ORDER BY date DESC LIMIT ?";
     finalParams.push(limit ? parseInt(limit) : 100);
