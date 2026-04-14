@@ -131,11 +131,10 @@ export default function PreOrdersPage() {
         actions={<button className="btn btn-primary" onClick={() => setShowForm(true)}><Plus size={16} /> New Pre-Order</button>}
       />
       <div className="page-content animate-fade-in">
-        <div className="filter-bar mb-4 luxury-mobile-scroll">
-          <button className={`btn ${!filterStatus ? 'btn-primary' : 'btn-secondary'} btn-sm`} style={{ whiteSpace: 'nowrap' }} onClick={() => setFilterStatus('')}>All ({preorders.length})</button>
+        <div className="filter-bar mb-4 flex flex-wrap gap-2">
+          <button className={`btn ${!filterStatus ? 'btn-primary' : 'btn-secondary'} btn-sm`} onClick={() => setFilterStatus('')}>All ({preorders.length})</button>
           {['pending', 'confirmed', 'in_progress', 'ready'].map(s => (
             <button key={s} className={`btn ${filterStatus === s ? 'btn-primary' : 'btn-secondary'} btn-sm`}
-              style={{ whiteSpace: 'nowrap' }}
               onClick={() => setFilterStatus(filterStatus === s ? '' : s)}>
               {STATUS_CONFIG[s].label} ({preorders.filter(o => o.status === s).length})
             </button>
