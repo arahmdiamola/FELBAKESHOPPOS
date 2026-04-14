@@ -63,10 +63,12 @@ export default function BakingPage() {
   const fetchHistory = async () => {
     try {
       const status = historyTab === 'success' ? 'completed' : 'ruined';
-      const data = await api.get(`/production/logs?status=${status}`);
-      setHistory(Array.isArray(data) ? data : []);
+      // v1.2.35: CACHE-BUSTER - Force fresh data by adding a unique timestamp
+      const data = await api.get(`/production/logs?status=${status}&_t=${Date.now()}`);
+      const unpacked = Array.isArray(data) ? data : (data?.logs || data?.batches || []);
+      setHistory(unpacked);
     } catch (err) {
-      addToast(`History Fetch Failed: ${err.message}`, 'error');
+      addToast(`History Sync Lost: ${err.message}`, 'error');
     }
   };
 
