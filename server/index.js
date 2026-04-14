@@ -604,6 +604,24 @@ app.post('/api/production/void', async (req, res) => {
   }
 });
 
+app.get('/api/production/active-batches', async (req, res) => {
+  try {
+    const batches = await db.all("SELECT * FROM production_logs_v2 WHERE status = 'started' ORDER BY date DESC");
+    res.json(batches);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/production/logs', async (req, res) => {
+  try {
+    const logs = await db.all("SELECT * FROM production_logs_v2 ORDER BY date DESC LIMIT 100");
+    res.json(logs);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // --- TRANSACTIONS ---
 app.get('/api/transactions', async (req, res) => {
   const limit = req.query.limit ? `LIMIT ${req.query.limit}` : '';
