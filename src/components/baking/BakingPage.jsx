@@ -111,9 +111,13 @@ export default function BakingPage() {
           emoji: selectedMaterial.emoji
         }];
       });
+    } else if (keypadMode === 'production' && selectedBatch) {
+      // PROD-SYNC: Finalize the batch with the actual yield entered
+      handleFinalizeBatch(selectedBatch.id, parseFloat(tempQty) || 0);
     }
     setShowQtyModal(false);
     setSelectedMaterial(null);
+    setSelectedBatch(null);
     setTempQty('');
   };
 
