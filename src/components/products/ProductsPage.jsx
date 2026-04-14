@@ -203,7 +203,6 @@ export default function ProductsPage() {
           </select>
         </div>
 
-        </div>
         <div className="table-container luxury-table-shield">
           <table className="table">
             <thead>
