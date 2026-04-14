@@ -74,6 +74,13 @@
 
 .cat-badge { font-size: 9px; font-weight: 900; background: #E7EEF5; color: #356695; padding: 4px 10px; border-radius: 4px; text-transform: uppercase; }
 
+/* Material Audit Ledger Styles */
+.material-col-audit { display: flex; align-items: center; gap: 14px; }
+.audit-emoji-lux { width: 40px; height: 40px; background: #FAF7F4; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
+.audit-name-lux { font-weight: 850; font-size: 0.95rem; color: #4A3728; }
+.usage-col-safe { color: #2E7D32; font-weight: 900; }
+.usage-col-danger { color: #C62828; font-weight: 900; background: rgba(198, 40, 40, 0.05); padding: 4px 12px; border-radius: 50px; display: inline-block; }
+
 @media (max-width: 768px) {
   .studio-reports-container { height: auto; overflow: visible; }
   .studio-control-bar { padding: 20px 16px; flex-direction: column; align-items: stretch; gap: 16px; }

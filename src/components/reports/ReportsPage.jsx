@@ -23,6 +23,8 @@ export default function ReportsPage() {
   const [rangePreset, setRangePreset] = useState('today');
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [productionLogs, setProductionLogs] = useState([]);
+  const [isLoadingProd, setIsLoadingProd] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
 
   // Initialize dates
@@ -54,6 +56,26 @@ export default function ReportsPage() {
       end: end.toISOString().split('T')[0]
     });
   };
+
+  const fetchProductionHistory = async () => {
+    setIsLoadingProd(true);
+    try {
+      // Fetch both completed and ruined logs for full audit
+      const [completed, ruined] = await Promise.all([
+        api.get('/production/logs?status=completed'),
+        api.get('/production/logs?status=ruined')
+      ]);
+      setProductionLogs([...(completed || []), ...(ruined || [])]);
+    } catch (err) {
+      console.error('Failed to fetch production logs', err);
+    } finally {
+      setIsLoadingProd(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProductionHistory();
+  }, []);
 
   // Filter transactions and pre-orders by range
   const filteredSales = useMemo(() => {
@@ -138,6 +160,14 @@ export default function ReportsPage() {
         { header: 'Revenue', accessor: p => p.revenue.toFixed(2) }
       ];
       exportToCSV(productStats, `Product_Report_${dateRange.start}`, cols);
+    } else if (activeTab === 'materials') {
+      const cols = [
+        { header: 'Material', accessor: m => m.name },
+        { header: 'Total Used', accessor: m => `${m.used} ${m.unit}` },
+        { header: 'Total Wasted', accessor: m => `${m.wasted} ${m.unit}` },
+        { header: 'Net Impact', accessor: m => `${(m.used + m.wasted).toFixed(2)} ${m.unit}` }
+      ];
+      exportToCSV(materialStats, `Material_Audit_${dateRange.start}_to_${dateRange.end}`, cols);
     } else {
       const cols = [
         { header: 'Date', accessor: e => formatDateTime(e.date) },
@@ -152,6 +182,43 @@ export default function ReportsPage() {
   // Metrics
   const totalRevenue = useMemo(() => filteredSales.reduce((s, t) => s + t.total, 0), [filteredSales]);
   const totalExpenses = useMemo(() => filteredExpenses.reduce((s, e) => s + e.amount, 0), [filteredExpenses]);
+  
+  const materialStats = useMemo(() => {
+    if (!dateRange.start || !dateRange.end) return [];
+    const start = new Date(dateRange.start);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(dateRange.end);
+    end.setHours(23, 59, 59, 999);
+
+    const filteredLogs = productionLogs.filter(log => {
+      const d = new Date(log.date);
+      return d >= start && d <= end;
+    });
+
+    const map = {};
+    filteredLogs.forEach(log => {
+      log.items?.forEach(item => {
+        if (!map[item.materialId]) {
+          map[item.materialId] = {
+            id: item.materialId,
+            name: item.name,
+            emoji: item.emoji || '📦',
+            unit: item.unit,
+            used: 0,
+            wasted: 0
+          };
+        }
+        if (log.status === 'ruined') {
+          map[item.materialId].wasted += item.quantity;
+        } else {
+          map[item.materialId].used += item.quantity;
+        }
+      });
+    });
+
+    return Object.values(map).sort((a, b) => b.used - a.used);
+  }, [productionLogs, dateRange]);
+
   const netProfit = totalRevenue - totalExpenses;
 
   return (
@@ -247,6 +314,7 @@ export default function ReportsPage() {
               <div className="studio-tabs">
                  <button className={activeTab === 'transactions' ? 'active' : ''} onClick={() => setActiveTab('transactions')}>Ledger</button>
                  <button className={activeTab === 'products' ? 'active' : ''} onClick={() => setActiveTab('products')}>Products</button>
+                 <button className={activeTab === 'materials' ? 'active' : ''} onClick={() => setActiveTab('materials')}>Materials</button>
                  <button className={activeTab === 'expenses' ? 'active' : ''} onClick={() => setActiveTab('expenses')}>Expenses</button>
               </div>
               <div className="workspace-meta">
@@ -301,6 +369,41 @@ export default function ReportsPage() {
                     ))}
                  </div>
               )}
+
+              {activeTab === 'materials' && (
+                  <div className="studio-table-glass">
+                     <table className="lux-table">
+                        <thead>
+                           <tr>
+                              <th>MATERIAL</th>
+                              <th>TOTAL QUANTITY USED</th>
+                              <th>SPOILAGE / WASTE</th>
+                              <th style={{ textAlign: 'right' }}>NET IMPACT</th>
+                           </tr>
+                        </thead>
+                        <tbody>
+                           {materialStats.map(m => (
+                              <tr key={m.id}>
+                                 <td className="material-col-audit">
+                                    <div className="audit-emoji-lux">{m.emoji}</div>
+                                    <div className="audit-name-lux">{m.name}</div>
+                                 </td>
+                                 <td className="usage-col-safe">{m.used} {m.unit}</td>
+                                 <td className="usage-col-danger">{m.wasted > 0 ? `${m.wasted} ${m.unit}` : '—'}</td>
+                                 <td className="val-col" style={{ fontWeight: 950 }}>{(m.used + m.wasted).toFixed(2)} {m.unit}</td>
+                              </tr>
+                           ))}
+                           {materialStats.length === 0 && (
+                              <tr>
+                                 <td colSpan="4" style={{ textAlign: 'center', padding: '40px', opacity: 0.5 }}>
+                                    No material consumption recorded for this period.
+                                 </td>
+                              </tr>
+                           )}
+                        </tbody>
+                     </table>
+                  </div>
+               )}
 
               {activeTab === 'expenses' && (
                  <div className="studio-table-glass">
