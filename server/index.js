@@ -14,7 +14,7 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
 // --- Server Shield: Deployment Version Marker ---
-console.log('--- BAKERY POS SERVER V1.1.6: TOTAL RESTORATION & SENSING ACTIVE ---');
+console.log('--- BAKERY POS SERVER V1.1.7: FINAL ALIGNMENT ACTIVE ---');
 
 app.use((req, res, next) => {
   res.set('Cache-Control', 'no-store');

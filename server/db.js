@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 async function syncColumnData(db, table, oldCol, newCol) {
   try {
-    const cols = await db.allRaw(`
+    const cols = await db.all(`
       SELECT column_name FROM information_schema.columns 
       WHERE table_name = $1 AND table_schema = 'public'
     `, [table]);
@@ -21,7 +21,7 @@ async function syncColumnData(db, table, oldCol, newCol) {
 
 async function bridgeLegacyData(db, legacyTable, targetTable, columnMap = {}) {
   try {
-    const tables = await db.allRaw("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'");
+    const tables = await db.all("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'");
     const tableNames = tables.map(t => t.table_name);
 
     if (!tableNames.includes(legacyTable) || !tableNames.includes(targetTable)) return;
@@ -31,9 +31,9 @@ async function bridgeLegacyData(db, legacyTable, targetTable, columnMap = {}) {
 
     if (parseInt(targetCount.count) === 0 && parseInt(legacyCount.count) > 0) {
       console.log(`[Legacy Bridge] Restoring data: ${legacyTable} -> ${targetTable} (${legacyCount.count} records)`);
-      const colsRes = await db.allRaw("SELECT column_name FROM information_schema.columns WHERE table_name = $1", [targetTable]);
+      const colsRes = await db.all("SELECT column_name FROM information_schema.columns WHERE table_name = $1", [targetTable]);
       const targetCols = colsRes.map(c => c.column_name);
-      const legacyData = await db.allRaw(`SELECT * FROM ${legacyTable}`);
+      const legacyData = await db.all(`SELECT * FROM ${legacyTable}`);
       
       for (const row of legacyData) {
         const insertObj = {};
@@ -99,7 +99,7 @@ async function robustColumnRepair(db, table, oldColVariants, newColName, isNotNu
 async function ensureColumnRenamed(db, table, oldColNames, newColName) {
   try {
     // 1. Get all columns for this table
-    const result = await db.allRaw(`
+    const result = await db.all(`
       SELECT column_name 
       FROM information_schema.columns 
       WHERE table_name = $1 
@@ -473,6 +473,11 @@ export async function initDb() {
 
     // 3. Guaranteed Column Addition (If transition missed anything)
     const fallbackAdditions = [
+      "ALTER TABLE production_log_items ALTER COLUMN materialid DROP NOT NULL",
+      "ALTER TABLE production_log_items ALTER COLUMN materialId DROP NOT NULL",
+      "ALTER TABLE production_log_items ALTER COLUMN productionlogid DROP NOT NULL",
+      "ALTER TABLE production_logs ALTER COLUMN productid DROP NOT NULL",
+      "ALTER TABLE production_logs ALTER COLUMN userid DROP NOT NULL",
       "ALTER TABLE users ADD COLUMN IF NOT EXISTS image TEXT",
       "ALTER TABLE products ADD COLUMN IF NOT EXISTS image TEXT",
       "ALTER TABLE branches ADD COLUMN IF NOT EXISTS last_seen TEXT",
