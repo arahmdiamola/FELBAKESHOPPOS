@@ -510,14 +510,26 @@ export default function CommandCenter({ isPublic = false }) {
                 );
               })()}
             </div>
-            <ResponsiveContainer width="100%" height={60}>
-                <AreaChart data={pulseMetrics.data}>
+            <ResponsiveContainer width="100%" height={100}>
+                <AreaChart data={pulseMetrics.data} margin={{ top: 5, right: 5, left: 5, bottom: 20 }}>
                     <defs>
                       <linearGradient id="tvPulse" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#D4763C" stopOpacity={0.4}/>
                         <stop offset="95%" stopColor="#D4763C" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
+                    <XAxis 
+                      dataKey="hourLabel" 
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10 }}
+                      interval={3}
+                    />
+                    <Tooltip 
+                      contentStyle={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '12px' }}
+                      itemStyle={{ color: '#D4763C' }}
+                      labelStyle={{ color: 'rgba(255,255,255,0.5)' }}
+                    />
                     <Area 
                       type="monotone" 
                       dataKey="revenue" 
