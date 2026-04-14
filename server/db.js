@@ -478,6 +478,12 @@ export async function initDb() {
       "ALTER TABLE production_logs ADD COLUMN IF NOT EXISTS unit TEXT",
       "ALTER TABLE production_logs ADD COLUMN IF NOT EXISTS user_name TEXT",
       "ALTER TABLE production_logs ADD COLUMN IF NOT EXISTS user_id TEXT",
+      "ALTER TABLE production_logs ADD COLUMN IF NOT EXISTS product_id TEXT",
+      "ALTER TABLE production_logs ADD COLUMN IF NOT EXISTS product_name TEXT",
+      "ALTER TABLE production_logs ADD COLUMN IF NOT EXISTS branch_id TEXT",
+      "ALTER TABLE production_logs ADD COLUMN IF NOT EXISTS quantity_produced REAL DEFAULT 0",
+      "ALTER TABLE production_logs ADD COLUMN IF NOT EXISTS date TEXT",
+      "ALTER TABLE production_logs ADD COLUMN IF NOT EXISTS notes TEXT",
       "ALTER TABLE branch_sessions ADD COLUMN IF NOT EXISTS last_seen TEXT"
     ];
 
