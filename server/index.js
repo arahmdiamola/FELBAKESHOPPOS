@@ -486,6 +486,30 @@ app.get('/api/production/logs', async (req, res) => {
   res.json(logs);
 });
 
+// v1.2.41: TOTAL DATA BRIDGE - Forensic Diagnostic Route
+app.get('/api/diag/vault-status', async (req, res) => {
+  try {
+    const tablesRes = await db.all("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'");
+    const tables = tablesRes.map(t => t.table_name || t.TABLE_NAME);
+    
+    let stats = {
+      isProduction: !!process.env.DATABASE_URL,
+      dbType: !!process.env.DATABASE_URL ? 'POSTGRES' : 'SQLITE',
+      tables: tables.filter(t => t.includes('production')),
+      counts: {}
+    };
+
+    for (const table of stats.tables) {
+       const c = await db.get(`SELECT COUNT(*) as count FROM ${table}`);
+       stats.counts[table] = c.count;
+    }
+
+    res.json(stats);
+  } catch (err) {
+    res.status(500).json({ error: err.message, stack: err.stack });
+  }
+});
+
 app.post('/api/production/log', async (req, res) => {
     const {
       id, productId, productName, quantityProduced, estimatedYield,

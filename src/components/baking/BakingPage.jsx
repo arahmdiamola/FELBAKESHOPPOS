@@ -340,10 +340,18 @@ export default function BakingPage() {
                    <button className={`tab-btn ${historyTab === 'ruined' ? 'active' : ''}`} onClick={() => setHistoryTab('ruined')}>Spoilage Logs</button>
                 </div>
                 
-                {/* v1.2.40: STUDIO HEALTH SIGNAL */}
-                <div style={{ padding: '4px 12px', background: 'rgba(76,175,80,0.1)', color: '#4CAF50', fontSize: '10px', fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                   <div style={{ width: 6, height: 6, background: '#4CAF50', borderRadius: '50%', boxShadow: '0 0 5px #4CAF50' }} />
-                   STUDIO SYNC: {history.length} RECORDS IN VAULT
+                {/* v1.2.41: STUDIO HEALTH SIGNAL - Click for Deep Discovery */}
+                <div 
+                   onClick={async () => {
+                      try {
+                         const diag = await api.get('/diag/vault-status');
+                         alert(`VAULT DIAGNOSTIC:\nDB: ${diag.dbType}\nTables: ${diag.tables.join(', ')}\nCounts: ${JSON.stringify(diag.counts)}`);
+                      } catch (e) { alert(`DIAG FAIL: ${e.message}`); }
+                   }}
+                   style={{ padding: '4px 12px', background: 'rgba(76,175,80,0.1)', color: '#4CAF50', fontSize: '10px', fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'help' }}
+                >
+                   <div style={{ width: 6, height: 6, background: history.length > 0 ? '#4CAF50' : '#f44336', borderRadius: '50%', boxShadow: history.length > 0 ? '0 0 5px #4CAF50' : '0 0 5px #f44336' }} />
+                   STUDIO SYNC: {history.length} RECORDS IN VAULT (CLICK FOR PROBE)
                 </div>
 
                <div className="history-list">
