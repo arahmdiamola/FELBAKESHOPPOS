@@ -999,7 +999,6 @@ app.post('/api/reset', requireSystemAdmin, async (req, res) => {
     }
 
       await db.run("DELETE FROM settings WHERE key LIKE 'sync_%'");
-    }
 
     res.json({ success: true, message: `Successfully wiped: ${targets.join(', ')}` });
   } catch (err) {
