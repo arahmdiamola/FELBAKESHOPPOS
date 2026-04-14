@@ -340,18 +340,18 @@ export default function BakingPage() {
                    <button className={`tab-btn ${historyTab === 'ruined' ? 'active' : ''}`} onClick={() => setHistoryTab('ruined')}>Spoilage Logs</button>
                 </div>
                 
-                {/* v1.2.62: STUDIO HEALTH SIGNAL - DIVE */}
+                {/* v1.2.63: STUDIO HEALTH SIGNAL - SCHEMA LOCK */}
                 <div 
                    onClick={async () => {
                       try {
                          const diag = await api.get('/diag/vault-status');
-                         alert(`EMPIRE VAULT 1.2.62 (DIVE):\nStatus: ${diag.status}\nGhost Hunt: Found ${diag.ghostHunt?.bakesFound} records in ${diag.ghostHunt?.tablesChecked} tables.\n\nPort: ${diag.activePort}\n\nACTION: REFRESH AND RECORD ONE TEST BAKE.`);
+                         alert(`EMPIRE VAULT 1.2.63 (LOCK):\nStatus: ${diag.status}\nSchema: ${diag.identity?.schema}\nSearchPath: ${diag.identity?.searchPath}\nGhost Hunt: Found ${diag.ghostHunt?.bakesFound} in ${diag.ghostHunt?.tablesChecked} tables.\n\nACTION: IF VERSION < 1.2.63, RENDER DEPLOY IS LAGGIN'.`);
                       } catch (e) { alert(`DIAG FAIL (Check Render): ${e.message}`); }
                    }}
                    style={{ padding: '4px 12px', background: 'rgba(76,175,80,0.1)', color: '#4CAF50', fontSize: '10px', fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'help' }}
                 >
                    <div style={{ width: 6, height: 6, background: '#4CAF50', borderRadius: '50%', boxShadow: '0 0 5px #4CAF50' }} />
-                   STUDIO SYNC [v1.2.62]: {history.length} RECORDS IN VAULT (CLICK FOR GHOST HUNT)
+                   STUDIO SYNC [v1.2.63]: {history.length} RECORDS IN VAULT (CLICK FOR LOCK SCAN)
                 </div>
 
                <div className="history-list">

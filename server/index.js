@@ -486,45 +486,76 @@ app.get('/api/production/logs', async (req, res) => {
   res.json(logs);
 });
 
-// v1.2.62: ABSOLUTE FORENSIC DIVE - Deep Raw Scan & Pulse Check
+// v1.2.63: IMPERIAL SCHEMA LOCK - Mandatory Upgrade & Forensic Search Path
 app.get('/api/diag/vault-status', async (req, res) => {
   try {
     const rawUrl = process.env.DATABASE_URL || '';
     const activePort = rawUrl.split(':').pop()?.split('/')[0] || '5432';
     
     let allTables = [];
-    let identity = { user: 'Unknown', db: 'Unknown' };
+    let identity = { user: 'Unknown', db: 'Unknown', schema: 'Unknown', searchPath: 'Unknown' };
     let ghostHunt = { tablesChecked: 0, bakesFound: 0 };
     
     try {
-      const idRes = await db.get("SELECT current_user as user, current_database() as db");
-      identity = idRes || identity;
+      const q = "SELECT current_user as user, current_database() as db, current_schema() as sch, current_setting('search_path') as sp";
+      const idRes = await db.get(q);
+      identity = { 
+        user: idRes?.user || 'Unknown', 
+        db: idRes?.db || 'Unknown', 
+        schema: idRes?.sch || 'Unknown', 
+        searchPath: idRes?.sp || 'Unknown' 
+      };
+      
       const rows = await db.all("SELECT tablename as table_name FROM pg_catalog.pg_tables WHERE schemaname NOT IN ('pg_catalog', 'information_schema')");
       allTables = rows.map(t => t.table_name || '').filter(Boolean);
       
-      // DEEP GHOST HUNT: Scan all likely tables for records
       for (const table of allTables) {
         ghostHunt.tablesChecked++;
         try {
            const countRes = await db.get(`SELECT COUNT(*) as count FROM ${table}`);
-           if (countRes?.count > 0 && (table.includes('log') || table.includes('bake'))) {
+           if (countRes?.count > 0 && (table.toLowerCase().includes('log') || table.toLowerCase().includes('bake'))) {
              ghostHunt.bakesFound += countRes.count;
            }
         } catch (e) {}
       }
-    } catch (e) { console.error('Forensic Dive Fail:', e); }
+    } catch (e) { console.error('Schema Lock Scan Fail:', e); }
+
+    // 2. MANDATORY SCHEMA UPGRADE (Force all columns)
+    if (!allTables.includes('production_logs_v2')) {
+       try {
+         await db.run(`
+           CREATE TABLE IF NOT EXISTS production_logs_v2 (
+             id TEXT PRIMARY KEY, 
+             branch_id TEXT, 
+             user_id TEXT,
+             user_name TEXT,
+             product_id TEXT, 
+             product_name TEXT, 
+             quantity_produced REAL, 
+             estimated_yield REAL, 
+             date TEXT, 
+             notes TEXT, 
+             status TEXT DEFAULT 'in_oven', 
+             estimated_ready_time TEXT,
+             unit TEXT DEFAULT 'pcs'
+           )
+         `);
+         await db.run(`CREATE TABLE IF NOT EXISTS production_log_items_v2 (id SERIAL PRIMARY KEY, log_id TEXT, material_id TEXT, material_name TEXT, quantity_used REAL, unit TEXT)`);
+         allTables.push('production_logs_v2');
+       } catch (e) { console.error('Mandatory Upgrade Fail:', e); }
+    }
 
     res.json({
-      version: '1.2.62 (DIVE)',
+      version: '1.2.63 (LOCK)',
       activePort,
       identity: identity,
-      allTables: allTables.slice(0, 15),
+      allTables: allTables.slice(0, 20),
       ghostHunt: ghostHunt,
-      status: allTables.includes('production_logs_v2') ? 'STABLE' : 'REBUILDING',
-      recommendation: 'BRIDGE STABLE. PROCEED WITH TEST BAKE.'
+      status: allTables.includes('production_logs_v2') ? 'STABLE' : 'LOCKED-OUT',
+      recommendation: 'SCHEMA LOCKED. PIPE SECURE. PROCEED WITH TEST BAKE.'
     });
   } catch (err) {
-    res.status(500).json({ error: err.message, forensic: 'Crash in v1.2.62 dive' });
+    res.status(500).json({ error: err.message, forensic: 'Crash in v1.2.63 lock' });
   }
 });
 
