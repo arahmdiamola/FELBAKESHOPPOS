@@ -14,7 +14,7 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
 // --- Server Shield: Deployment Version Marker ---
-console.log('--- BAKERY POS SERVER V1.2.19: GLOBAL VISIBILITY ACTIVE ---');
+console.log('--- BAKERY POS SERVER V1.2.20: DATA RECOVERY ACTIVE ---');
 
 app.use((req, res, next) => {
   res.set('Cache-Control', 'no-store');
@@ -648,8 +648,8 @@ app.get('/api/production/active-batches', async (req, res) => {
 app.get('/api/production/logs', async (req, res) => {
   try {
     const { status, limit } = req.query;
-    const { query: v_query, params: v_params } = getBranchFilter(req);
-
+    // v1.2.20: UNIVERSAL RECOVERY - If we are looking for 'in_oven' or specific status, 
+    // bypass the branch filter to ensure data visibility during diagnostics.
     let sql = `
       SELECT 
         id, 
@@ -664,15 +664,22 @@ app.get('/api/production/logs', async (req, res) => {
         unit,
         notes
       FROM production_logs_v2 
-      WHERE ${v_query}
+      WHERE 1=1
     `;
-    let finalParams = [...v_params];
+    let finalParams = [];
     
     if (status) {
       sql += " AND status = ?";
       finalParams.push(status);
     }
     
+    // Strict branch filtering only for general history, not for active monitors
+    if (!status || status === 'completed') {
+       const { query: v_query, params: v_params } = getBranchFilter(req);
+       sql += ` AND ${v_query}`;
+       finalParams.push(...v_params);
+    }
+
     sql += " ORDER BY date DESC LIMIT ?";
     finalParams.push(limit ? parseInt(limit) : 100);
 
