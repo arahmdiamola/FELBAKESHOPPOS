@@ -257,9 +257,19 @@ export default function BakingPage() {
 
                     <label>Expected Yield</label>
                     <div className="yield-stepper">
-                       <button onClick={() => setQuantityToProduce(q => Math.max(1, q - 1))}><Minus size={14} /></button>
-                       <span className="yield-num">{quantityToProduce}</span>
-                       <button onClick={() => setQuantityToProduce(q => q + 1)}><Plus size={14} /></button>
+                      <button onClick={() => setQuantityToProduce(Math.max(1, quantityToProduce - 1))}><Minus size={14} /></button>
+                      <div 
+                        className="yield-num" 
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => {
+                          setEditingMaterial({ productName: targetProduct?.name || 'Batch', unit: 'pcs' });
+                          setKeypadValue(quantityToProduce.toString());
+                          setIsKeypadOpen(true);
+                        }}
+                      >
+                        {quantityToProduce}
+                      </div>
+                      <button onClick={() => setQuantityToProduce(quantityToProduce + 1)}><Plus size={14} /></button>
                     </div>
 
                     <button 
