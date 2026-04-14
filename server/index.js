@@ -11,7 +11,10 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: '50mb' })); // High limit for base64 images
+app.use(express.json({ limit: '50mb' }));
+
+// --- Server Shield: Deployment Version Marker ---
+console.log('--- BAKERY POS SERVER V1.1.0: ABSOLUTE SCHEMA GUARD ACTIVE ---');
 
 app.use((req, res, next) => {
   res.set('Cache-Control', 'no-store');
