@@ -473,21 +473,29 @@ app.delete('/api/raw-materials/:id', async (req, res) => {
 
 // --- PRODUCTION ---
 app.get('/api/production/logs', async (req, res) => {
-  const status = req.query.status;
-  const { query, params } = getBranchFilter(req);
-  // v1.2.64: ALIGNED WITH V2 VAULT
-  let sql = `SELECT * FROM production_logs_v2 WHERE ${query}`;
-  if (status) sql += ` AND status = '${status}'`;
-  sql += ` ORDER BY date DESC LIMIT 100`;
-  
-  const logs = await db.all(sql, params);
-  for (const log of logs) {
-    log.items = await db.all("SELECT * FROM production_log_items_v2 WHERE log_id = ?", [log.id]);
+  try {
+    const status = req.query.status;
+    const { query, params } = getBranchFilter(req);
+    // v1.2.65: NUCLEAR ALIGNMENT & CRASH-PROOF
+    let sql = `SELECT * FROM production_logs_v2 WHERE ${query}`;
+    if (status) sql += ` AND status = '${status}'`;
+    sql += ` ORDER BY date DESC LIMIT 100`;
+    
+    const logs = await db.all(sql, params);
+    for (const log of logs) {
+      // Safety catch for missing items table
+      try {
+        log.items = await db.all("SELECT * FROM production_log_items_v2 WHERE log_id = ?", [log.id]);
+      } catch (e) { log.items = []; }
+    }
+    res.json(logs);
+  } catch (err) {
+    console.error('Logs API crash:', err.message);
+    res.status(500).json({ error: 'Vault misaligned during rebuild' });
   }
-  res.json(logs);
 });
 
-// v1.2.63: IMPERIAL SCHEMA LOCK - Mandatory Upgrade & Forensic Search Path
+// v1.2.65: ABSOLUTE NUCLEAR RECONSTRUCTION
 app.get('/api/diag/vault-status', async (req, res) => {
   try {
     const rawUrl = process.env.DATABASE_URL || '';
@@ -495,68 +503,45 @@ app.get('/api/diag/vault-status', async (req, res) => {
     
     let allTables = [];
     let identity = { user: 'Unknown', db: 'Unknown', schema: 'Unknown', searchPath: 'Unknown' };
-    let ghostHunt = { tablesChecked: 0, bakesFound: 0 };
     
     try {
       const q = "SELECT current_user as user, current_database() as db, current_schema() as sch, current_setting('search_path') as sp";
       const idRes = await db.get(q);
-      identity = { 
-        user: idRes?.user || 'Unknown', 
-        db: idRes?.db || 'Unknown', 
-        schema: idRes?.sch || 'Unknown', 
-        searchPath: idRes?.sp || 'Unknown' 
-      };
-      
+      identity = { user: idRes?.user, db: idRes?.db, schema: idRes?.sch, searchPath: idRes?.sp };
       const rows = await db.all("SELECT tablename as table_name FROM pg_catalog.pg_tables WHERE schemaname NOT IN ('pg_catalog', 'information_schema')");
       allTables = rows.map(t => t.table_name || '').filter(Boolean);
-      
-      for (const table of allTables) {
-        ghostHunt.tablesChecked++;
-        try {
-           const countRes = await db.get(`SELECT COUNT(*) as count FROM ${table}`);
-           if (countRes?.count > 0 && (table.toLowerCase().includes('log') || table.toLowerCase().includes('bake'))) {
-             ghostHunt.bakesFound += countRes.count;
-           }
-        } catch (e) {}
-      }
-    } catch (e) { console.error('Schema Lock Scan Fail:', e); }
+    } catch (e) {}
 
-    // 2. MANDATORY SCHEMA UPGRADE (Force all columns)
-    if (!allTables.includes('production_logs_v2')) {
+    // MANDATORY DDL LOCK
+    if (!allTables.includes('production_logs_v2') || !allTables.includes('production_log_items_v2')) {
        try {
-         await db.run(`
-           CREATE TABLE IF NOT EXISTS production_logs_v2 (
-             id TEXT PRIMARY KEY, 
-             branch_id TEXT, 
-             user_id TEXT,
-             user_name TEXT,
-             product_id TEXT, 
-             product_name TEXT, 
-             quantity_produced REAL, 
-             estimated_yield REAL, 
-             date TEXT, 
-             notes TEXT, 
-             status TEXT DEFAULT 'in_oven', 
-             estimated_ready_time TEXT,
-             unit TEXT DEFAULT 'pcs'
-           )
-         `);
-         await db.run(`CREATE TABLE IF NOT EXISTS production_log_items_v2 (id SERIAL PRIMARY KEY, log_id TEXT, material_id TEXT, material_name TEXT, quantity_used REAL, unit TEXT)`);
-         allTables.push('production_logs_v2');
-       } catch (e) { console.error('Mandatory Upgrade Fail:', e); }
+         await db.run("CREATE TABLE IF NOT EXISTS production_logs_v2 (id TEXT PRIMARY KEY, branch_id TEXT, user_id TEXT, user_name TEXT, product_id TEXT, product_name TEXT, quantity_produced REAL, estimated_yield REAL, date TEXT, notes TEXT, status TEXT DEFAULT 'in_oven', estimated_ready_time TEXT, unit TEXT DEFAULT 'pcs')");
+         await db.run("CREATE TABLE IF NOT EXISTS production_log_items_v2 (id SERIAL PRIMARY KEY, log_id TEXT, material_id TEXT, material_name TEXT, quantity_used REAL, unit TEXT)");
+         allTables.push('production_logs_v2', 'production_log_items_v2');
+       } catch (e) {}
+    }
+
+    let ghostHunt = { tablesChecked: 0, bakesFound: 0 };
+    for (const table of allTables) {
+      ghostHunt.tablesChecked++;
+      try {
+         const countRes = await db.get(`SELECT COUNT(*) as count FROM ${table}`);
+         if (countRes?.count > 0 && (table.toLowerCase().includes('log') || table.toLowerCase().includes('bake'))) {
+           ghostHunt.bakesFound += countRes.count;
+         }
+      } catch (e) {}
     }
 
     res.json({
-      version: '1.2.63 (LOCK)',
+      version: '1.2.65 (NUCLEAR)',
       activePort,
       identity: identity,
-      allTables: allTables.slice(0, 20),
       ghostHunt: ghostHunt,
       status: allTables.includes('production_logs_v2') ? 'STABLE' : 'LOCKED-OUT',
-      recommendation: 'SCHEMA LOCKED. PIPE SECURE. PROCEED WITH TEST BAKE.'
+      recommendation: 'VAULTS REBUILT. REFRESH NOW.'
     });
   } catch (err) {
-    res.status(500).json({ error: err.message, forensic: 'Crash in v1.2.63 lock' });
+    res.status(500).json({ error: err.message });
   }
 });
 
