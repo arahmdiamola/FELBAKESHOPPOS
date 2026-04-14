@@ -56,12 +56,12 @@ async function logAction(req, action, details = null) {
   }
 }
 
-// --- DIAGNOSTIC: RAW BRANCH DATA ---
-app.get('/api/diag/branches', async (req, res) => {
+// --- DIAGNOSTIC: RAW OVEN DATA ---
+app.get('/api/diag/oven', async (req, res) => {
   try {
-    const branches = await db.all("SELECT * FROM branches");
-    const sessions = await db.all("SELECT * FROM branch_sessions");
-    res.json({ branches, sessions, serverTime: new Date().toISOString() });
+    const logs = await db.all("SELECT * FROM production_logs_v2 LIMIT 10");
+    const headerBranch = req.headers['x-branch-id'];
+    res.json({ logs, headerBranch, serverVersion: 'v1.2.16' });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
