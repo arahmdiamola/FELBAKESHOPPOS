@@ -486,21 +486,20 @@ app.get('/api/production/logs', async (req, res) => {
   res.json(logs);
 });
 
-// v1.2.48: ABSOLUTE VAULT UNMASKING - Deep Postgres Probe
+// v1.2.49: EMPIRE DIRECT CONNECTION - Pooler Bypass & Native Sync
 app.get('/api/diag/vault-status', async (req, res) => {
   try {
     const isPostgres = !!process.env.DATABASE_URL;
+    const isPooler = process.env.DATABASE_URL?.includes('pooler.supabase.com');
     let allTables = [];
-    let initError = null;
+    let initError = isPooler ? 'POOLER DETECTED: Migration Blocked' : null;
     let identity = { user: 'Unknown', db: 'Unknown' };
     
-    // 1. IDENTITY & DEEP SCAN
     try {
       if (isPostgres) {
          const idRes = await db.get("SELECT current_user as user, current_database() as db");
          identity = idRes || identity;
-         
-         const rows = await db.all("SELECT tablename as table_name FROM pg_catalog.pg_tables WHERE schemaname NOT IN ('pg_catalog', 'information_schema')");
+         const rows = await db.all("SELECT tablename as table_name FROM pg_catalog.pg_tables WHERE schemaname = 'public'");
          allTables = rows.map(t => t.table_name || '').filter(Boolean);
       } else {
          const rows = await db.all("SELECT name as table_name FROM sqlite_master WHERE type='table'");
@@ -508,30 +507,25 @@ app.get('/api/diag/vault-status', async (req, res) => {
       }
     } catch (e) { console.error('Deep Scan Fail:', e); }
 
-    // 2. FORCE INITIALIZE IF V2 IS MISSING
-    if (!allTables.includes('production_logs_v2')) {
+    // 2. ABSOLUTE INITIALIZATION (Only if not pooler)
+    if (!allTables.includes('production_logs_v2') && !isPooler) {
        try {
          await db.run(`CREATE TABLE IF NOT EXISTS production_logs_v2 (id TEXT PRIMARY KEY, branch_id TEXT, product_id TEXT, product_name TEXT, quantity_produced REAL, estimated_yield REAL, date TEXT, status TEXT DEFAULT 'in_oven', unit TEXT, notes TEXT)`);
          await db.run(`CREATE TABLE IF NOT EXISTS production_log_items_v2 (id SERIAL PRIMARY KEY, log_id TEXT, material_id TEXT, material_name TEXT, quantity_used REAL, unit TEXT)`);
        } catch (e) { initError = e.message; }
     }
 
-    const tables = allTables.filter(t => typeof t === 'string' && t.trim() !== '');
-
     res.json({
-      version: '1.2.48 (UNMASKED)',
+      version: '1.2.49 (DIRECT)',
       isProduction: isPostgres,
-      dbType: isPostgres ? 'POSTGRES' : 'SQLITE (LOCAL)',
+      isPooler: isPooler,
       identity: identity,
-      allTablesFound: tables,
+      allTablesFound: allTables,
       initError: initError,
-      env: { 
-        DATABASE_URL: !!process.env.DATABASE_URL,
-        DB_HOST: process.env.DATABASE_URL ? process.env.DATABASE_URL.split('@')[1]?.split('/')[0] : 'None'
-      }
+      recommendation: isPooler ? 'SWAP TO DIRECT CONNECTION IN RENDER (Port 5432/db.supabase.co)' : 'Signal Stable'
     });
   } catch (err) {
-    res.status(500).json({ error: err.message, forensic: 'Crash in v1.2.48 unmask' });
+    res.status(500).json({ error: err.message, forensic: 'Crash in v1.2.49 direct-check' });
   }
 });
 
@@ -970,8 +964,7 @@ app.post('/api/reset', requireSystemAdmin, async (req, res) => {
     
     if (targets.includes('preorders')) {
       await db.run("DELETE FROM preorders");
-      console.log("[Reset] Wiped Pre-orders");
-    }
+);
 
       await db.run("DELETE FROM settings WHERE key LIKE 'sync_%'");
 
