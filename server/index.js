@@ -14,7 +14,7 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
 // --- Server Shield: Deployment Version Marker ---
-console.log('--- BAKERY POS SERVER V1.2.5: POWER-SYNC ACTIVE ---');
+console.log('--- BAKERY POS SERVER V1.2.7: STATUS ALIGNMENT ACTIVE ---');
 
 app.use((req, res, next) => {
   res.set('Cache-Control', 'no-store');
@@ -486,8 +486,12 @@ app.get('/api/production/logs', async (req, res) => {
 });
 
 app.post('/api/production/log', async (req, res) => {
-  const { id, productId, productName, quantityProduced, estimatedYield, items, date, notes, status } = req.body;
-  const branchId = req.headers['x-branch-id'];
+    const {
+      productId, productName, quantityProduced, estimatedYield,
+      items, notes, status, branchId, bakerId, bakerName
+    } = req.body;
+
+    const finalStatus = quantityProduced > 0 ? 'completed' : (status || 'in_oven');
   const userId = req.headers['x-user-id'];
   const userNameToken = req.headers['x-user-name'] || 'User';
 
@@ -606,7 +610,7 @@ app.post('/api/production/void', async (req, res) => {
 
 app.get('/api/production/active-batches', async (req, res) => {
   try {
-    const batches = await db.all("SELECT * FROM production_logs_v2 WHERE status = 'started' ORDER BY date DESC");
+    const batches = await db.all("SELECT * FROM production_logs_v2 WHERE status = 'in_oven' ORDER BY date DESC");
     res.json(batches);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -615,7 +619,19 @@ app.get('/api/production/active-batches', async (req, res) => {
 
 app.get('/api/production/logs', async (req, res) => {
   try {
-    const logs = await db.all("SELECT * FROM production_logs_v2 ORDER BY date DESC LIMIT 100");
+    const { status, limit } = req.query;
+    let query = "SELECT * FROM production_logs_v2";
+    let params = [];
+    
+    if (status) {
+      query += " WHERE status = ?";
+      params.push(status);
+    }
+    
+    query += " ORDER BY date DESC LIMIT ?";
+    params.push(limit ? parseInt(limit) : 100);
+
+    const logs = await db.all(query, params);
     res.json(logs);
   } catch (err) {
     res.status(500).json({ error: err.message });
