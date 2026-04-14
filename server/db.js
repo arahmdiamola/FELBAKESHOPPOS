@@ -122,6 +122,33 @@ async function robustColumnRepair(db, table, oldColVariants, newColName, isNotNu
   }
 }
 
+async function forceRebuildIfBroken(db) {
+  try {
+    const tableToCheck = 'production_log_items';
+    const brokenColumns = ['materialid', 'materialId', 'quantityused', 'quantityUsed', 'productionlogid'];
+    
+    const result = await db.all(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = $1 
+      AND table_schema = 'public'
+    `, [tableToCheck]);
+    
+    if (result.length === 0) return; // Table not created yet
+    const actualCols = result.map(r => r.column_name);
+    const hasGhost = brokenColumns.some(ghost => actualCols.includes(ghost));
+
+    if (hasGhost) {
+      console.log(`[Factory Reset] DETECTED BROKEN SCHEMA in ${tableToCheck}. Incinerating...`);
+      await db.run('DROP TABLE IF EXISTS production_log_items CASCADE');
+      await db.run('DROP TABLE IF EXISTS production_logs CASCADE');
+      console.log('[Factory Reset] Tables cleared. Re-initializing fresh schema...');
+    }
+  } catch (err) {
+    console.warn('[Factory Reset Warning] Reset check failed:', err.message);
+  }
+}
+
 async function ensureColumnRenamed(db, table, oldColNames, newColName) {
   try {
     // 1. Get all columns for this table
@@ -454,6 +481,38 @@ export async function initDb() {
       { table: 'branch_sessions', variants: ['userId', 'userid', '"userId"'], target: 'user_id' },
       { table: 'branch_sessions', variants: ['lastSeen', 'lastseen', '"lastSeen"'], target: 'last_seen' }
     ];
+
+    // 1.5 Absolute Factory Reset (v1.2.0)
+    await forceRebuildIfBroken(db);
+
+    // Initial table creation
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS production_logs (
+        id TEXT PRIMARY KEY,
+        product_id TEXT NOT NULL,
+        product_name TEXT NOT NULL,
+        quantity_produced INTEGER NOT NULL,
+        unit TEXT,
+        estimated_yield INTEGER,
+        status TEXT DEFAULT 'started',
+        start_time TEXT,
+        end_time TEXT,
+        user_id TEXT,
+        branch_id TEXT
+      )
+    `);
+
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS production_log_items (
+        id TEXT PRIMARY KEY,
+        production_log_id TEXT NOT NULL,
+        material_id TEXT NOT NULL,
+        material_name TEXT NOT NULL,
+        quantity_used REAL NOT NULL,
+        unit TEXT,
+        cost_price REAL DEFAULT 0
+      )
+    `);
 
     // 2. Final Standardization Run
     console.log('[Migration] Starting Global Casing Standardization...');
