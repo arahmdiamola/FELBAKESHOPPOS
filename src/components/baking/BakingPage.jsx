@@ -354,19 +354,7 @@ export default function BakingPage() {
                    <button className={`tab-btn ${historyTab === 'ruined' ? 'active' : ''}`} onClick={() => setHistoryTab('ruined')}>Spoilage Logs</button>
                 </div>
                 
-                {/* v1.2.65: STUDIO HEALTH SIGNAL - NUCLEAR */}
-                <div 
-                   onClick={async () => {
-                      try {
-                         const diag = await api.get('/diag/vault-status');
-                         alert(`EMPIRE VAULT 1.2.65 (NUCLEAR):\nStatus: ${diag.status}\nVaults: ${diag.ghostHunt?.tablesChecked} Found\nRecords Found: ${diag.ghostHunt?.bakesFound}\n\nACTION: REFRESH AGAIN - VISIBILITY RESTORED!`);
-                      } catch (e) { alert(`DIAG FAIL (Check Render): ${e.message}`); }
-                   }}
-                   style={{ padding: '4px 12px', background: 'rgba(76,175,80,0.1)', color: '#4CAF50', fontSize: '10px', fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'help' }}
-                >
-                   <div style={{ width: 6, height: 6, background: '#4CAF50', borderRadius: '50%', boxShadow: '0 0 5px #4CAF50' }} />
-                   STUDIO SYNC [v1.2.65]: {history.length} RECORDS IN VAULT (CLICK FOR RECONSTRUCTION)
-                </div>
+
 
                <div className="history-list">
                   {history.filter(log => (historyTab === 'success' ? log.status === 'completed' : log.status === 'ruined')).length === 0 ? (

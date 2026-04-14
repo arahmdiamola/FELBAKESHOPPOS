@@ -14,7 +14,7 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
 // --- Server Shield: Deployment Version Marker ---
-console.log('--- BAKERY POS SERVER V1.2.40: ABSOLUTE SYNC ACTIVE ---');
+console.log('--- BAKERY POS SERVER V1.2.66: PRODUCTION READY ---');
 
 app.use((req, res, next) => {
   res.set('Cache-Control', 'no-store');
@@ -56,16 +56,7 @@ async function logAction(req, action, details = null) {
   }
 }
 
-// --- DIAGNOSTIC: RAW OVEN DATA ---
-app.get('/api/diag/oven', async (req, res) => {
-  try {
-    const logs = await db.all("SELECT * FROM production_logs_v2 LIMIT 10");
-    const headerBranch = req.headers['x-branch-id'];
-    res.json({ logs, headerBranch, serverVersion: 'v1.2.16' });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
+
 
 // Helper to append branch condition (strictly enforced by role)
 const getBranchFilter = (req) => {
@@ -477,7 +468,6 @@ app.get('/api/production/logs', async (req, res) => {
     const status = req.query.status;
     const { query, params } = getBranchFilter(req);
     
-    // v1.2.65: NUCLEAR ALIGNMENT & CRASH-PROOF
     let sql = `
       SELECT 
         id, 
@@ -502,7 +492,6 @@ app.get('/api/production/logs', async (req, res) => {
     const logs = await db.all(sql, params);
     for (const log of logs) {
       try {
-        // v1.2.66: FIXED COLUMN ALIGNMENT
         log.items = await db.all("SELECT * FROM production_log_items_v2 WHERE production_log_id = ?", [log.id]);
       } catch (e) { 
         log.items = []; 
@@ -511,108 +500,7 @@ app.get('/api/production/logs', async (req, res) => {
     res.json(logs);
   } catch (err) {
     console.error('Logs API crash:', err.message);
-    res.status(500).json({ error: 'Vault misaligned during rebuild' });
-  }
-});
-
-// v1.2.65: ABSOLUTE NUCLEAR RECONSTRUCTION
-app.get('/api/diag/vault-status', async (req, res) => {
-  try {
-    const rawUrl = process.env.DATABASE_URL || '';
-    const activePort = rawUrl.split(':').pop()?.split('/')[0] || '5432';
-    
-    let allTables = [];
-    let identity = { user: 'Unknown', db: 'Unknown', schema: 'Unknown', searchPath: 'Unknown' };
-    
-    try {
-      const q = "SELECT current_user as user, current_database() as db, current_schema() as sch, current_setting('search_path') as sp";
-      const idRes = await db.get(q);
-      identity = { user: idRes?.user, db: idRes?.db, schema: idRes?.sch, searchPath: idRes?.sp };
-      const rows = await db.all("SELECT tablename as table_name FROM pg_catalog.pg_tables WHERE schemaname NOT IN ('pg_catalog', 'information_schema')");
-      allTables = rows.map(t => t.table_name || '').filter(Boolean);
-    } catch (e) {}
-
-    // MANDATORY DDL LOCK
-    if (!allTables.includes('production_logs_v2') || !allTables.includes('production_log_items_v2')) {
-       try {
-         await db.run("CREATE TABLE IF NOT EXISTS production_logs_v2 (id TEXT PRIMARY KEY, branch_id TEXT, user_id TEXT, user_name TEXT, product_id TEXT, product_name TEXT, quantity_produced REAL, estimated_yield REAL, date TEXT, notes TEXT, status TEXT DEFAULT 'in_oven', estimated_ready_time TEXT, unit TEXT DEFAULT 'pcs')");
-         // v1.2.66: UNIFIED SCHEMA
-         await db.run("CREATE TABLE IF NOT EXISTS production_log_items_v2 (id TEXT PRIMARY KEY, production_log_id TEXT, material_id TEXT, material_name TEXT, quantity_used REAL, unit TEXT, cost_price REAL)");
-         allTables.push('production_logs_v2', 'production_log_items_v2');
-       } catch (e) {}
-    }
-
-    // v1.2.66 SELF-HEALING: Column Migration for Vault misalignments
-    if (allTables.includes('production_log_items_v2')) {
-      try {
-        const cols = await db.all("PRAGMA table_info(production_log_items_v2)");
-        const colNames = cols.map(c => c.name);
-        
-        // If we still have 'log_id' instead of 'production_log_id', or missing cost_price
-        // and we suspect this is the broken v1.2.65 schema, we can safely rebuild it 
-        // since data insertion was previously failing anyway.
-        if (colNames.includes('log_id') || !colNames.includes('cost_price')) {
-           console.log("[Vault Fix] Detected misaligned log items table. Rebuilding...");
-           await db.run("DROP TABLE production_log_items_v2");
-           await db.run("CREATE TABLE production_log_items_v2 (id TEXT PRIMARY KEY, production_log_id TEXT, material_id TEXT, material_name TEXT, quantity_used REAL, unit TEXT, cost_price REAL)");
-        }
-      } catch (e) { console.error('Migration failed:', e.message); }
-    }
-
-    let ghostHunt = { tablesChecked: 0, bakesFound: 0 };
-    for (const table of allTables) {
-      ghostHunt.tablesChecked++;
-      try {
-         const countRes = await db.get(`SELECT COUNT(*) as count FROM ${table}`);
-         if (countRes?.count > 0 && (table.toLowerCase().includes('log') || table.toLowerCase().includes('bake'))) {
-           ghostHunt.bakesFound += countRes.count;
-         }
-      } catch (e) {}
-    }
-
-    res.json({
-      version: '1.2.65 (NUCLEAR)',
-      activePort,
-      identity: identity,
-      ghostHunt: ghostHunt,
-      status: allTables.includes('production_logs_v2') ? 'STABLE' : 'LOCKED-OUT',
-      recommendation: 'VAULTS REBUILT. REFRESH NOW.'
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// NEW: Pulse Check for Test Bake
-app.post('/api/vault/pulse-test', async (req, res) => {
-  try {
-    const testId = `TEST-${Date.now()}`;
-    await db.run(
-      "INSERT INTO production_logs_v2 (id, product_name, quantity_produced, date, status) VALUES (?, ?, ?, ?, ?)",
-      [testId, 'VAULT PULSE TEST', 1.0, new Date().toISOString().split('T')[0], 'completed']
-    );
-    res.json({ success: true, id: testId });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// NEW: Vault Teleportation for recovery
-app.post('/api/vault/recover-legacy', async (req, res) => {
-  try {
-    // This looks for any orphaned records in the system and migrates them to v2
-    const legacyRecords = await db.all("SELECT * FROM production_logs WHERE id NOT IN (SELECT id FROM production_logs_v2)").catch(() => []);
-    
-    for (const log of legacyRecords) {
-      await db.run(
-        "INSERT INTO production_logs_v2 (id, branch_id, product_id, product_name, quantity_produced, estimated_yield, date, status, unit, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        [log.id, log.branch_id, log.product_id, log.product_name, log.quantity_produced, log.estimated_yield, log.date, log.status, log.unit, log.notes]
-      ).catch(e => console.error('Teleport fail:', log.id, e.message));
-    }
-    
-    res.json({ success: true, count: legacyRecords.length, message: `Teleported ${legacyRecords.length} bakes to the new vault.` });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Data vault synchronization failed' });
   }
 });
 
