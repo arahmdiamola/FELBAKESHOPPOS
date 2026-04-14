@@ -64,8 +64,10 @@ export default function BakingPage() {
     try {
       const status = historyTab === 'success' ? 'completed' : 'ruined';
       const data = await api.get(`/production/logs?status=${status}`);
-      setHistory(data);
-    } catch (err) {}
+      setHistory(Array.isArray(data) ? data : []);
+    } catch (err) {
+      addToast(`History Fetch Failed: ${err.message}`, 'error');
+    }
   };
 
   const fetchActiveBatches = async () => {
@@ -75,8 +77,10 @@ export default function BakingPage() {
       const data = res.batches || res; 
       setActiveBatches(Array.isArray(data) ? data : []);
       const recentRuined = await api.get('/production/logs?status=ruined&limit=5');
-      setAlerts(recentRuined);
-    } catch (err) {}
+      setAlerts(Array.isArray(recentRuined) ? recentRuined : []);
+    } catch (err) {
+      addToast(`Live Oven Signal Lost: ${err.message}`, 'error');
+    }
   };
 
   const filteredMaterials = useMemo(() => {
@@ -351,10 +355,10 @@ export default function BakingPage() {
 
            {/* Section 2: Production Logs */}
            <div className="history-studio">
-              <div className="history-tabs">
-                 <button className={`tab-btn ${historyTab === 'success' ? 'active' : ''}`} onClick={() => setHistoryTab('success')}>Success Logs</button>
-                 <button className={`tab-btn ${historyTab === 'waste' ? 'active' : ''}`} onClick={() => setHistoryTab('waste')}>Spoilage Logs</button>
-              </div>
+               <div className="history-tabs">
+                  <button className={`tab-btn ${historyTab === 'success' ? 'active' : ''}`} onClick={() => setHistoryTab('success')}>Success Logs</button>
+                  <button className={`tab-btn ${historyTab === 'ruined' ? 'active' : ''}`} onClick={() => setHistoryTab('ruined')}>Spoilage Logs</button>
+               </div>
               <div className="history-list">
                  {history.length === 0 ? (
                     <div className="history-empty">No activity found</div>
