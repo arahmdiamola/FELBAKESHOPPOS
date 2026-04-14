@@ -345,7 +345,7 @@ export default function BakingPage() {
                    onClick={async () => {
                       try {
                          const diag = await api.get('/diag/vault-status');
-                         alert(`VAULT DIAGNOSTIC:\nDB: ${diag.dbType}\nTables: ${diag.tables.join(', ')}\nCounts: ${JSON.stringify(diag.counts)}`);
+                         alert(`VAULT DIAGNOSTIC:\nDB: ${diag.dbType}\nProduction Tables: ${(diag.productionTables || []).join(', ')}\nCounts: ${JSON.stringify(diag.counts || {})}\nEnv: ${JSON.stringify(diag.env || {})}`);
                       } catch (e) { alert(`DIAG FAIL: ${e.message}`); }
                    }}
                    style={{ padding: '4px 12px', background: 'rgba(76,175,80,0.1)', color: '#4CAF50', fontSize: '10px', fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'help' }}
