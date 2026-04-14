@@ -486,14 +486,14 @@ app.get('/api/production/logs', async (req, res) => {
   res.json(logs);
 });
 
-// v1.2.53: ABSOLUTE SESSION BRIDGE - Port 6543 Optimization
+// v1.2.54: ABSOLUTE FORCE SIGNAL - Nuclear Overpass & Port Mirror
 app.get('/api/diag/vault-status', async (req, res) => {
   try {
     const rawUrl = process.env.DATABASE_URL || '';
     const isPostgres = !!rawUrl;
-    const isTransactionPooler = rawUrl.includes('pooler') && rawUrl.includes(':5432');
-    const isSessionPooler = rawUrl.includes('pooler') && rawUrl.includes(':6543');
-    const urlMirror = rawUrl.substring(0, 15) + '...';
+    const activePort = rawUrl.split(':').pop()?.split('/')[0] || '5432';
+    const activeHost = rawUrl.split('@')[1]?.split(':')[0] || 'Unknown';
+    const isTransactionPooler = rawUrl.includes('pooler') && activePort === '5432';
     
     let allTables = [];
     let identity = { user: 'Unknown', db: 'Unknown' };
@@ -505,30 +505,31 @@ app.get('/api/diag/vault-status', async (req, res) => {
          const rows = await db.all("SELECT tablename as table_name FROM pg_catalog.pg_tables WHERE schemaname = 'public'");
          allTables = rows.map(t => t.table_name || '').filter(Boolean);
       }
-    } catch (e) { console.error('Bridge Scan Fail:', e); }
+    } catch (e) { console.error('Force Scan Fail:', e); }
 
-    // 2. AUTO-INIT (Allow on Session Pooler or Direct)
+    // 2. NUCLEAR INITIALIZE (Forced attempt even on poolers)
     let initStatus = 'STANDBY';
-    if (!allTables.includes('production_logs_v2') && !isTransactionPooler) {
+    if (!allTables.includes('production_logs_v2')) {
        try {
          await db.run(`CREATE TABLE IF NOT EXISTS production_logs_v2 (id TEXT PRIMARY KEY, branch_id TEXT, product_id TEXT, product_name TEXT, quantity_produced REAL, estimated_yield REAL, date TEXT, status TEXT DEFAULT 'in_oven', unit TEXT, notes TEXT)`);
          await db.run(`CREATE TABLE IF NOT EXISTS production_log_items_v2 (id SERIAL PRIMARY KEY, log_id TEXT, material_id TEXT, material_name TEXT, quantity_used REAL, unit TEXT)`);
          initStatus = 'SUCCESS: Vault Rebuilt';
-       } catch (e) { initStatus = 'INIT FAIL: ' + e.message; }
+       } catch (e) { initStatus = 'CRITICAL FAIL: ' + e.message; }
+    } else {
+       initStatus = 'ACTIVE: Tables Found';
     }
 
     res.json({
-      version: '1.2.53 (SESSION)',
-      isPostgres,
+      version: '1.2.54 (FORCE)',
+      activePort,
+      activeHost,
       isTransactionPooler,
-      isSessionPooler,
       identity: identity,
-      urlMirror: urlMirror,
       initStatus: initStatus,
-      recommendation: isTransactionPooler ? 'CRITICAL: Port 5432 Pooler blocks data! Swap to Port 6543 (Session Mode)' : 'SIGNAL OPTIMAL'
+      recommendation: isTransactionPooler ? 'WARNING: Port 5432 detected. If tables miss, swap to 6543 in Render Environment.' : 'SIGNAL STABLE'
     });
   } catch (err) {
-    res.status(500).json({ error: err.message, forensic: 'Crash in v1.2.53 bridge' });
+    res.status(500).json({ error: err.message, forensic: 'Crash in v1.2.54 force' });
   }
 });
 
