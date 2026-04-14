@@ -486,77 +486,60 @@ app.get('/api/production/logs', async (req, res) => {
   res.json(logs);
 });
 
-// v1.2.45: ABSOLUTE EMPIRE RESTORATION - Forensic Scan & Force Initialize
+// v1.2.47: ABSOLUTE SIGNAL FORCE - Global Scan & Discovery
 app.get('/api/diag/vault-status', async (req, res) => {
   try {
     const isPostgres = !!process.env.DATABASE_URL;
     let allTables = [];
+    let initError = null;
     
-    // 1. SCAN FOR EVERY TABLE
-    if (isPostgres) {
-       const rows = await db.all("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'");
-       allTables = rows.map(t => t.table_name || t.TABLE_NAME || '');
-    } else {
-       const rows = await db.all("SELECT name as table_name FROM sqlite_master WHERE type='table'");
-       allTables = rows.map(t => t.table_name || '');
-    }
-    
+    // 1. GLOBAL SCHEMA SCAN
+    try {
+      if (isPostgres) {
+         const rows = await db.all("SELECT table_name FROM information_schema.tables"); // All schemas
+         allTables = rows.map(t => t.table_name || t.TABLE_NAME || '').filter(Boolean);
+      } else {
+         const rows = await db.all("SELECT name as table_name FROM sqlite_master WHERE type='table'");
+         allTables = rows.map(t => t.table_name || '').filter(Boolean);
+      }
+    } catch (e) { console.error('Scan Fail:', e); }
+
     // 2. FORCE INITIALIZE IF V2 IS MISSING
     if (!allTables.includes('production_logs_v2')) {
-       console.log('[Forensic] v2 Tables missing. Initializing Ghost Vault...');
-       await db.run(`
-          CREATE TABLE IF NOT EXISTS production_logs_v2 (
-            id TEXT PRIMARY KEY,
-            branch_id TEXT,
-            product_id TEXT,
-            product_name TEXT,
-            quantity_produced REAL,
-            estimated_yield REAL,
-            estimated_ready_time TEXT,
-            date TEXT,
-            status TEXT DEFAULT 'in_oven',
-            unit TEXT,
-            notes TEXT
-          )
-       `);
-       await db.run(`
-          CREATE TABLE IF NOT EXISTS production_log_items_v2 (
-            id SERIAL PRIMARY KEY,
-            log_id TEXT,
-            material_id TEXT,
-            material_name TEXT,
-            quantity_used REAL,
-            unit TEXT
-          )
-       `);
-       // Re-scan after init
-       const rows = isPostgres 
-          ? await db.all("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'")
-          : await db.all("SELECT name as table_name FROM sqlite_master WHERE type='table'");
-       allTables = rows.map(t => t.table_name || t.TABLE_NAME || '');
+       try {
+         await db.run(`
+            CREATE TABLE IF NOT EXISTS production_logs_v2 (
+              id TEXT PRIMARY KEY,
+              branch_id TEXT,
+              product_id TEXT,
+              product_name TEXT,
+              quantity_produced REAL,
+              estimated_yield REAL,
+              date TEXT,
+              status TEXT DEFAULT 'in_oven',
+              unit TEXT,
+              notes TEXT
+            )
+         `);
+         await db.run(`CREATE TABLE IF NOT EXISTS production_log_items_v2 (id SERIAL PRIMARY KEY, log_id TEXT, material_id TEXT, material_name TEXT, quantity_used REAL, unit TEXT)`);
+       } catch (e) { initError = e.message; }
     }
 
     const tables = allTables.filter(t => typeof t === 'string' && t.trim() !== '');
 
-    let stats = {
+    res.json({
+      version: '1.2.47 (ABSOLUTE)',
       isProduction: isPostgres,
       dbType: isPostgres ? 'POSTGRES' : 'SQLITE (LOCAL)',
       allTablesFound: tables,
-      counts: {},
-      env: { DATABASE_URL_PRESENT: !!process.env.DATABASE_URL }
-    };
-
-    const targetTables = tables.filter(t => t.toLowerCase().includes('production'));
-    for (const table of targetTables) {
-       try {
-         const c = await db.get(`SELECT COUNT(*) as count FROM ${table}`);
-         stats.counts[table] = c.count;
-       } catch (e) { stats.counts[table] = `Scan Error: ${e.message}`; }
-    }
-
-    res.json(stats);
+      initError: initError,
+      env: { 
+        DATABASE_URL: !!process.env.DATABASE_URL,
+        DB_HOST: process.env.DATABASE_URL ? process.env.DATABASE_URL.split('@')[1]?.split('/')[0] : 'None'
+      }
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message, forensic: 'Crash in forensic vault scan' });
+    res.status(500).json({ error: err.message, forensic: 'Crash in v1.2.47 scan' });
   }
 });
 
