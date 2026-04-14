@@ -955,7 +955,7 @@ app.post('/api/reset', requireSystemAdmin, async (req, res) => {
     
     if (targets.includes('preorders')) {
       await db.run("DELETE FROM preorders");
-);
+    }
 
       await db.run("DELETE FROM settings WHERE key LIKE 'sync_%'");
 
