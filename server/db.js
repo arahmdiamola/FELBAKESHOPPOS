@@ -472,23 +472,30 @@ export async function initDb() {
     */
 
     // Initial table creation (Legacy cleanup still active for old tables)
-    await db.run(`
-      CREATE TABLE IF NOT EXISTS production_logs_v2 (
-        id TEXT PRIMARY KEY,
-        branch_id TEXT,
-        user_id TEXT,
-        user_name TEXT,
-        product_id TEXT,
-        product_name TEXT,
-        quantity_produced REAL DEFAULT 0,
-        estimated_yield REAL DEFAULT 0,
-        date TEXT,
-        notes TEXT,
-        status TEXT,
-        unit TEXT,
-        estimated_ready_time TEXT
-      )
-    `);
+        await db.run(`
+          CREATE TABLE IF NOT EXISTS production_logs_v2 (
+            id TEXT PRIMARY KEY,
+            branch_id TEXT,
+            user_id TEXT,
+            user_name TEXT,
+            product_id TEXT,
+            product_name TEXT,
+            quantity_produced REAL DEFAULT 0,
+            estimated_yield REAL DEFAULT 0,
+            date TEXT,
+            notes TEXT,
+            status TEXT,
+            unit TEXT,
+            estimated_ready_time TEXT
+          )
+        `);
+
+        // SCHEMA HEALER: Ensure estimated_ready_time exists if table was already created
+        try {
+          await db.run("ALTER TABLE production_logs_v2 ADD COLUMN estimated_ready_time TEXT");
+        } catch (e) {
+          // Column likely already exists
+        }
 
     await db.run(`
       CREATE TABLE IF NOT EXISTS production_log_items_v2 (
