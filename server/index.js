@@ -508,16 +508,16 @@ app.post('/api/production/log', async (req, res) => {
   const userId = req.headers['x-user-id'];
   const userNameToken = req.headers['x-user-name'] || 'User';
 
-  if (!branchId || branchId === 'all') {
-    return res.status(400).json({ error: 'Valid Branch ID is required' });
-  }
+    // v1.2.32: UNIVERSAL IDENTITY ANCHOR - Ensure Global Owners have a valid 
+    // storage anchor even if they are not bound to a specific branch.
+    const storageBranchId = (!branchId || branchId === 'all') ? 'global' : branchId;
 
     try {
       await db.transaction(async (tx) => {
         // 1. Create Production Log
         await tx.run(
           "INSERT INTO production_logs_v2 (id, branch_id, user_id, user_name, product_id, product_name, quantity_produced, estimated_yield, date, notes, status, estimated_ready_time, unit) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-          [id, branchId, userId, userNameToken, productId, productName, quantityProduced || 0, estimatedYield || 0, date, notes, finalStatus, finalReadyTime, unit || 'pcs']
+          [id, storageBranchId, userId, userNameToken, productId, productName, quantityProduced || 0, estimatedYield || 0, date, notes, finalStatus, finalReadyTime, unit || 'pcs']
         );
 
       // 2. Add Finished Product stock (ONLY if completed immediately)
