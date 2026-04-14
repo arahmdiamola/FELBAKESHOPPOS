@@ -490,11 +490,18 @@ export async function initDb() {
           )
         `);
 
-        // SCHEMA HEALER: Ensure estimated_ready_time exists if table was already created
-        try {
-          await db.run("ALTER TABLE production_logs_v2 ADD COLUMN estimated_ready_time TEXT");
-        } catch (e) {
-          // Column likely already exists
+        // SCHEMA HEALER: Ensure critical columns exist if table was already created in earlier versions
+        const columnsToHeal = [
+          { name: 'estimated_ready_time', type: 'TEXT' },
+          { name: 'unit', type: 'TEXT' }
+        ];
+
+        for (const col of columnsToHeal) {
+          try {
+            await db.run(`ALTER TABLE production_logs_v2 ADD COLUMN ${col.name} ${col.type}`);
+          } catch (e) {
+            // Column likely already exists, safe to ignore
+          }
         }
 
     await db.run(`
