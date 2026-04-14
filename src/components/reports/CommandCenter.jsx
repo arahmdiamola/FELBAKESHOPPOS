@@ -243,7 +243,12 @@ export default function CommandCenter({ isPublic = false }) {
     const peak = [...data].sort((a, b) => b.revenue - a.revenue)[0];
     const peakHour = (peak && peak.revenue > 0) ? peak.hourLabel : 'None';
 
-    return { data, total, peakHour };
+    const todayTxCount = globalSales.filter(t => {
+       if (!t.date) return false;
+       return new Date(t.date).toDateString() === todayStr;
+    }).length;
+
+    return { data, total, peakHour, todayTxCount };
   }, [globalSales]);
 
   const tickerItems = useMemo(() => {
@@ -329,7 +334,7 @@ export default function CommandCenter({ isPublic = false }) {
           </div>
           <div style={{ fontSize: '0.8rem', opacity: 0.4, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6, width: '100%', paddingRight: 5 }}>
             <TrendingUp size={14} style={{ color: 'var(--success)' }} />
-            {globalSales.length.toLocaleString()} TX
+            {pulseMetrics.todayTxCount.toLocaleString()} TX
           </div>
         </div>
       </div>

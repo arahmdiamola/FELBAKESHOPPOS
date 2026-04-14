@@ -22,7 +22,7 @@
 }
 
 .tv-header {
-  padding: 10px 20px;
+  padding: 8px 16px;
   background: rgba(10, 5, 2, 0.8);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--glass-border);
@@ -58,7 +58,7 @@
 }
 
 .header-logo {
-  height: 48px;
+  height: 40px;
   width: auto;
   border-radius: 8px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
@@ -74,7 +74,7 @@
 
 .tv-main-revenue {
   font-family: 'Outfit', sans-serif;
-  font-size: 3.2rem;
+  font-size: 2.2rem;
   font-weight: 950;
   line-height: 1;
   text-shadow: 0 0 20px rgba(212, 118, 60, 0.3);
@@ -186,7 +186,7 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 90px;
+  min-height: 80px;
 }
 
 .tv-unit-tile.is-live::after {
@@ -365,7 +365,7 @@
   padding: 12px;
   display: flex;
   flex-direction: column;
-  min-height: 120px;
+  min-height: 100px;
 }
 
 .intelligence-card .card-title {
