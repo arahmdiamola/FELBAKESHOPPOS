@@ -116,8 +116,12 @@ export default function CommandCenter({ isPublic = false }) {
       // v1.2.40: NUCLEAR FILTERING - Command center now filters the 100% log pulse locally
       if (log.status !== 'ruined') return;
 
-      // Sunk Cost: Sum of material costs
-      const materialCost = log.items?.reduce((sum, item) => sum + (item.costPrice || 0) * item.quantityUsed, 0) || 0;
+      // Wasted Ingredients: Sum of material costs (Handling both DB snake_case and payload variants)
+      const materialCost = (log.items || []).reduce((sum, item) => {
+        const price = item.cost_price ?? item.costPrice ?? 0;
+        const qty = item.quantity_used ?? item.quantityUsed ?? 0;
+        return sum + (price * qty);
+      }, 0);
       totalSunkCost += materialCost;
 
       // Potential Loss: Retail price * quantity
@@ -459,19 +463,19 @@ export default function CommandCenter({ isPublic = false }) {
               </div>
 
               <div className="intelligence-card">
-                  <div className="card-title" style={{ color: '#ff4d4d' }}>
-                      <AlertTriangle size={14} color="#ff4d4d" /> PRODUCTION LOSS (7D)
-                  </div>
-                  <div className="loss-grid-compact">
-                      <div className="loss-mini-box">
-                        <span className="label">SUNK COST</span>
-                        <span className="value">{formatCurrency(lossStats?.totalSunkCost || 0)}</span>
-                      </div>
-                      <div className="loss-mini-box">
-                        <span className="label">REVENUE VOID</span>
-                        <span className="value">{formatCurrency(lossStats?.totalPotentialLoss || 0)}</span>
-                      </div>
-                  </div>
+                   <div className="card-title" style={{ color: '#ff4d4d' }}>
+                       <AlertTriangle size={14} color="#ff4d4d" /> PRODUCTION LOSS (7D)
+                   </div>
+                   <div className="loss-grid-compact">
+                       <div className="loss-mini-box">
+                         <span className="label">WASTED INGREDIENTS</span>
+                         <span className="value">{formatCurrency(lossStats?.totalSunkCost || 0)}</span>
+                       </div>
+                       <div className="loss-mini-box">
+                         <span className="label">LOST SALES</span>
+                         <span className="value">{formatCurrency(lossStats?.totalPotentialLoss || 0)}</span>
+                       </div>
+                   </div>
                   <div className="ruined-list-mini" style={{ marginTop: 10 }}>
                     {ruinedProduction.slice(0, 3).map(p => (
                       <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', opacity: 0.8, borderBottom: '1px solid rgba(255,255,255,0.03)', padding: '2px 0' }}>

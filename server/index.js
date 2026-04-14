@@ -13,8 +13,8 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-// --- Server Shield: Deployment Version Marker ---
-console.log('--- BAKERY POS SERVER V1.2.66: PRODUCTION READY ---');
+// --- Server Shield: Deployment Header ---
+console.log('--- BAKERY POS SERVER: PRODUCTION READY ---');
 
 app.use((req, res, next) => {
   res.set('Cache-Control', 'no-store');
@@ -499,8 +499,8 @@ app.get('/api/production/logs', async (req, res) => {
     }
     res.json(logs);
   } catch (err) {
-    console.error('Logs API crash:', err.message);
-    res.status(500).json({ error: 'Data vault synchronization failed' });
+    console.error('Logs API error:', err.message);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -546,11 +546,11 @@ app.post('/api/production/log', async (req, res) => {
       // 3. Process Raw Materials usage
       if (Array.isArray(items)) {
         for (const item of items) {
-          // POWER-SYNC SELF-HEALING: Fetch missing fields from DB or payload variants
+          // Resolve fields
           const material = await tx.get("SELECT name, unit, cost_price FROM raw_materials WHERE id = ?", [item.materialId]);
           
-          const resolvedName = item.materialName || item.material_name || material?.name || 'Unknown Ingredient';
-          const resolvedQty = item.quantityUsed ?? item.quantity_used ?? 0;
+          const resolvedName = item.materialName || material?.name || 'Unknown Ingredient';
+          const resolvedQty = item.quantityUsed || 0;
           const resolvedUnit = item.unit || material?.unit || 'pcs';
           const resolvedCost = material?.cost_price || 0;
 
@@ -575,11 +575,9 @@ app.post('/api/production/log', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error('[Production Log Failed]', err);
-    // V1.1.6 Sensing: Return detailed error message if column missing
     res.status(500).json({ 
-      error: `Production Log Error: ${err.message}`,
-      detail: err.toString(),
-      code: err.code
+      error: 'Production Log Error',
+      message: err.message
     });
   }
 });

@@ -66,7 +66,6 @@ export default function BakingPage() {
 
   const fetchHistory = async () => {
     try {
-      // v1.2.40: ABSOLUTE SYNC - We now fetch EVERYTHING for local filtering to ensure reliability
       const data = await api.get(`/production/logs?limit=100&_t=${Date.now()}`);
       const unpacked = Array.isArray(data) ? data : (data?.logs || data?.batches || []);
       setHistory(unpacked);
@@ -115,7 +114,7 @@ export default function BakingPage() {
         return [...prev, { 
           materialId: id, 
           materialName: selectedMaterial.name,
-          name: selectedMaterial.name, // v1.2.36 Fallback
+          name: selectedMaterial.name, 
           quantityUsed: qtyUsed,
           unit: selectedMaterial.unit,
           emoji: selectedMaterial.emoji
@@ -302,12 +301,6 @@ export default function BakingPage() {
                  <div className="oven-status">
                     <div className="pulse-dot" /> LIVE OVEN MONITOR
                  </div>
-                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '10px', background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px' }}>
-                       SIGNAL: {activeBatches.length}
-                    </span>
-                    <button onClick={fetchActiveBatches} style={{ background: 'none', border: 'none', color: '#3b82f6', fontSize: '10px', cursor: 'pointer', textDecoration: 'underline' }}>RE-SYNC</button>
-                 </div>
               </div>
               
               <div className="oven-grid">
@@ -402,7 +395,6 @@ export default function BakingPage() {
                  </div>
                  <div className="marquee-container">
                     <div className="marquee-content">
-                       {/* Duplicated for infinite loop effect if items are few */}
                        {[...alerts, ...alerts].map((a, i) => (
                           <div key={`${a.id}-${i}`} className="ticker-item">
                              <span className="ticker-product">{a.productName}</span>
