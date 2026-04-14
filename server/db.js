@@ -113,6 +113,7 @@ async function ensureColumnRenamed(db, table, oldColNames, newColName) {
     if (existingCols.includes(newColName)) return;
 
     // 3. Check for any variants of the old name
+    // 3. Check for any variants of the old name
     for (const oldCol of oldColNames) {
       // Check both quoted exact match and unquoted lowercase
       const variant = existingCols.find(c => c === oldCol || c === oldCol.toLowerCase());
@@ -401,6 +402,7 @@ export async function initDb() {
       { table: 'production_logs', variants: ['branchId', 'branchid'], target: 'branch_id' },
       { table: 'production_logs', variants: ['userId', 'userid'], target: 'user_id' },
       { table: 'production_log_items', variants: ['productionLogId', 'productionlogid'], target: 'production_log_id' },
+      { table: 'raw_materials', variants: ['reorderPoint', 'reorderpoint'], target: 'reorder_point' },
       { table: 'branch_sessions', variants: ['branchId', 'branchid', '"branchId"'], target: 'branch_id' },
       { table: 'branch_sessions', variants: ['userId', 'userid', '"userId"'], target: 'user_id' },
       { table: 'branch_sessions', variants: ['lastSeen', 'lastseen', '"lastSeen"'], target: 'last_seen' }
@@ -469,6 +471,7 @@ export async function initDb() {
       "ALTER TABLE products ADD COLUMN IF NOT EXISTS cost_price REAL DEFAULT 0",
       "ALTER TABLE products ADD COLUMN IF NOT EXISTS is_top_selling INTEGER DEFAULT 0",
       "ALTER TABLE preorders ADD COLUMN IF NOT EXISTS quantity REAL DEFAULT 1",
+      "ALTER TABLE raw_materials ADD COLUMN IF NOT EXISTS reorder_point REAL DEFAULT 0",
       "ALTER TABLE raw_materials ADD COLUMN IF NOT EXISTS cost_price REAL DEFAULT 0",
       "ALTER TABLE production_logs ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'completed'",
       "ALTER TABLE production_logs ADD COLUMN IF NOT EXISTS estimated_yield REAL DEFAULT 0",

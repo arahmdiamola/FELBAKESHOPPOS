@@ -101,6 +101,20 @@ export default function RawMaterialsPage() {
       }
     }
   };
+  const handleQuickAdjust = async (material, delta) => {
+    try {
+      const newStock = Math.max(0, material.stock + delta);
+      await api.put(`/raw-materials/${material.id}`, {
+        ...material,
+        stock: newStock
+      });
+      setMaterials(prev => prev.map(m => m.id === material.id ? { ...m, stock: newStock } : m));
+      addToast(`${material.name} stock adjusted`, 'success');
+    } catch (err) {
+      addToast(err.message, 'error');
+    }
+  };
+
 
   return (
     <>
@@ -128,7 +142,8 @@ export default function RawMaterialsPage() {
         </div>
 
         <div className="glass-table-container">
-          <table className="luxury-table">
+          {/* Desktop Table */}
+          <table className="luxury-table desktop-only">
             <thead>
               <tr>
                 <th width="50"></th>
@@ -202,6 +217,48 @@ export default function RawMaterialsPage() {
               )}
             </tbody>
           </table>
+          
+          {/* Mobile Card List */}
+          <div className="mobile-card-list">
+             {filtered.map(m => {
+                const isLow = m.reorderPoint > 0 && m.stock <= m.reorderPoint;
+                return (
+                   <div key={m.id} className="material-card-mobile animate-slide-up">
+                      <div className="card-top">
+                        {m.image ? (
+                           <div className="card-img" style={{ backgroundImage: `url(${m.image})` }} />
+                        ) : (
+                           <div className="card-emoji-box">{m.emoji}</div>
+                        )}
+                        <div className="card-titles">
+                           <h3>{m.name}</h3>
+                           <div className={`card-status ${isLow ? 'low' : 'ok'}`}>
+                              {isLow ? 'LOW STOCK ALERT' : 'HEALTHY STOCK'}
+                           </div>
+                        </div>
+                        <div className="card-actions-mini">
+                           <button onClick={() => openEdit(m)}><Edit3 size={16} /></button>
+                        </div>
+                      </div>
+                      
+                      <div className="card-body">
+                         <div className="card-stat">
+                            <label>Threshold</label>
+                            <span>{m.reorderPoint} {m.unit}</span>
+                         </div>
+                         <div className="card-stepper">
+                            <button className="step-btn minus" onClick={() => handleQuickAdjust(m, -1)}><Minus size={18} /></button>
+                            <div className="step-val">
+                               <span className="num">{m.stock}</span>
+                               <span className="unit">{m.unit}</span>
+                            </div>
+                            <button className="step-btn plus" onClick={() => handleQuickAdjust(m, 1)}><Plus size={18} /></button>
+                         </div>
+                      </div>
+                   </div>
+                );
+             })}
+          </div>
         </div>
       </div>
 
@@ -232,16 +289,18 @@ export default function RawMaterialsPage() {
           <div className="form-grid mt-6">
           <div className="input-group full-width">
             <label>Select Icon</label>
-            <div className="emoji-grid">
-              {BAKING_EMOJIS.map(e => (
-                <button 
-                  key={e} 
-                  className={`emoji-btn ${form.emoji === e ? 'active' : ''}`}
-                  onClick={() => setForm({...form, emoji: e})}
-                >
-                  {e}
-                </button>
-              ))}
+            <div className="emoji-grid-mobile-wrap">
+               <div className="emoji-grid">
+                  {BAKING_EMOJIS.map(e => (
+                  <button 
+                     key={e} 
+                     className={`emoji-btn ${form.emoji === e ? 'active' : ''}`}
+                     onClick={() => setForm({...form, emoji: e})}
+                  >
+                     {e}
+                  </button>
+                  ))}
+               </div>
             </div>
           </div>
           <div className="input-group">
@@ -277,7 +336,7 @@ export default function RawMaterialsPage() {
               className="input" 
               type="number" 
               value={form.reorderPoint} 
-              onChange={e => setForm({...form, reorderPoint: parseFloat(e.target.value)})}
+              onChange={e => setForm({...form, reorderPoint: parseFloat(e.target.value) || 0})}
             />
             <span className="text-xs text-muted">Warn me when stock drops below this level</span>
           </div>
@@ -300,7 +359,10 @@ export default function RawMaterialsPage() {
             radial-gradient(at 100% 0%, hsla(180,100%,74%,0.08) 0, transparent 50%),
             radial-gradient(at 50% 100%, hsla(28,100%,74%,0.05) 0, transparent 50%);
           background-attachment: fixed;
+          overflow-y: auto;
         }
+
+        .mobile-card-list { display: none; }
 
         .filter-bar-luxury {
            display: flex;
@@ -523,6 +585,59 @@ export default function RawMaterialsPage() {
           to { transform: translateY(0); opacity: 1; }
         }
         .animate-slide-up { animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both; }
+
+        @media (max-width: 768px) {
+           .pos-glass-layout { padding: 16px; }
+           .filter-bar-luxury { flex-direction: column; align-items: stretch; gap: 12px; }
+           .search-bar-glass { max-width: none !important; }
+           .luxury-add-btn { justify-content: center; padding: 16px; }
+
+           .desktop-only { display: none !important; }
+           .mobile-card-list { display: flex; flex-direction: column; gap: 16px; padding: 16px; }
+           .glass-table-container { background: none; border: none; box-shadow: none; overflow: visible; }
+
+           .material-card-mobile {
+              background: white;
+              border-radius: 28px;
+              padding: 20px;
+              box-shadow: 0 10px 30px rgba(74, 55, 40, 0.05);
+              border: 1px solid rgba(74, 55, 40, 0.03);
+           }
+
+           .card-top { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+           .card-img, .card-emoji-box { width: 56px; height: 56px; border-radius: 18px; background-size: cover; background-position: center; flex-shrink: 0; }
+           .card-emoji-box { background: #FDFBF8; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; }
+           .card-titles { flex: 1; }
+           .card-titles h3 { font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 900; color: var(--mocha); margin: 0; }
+           .card-status { font-size: 9px; font-weight: 900; margin-top: 4px; }
+           .card-status.ok { color: var(--sage); }
+           .card-status.low { color: #ef4444; }
+
+           .card-actions-mini button { width: 36px; height: 36px; border-radius: 50%; border: none; background: #FDFBF8; color: var(--mocha); display: flex; align-items: center; justify-content: center; }
+
+           .card-body { 
+              display: flex; 
+              align-items: center; 
+              justify-content: space-between; 
+              background: #FDFBF8; 
+              padding: 12px 16px; 
+              border-radius: 20px; 
+           }
+           .card-stat { display: flex; flex-direction: column; }
+           .card-stat label { font-size: 8px; font-weight: 900; text-transform: uppercase; color: #A0938A; letter-spacing: 0.1em; }
+           .card-stat span { font-weight: 900; font-size: 0.85rem; color: var(--mocha); }
+
+           .card-stepper { display: flex; align-items: center; gap: 12px; }
+           .step-btn { width: 44px; height: 44px; border-radius: 14px; border: none; background: white; color: var(--mocha); font-weight: 900; box-shadow: 0 4px 10px rgba(0,0,0,0.05); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+           .step-btn.minus { color: #ef4444; }
+           .step-btn.plus { color: var(--sage); }
+           .step-val { display: flex; flex-direction: column; align-items: center; min-width: 40px; }
+           .step-val .num { font-weight: 950; font-size: 1.1rem; color: var(--mocha); }
+           .step-val .unit { font-size: 8px; font-weight: 900; opacity: 0.5; text-transform: uppercase; }
+
+           .emoji-grid-mobile-wrap { overflow-x: auto; padding-bottom: 8px; }
+           .emoji-grid { grid-template-columns: repeat(12, 1fr); width: max-content; }
+        }
       `}</style>
     </>
   );
