@@ -211,18 +211,21 @@ export async function initDb() {
       );
     }
 
-    // 4. Performance Indexes
-    try {
-      await db.exec(`
-        CREATE INDEX IF NOT EXISTS idx_transactions_branch_date ON transactions(branch_id, date);
-        CREATE INDEX IF NOT EXISTS idx_transactions_date_only ON transactions(date);
-        CREATE INDEX IF NOT EXISTS idx_logs_branch_time ON system_logs(branch_id, timestamp);
-        CREATE INDEX IF NOT EXISTS idx_logs_timestamp_only ON system_logs(timestamp);
-        CREATE INDEX IF NOT EXISTS idx_sessions_branch ON branch_sessions(branch_id);
-        CREATE INDEX IF NOT EXISTS idx_prod_logs_branch ON production_logs_v2(branch_id);
-        CREATE INDEX IF NOT EXISTS idx_prod_items_log ON production_log_items_v2(production_log_id);
-      `);
-    } catch (e) {
+     // 4. Performance Indexes
+     try {
+       await db.exec(`
+         CREATE INDEX IF NOT EXISTS idx_transactions_branch_date ON transactions(branch_id, date);
+         CREATE INDEX IF NOT EXISTS idx_transactions_date_only ON transactions(date);
+         CREATE INDEX IF NOT EXISTS idx_transaction_items_tx ON transaction_items(transaction_id);
+         CREATE INDEX IF NOT EXISTS idx_logs_branch_time ON system_logs(branch_id, timestamp);
+         CREATE INDEX IF NOT EXISTS idx_logs_timestamp_only ON system_logs(timestamp);
+         CREATE INDEX IF NOT EXISTS idx_sessions_branch ON branch_sessions(branch_id);
+         CREATE INDEX IF NOT EXISTS idx_prod_logs_branch ON production_logs_v2(branch_id);
+         CREATE INDEX IF NOT EXISTS idx_prod_logs_date ON production_logs_v2(date);
+         CREATE INDEX IF NOT EXISTS idx_prod_logs_status ON production_logs_v2(status);
+         CREATE INDEX IF NOT EXISTS idx_prod_items_log ON production_log_items_v2(production_log_id);
+       `);
+     } catch (e) {
       console.warn("[Index Initialization Notice]", e.message);
     }
 
