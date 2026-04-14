@@ -485,10 +485,9 @@ app.get('/api/production/logs', async (req, res) => {
   res.json(logs);
 });
 
-app.post('/api/production/log', async (req, res) => {
     const {
-      productId, productName, quantityProduced, estimatedYield,
-      items, notes, status, branchId, bakerId, bakerName
+      id, productId, productName, quantityProduced, estimatedYield,
+      items, date, notes, status, branchId, bakerId, bakerName
     } = req.body;
 
     const finalStatus = quantityProduced > 0 ? 'completed' : (status || 'in_oven');
@@ -498,8 +497,6 @@ app.post('/api/production/log', async (req, res) => {
   if (!branchId || branchId === 'all') {
     return res.status(400).json({ error: 'Valid Branch ID is required' });
   }
-
-  const finalStatus = status || 'completed';
 
   try {
     await db.transaction(async (tx) => {
