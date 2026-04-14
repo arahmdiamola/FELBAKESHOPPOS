@@ -14,7 +14,7 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
 // --- Server Shield: Deployment Version Marker ---
-console.log('--- BAKERY POS SERVER V1.2.7: STATUS ALIGNMENT ACTIVE ---');
+console.log('--- BAKERY POS SERVER V1.2.11: ALIA-SYNC ACTIVE ---');
 
 app.use((req, res, next) => {
   res.set('Cache-Control', 'no-store');
@@ -611,7 +611,23 @@ app.post('/api/production/void', async (req, res) => {
 
 app.get('/api/production/active-batches', async (req, res) => {
   try {
-    const batches = await db.all("SELECT * FROM production_logs_v2 WHERE status = 'in_oven' ORDER BY date DESC");
+    const { query, params } = getBranchFilter(req);
+    const batches = await db.all(`
+      SELECT 
+        id, 
+        branch_id AS "branchId", 
+        product_id AS "productId", 
+        product_name AS "productName", 
+        quantity_produced AS "quantityProduced", 
+        estimated_yield AS "estimatedYield", 
+        date, 
+        status,
+        unit,
+        notes
+      FROM production_logs_v2 
+      WHERE status = 'in_oven' AND ${query}
+      ORDER BY date DESC
+    `, params);
     res.json(batches);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -621,18 +637,34 @@ app.get('/api/production/active-batches', async (req, res) => {
 app.get('/api/production/logs', async (req, res) => {
   try {
     const { status, limit } = req.query;
-    let query = "SELECT * FROM production_logs_v2";
-    let params = [];
+    const { query: v_query, params: v_params } = getBranchFilter(req);
+
+    let sql = `
+      SELECT 
+        id, 
+        branch_id AS "branchId", 
+        product_id AS "productId", 
+        product_name AS "productName", 
+        quantity_produced AS "quantityProduced", 
+        estimated_yield AS "estimatedYield", 
+        date, 
+        status,
+        unit,
+        notes
+      FROM production_logs_v2 
+      WHERE ${v_query}
+    `;
+    let finalParams = [...v_params];
     
     if (status) {
-      query += " WHERE status = ?";
-      params.push(status);
+      sql += " AND status = ?";
+      finalParams.push(status);
     }
     
-    query += " ORDER BY date DESC LIMIT ?";
-    params.push(limit ? parseInt(limit) : 100);
+    sql += " ORDER BY date DESC LIMIT ?";
+    finalParams.push(limit ? parseInt(limit) : 100);
 
-    const logs = await db.all(query, params);
+    const logs = await db.all(sql, finalParams);
     res.json(logs);
   } catch (err) {
     res.status(500).json({ error: err.message });
