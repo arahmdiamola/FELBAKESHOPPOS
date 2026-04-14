@@ -243,6 +243,7 @@ export default function CommandCenter({ isPublic = false }) {
     const peak = [...data].sort((a, b) => b.revenue - a.revenue)[0];
     const peakHour = (peak && peak.revenue > 0) ? peak.hourLabel : 'None';
 
+    const todayStr = new Date().toDateString();
     const todayTxCount = globalSales.filter(t => {
        if (!t.date) return false;
        return new Date(t.date).toDateString() === todayStr;
