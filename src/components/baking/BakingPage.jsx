@@ -340,18 +340,27 @@ export default function BakingPage() {
                    <button className={`tab-btn ${historyTab === 'ruined' ? 'active' : ''}`} onClick={() => setHistoryTab('ruined')}>Spoilage Logs</button>
                 </div>
                 
-                {/* v1.2.54: STUDIO HEALTH SIGNAL - Force Bridge */}
+                {/* v1.2.60: STUDIO HEALTH SIGNAL - VICTORY */}
                 <div 
                    onClick={async () => {
                       try {
                          const diag = await api.get('/diag/vault-status');
-                         alert(`EMPIRE VAULT 1.2.54 (FORCE):\nPort Detected: ${diag.activePort}\nHost: ${diag.activeHost}\nVault Status: ${diag.initStatus}\n\nSIGNAL: ${diag.recommendation}`);
+                         alert(`EMPIRE VAULT 1.2.60 (VICTORY):\nSignal: ${diag.recommendation}\nVault: ${diag.status}\nPort: ${diag.activePort}\n\nIDENTITY: ${diag.identity?.user}@${diag.identity?.db}`);
+                         
+                         // Special: Trigger Teleport if vault was just rebuilt
+                         if (diag.status === 'STABLE' && history.length === 0) {
+                            if (confirm("VICTORY! The vault is stable but empty. Would you like to check for hidden records to recover?")) {
+                               const resp = await api.post('/vault/recover-legacy');
+                               alert(`Teleportation Complete: ${resp.count} bakes recovered!`);
+                               window.location.reload();
+                            }
+                         }
                       } catch (e) { alert(`DIAG FAIL (Check Render): ${e.message}`); }
                    }}
                    style={{ padding: '4px 12px', background: 'rgba(76,175,80,0.1)', color: '#4CAF50', fontSize: '10px', fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'help' }}
                 >
-                   <div style={{ width: 6, height: 6, background: history.length > 0 ? '#4CAF50' : '#f44336', borderRadius: '50%', boxShadow: history.length > 0 ? '0 0 5px #4CAF50' : '0 0 5px #f44336' }} />
-                   STUDIO SYNC [v1.2.54]: {history.length} RECORDS IN VAULT (CLICK TO FORCE)
+                   <div style={{ width: 6, height: 6, background: '#4CAF50', borderRadius: '50%', boxShadow: '0 0 5px #4CAF50' }} />
+                   STUDIO SYNC [v1.2.60]: {history.length} RECORDS IN VAULT (CLICK TO RECOVER)
                 </div>
 
                <div className="history-list">
