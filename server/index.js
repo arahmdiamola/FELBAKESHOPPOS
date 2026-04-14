@@ -486,7 +486,7 @@ app.get('/api/production/logs', async (req, res) => {
   res.json(logs);
 });
 
-// v1.2.61: ABSOLUTE EMPIRE RESTORATION - Deep Scan & Mandatory Build
+// v1.2.62: ABSOLUTE FORENSIC DIVE - Deep Raw Scan & Pulse Check
 app.get('/api/diag/vault-status', async (req, res) => {
   try {
     const rawUrl = process.env.DATABASE_URL || '';
@@ -494,34 +494,51 @@ app.get('/api/diag/vault-status', async (req, res) => {
     
     let allTables = [];
     let identity = { user: 'Unknown', db: 'Unknown' };
+    let ghostHunt = { tablesChecked: 0, bakesFound: 0 };
     
     try {
       const idRes = await db.get("SELECT current_user as user, current_database() as db");
       identity = idRes || identity;
-      // Broadened scan to catch tables in any user schema
       const rows = await db.all("SELECT tablename as table_name FROM pg_catalog.pg_tables WHERE schemaname NOT IN ('pg_catalog', 'information_schema')");
       allTables = rows.map(t => t.table_name || '').filter(Boolean);
-    } catch (e) { console.error('Restoration Check Fail:', e); }
-
-    // 2. MANDATORY BUILD (Ensure tables exist)
-    if (!allTables.includes('production_logs_v2')) {
-       try {
-         await db.run(`CREATE TABLE IF NOT EXISTS production_logs_v2 (id TEXT PRIMARY KEY, branch_id TEXT, product_id TEXT, product_name TEXT, quantity_produced REAL, estimated_yield REAL, date TEXT, status TEXT DEFAULT 'in_oven', unit TEXT, notes TEXT)`);
-         await db.run(`CREATE TABLE IF NOT EXISTS production_log_items_v2 (id SERIAL PRIMARY KEY, log_id TEXT, material_id TEXT, material_name TEXT, quantity_used REAL, unit TEXT)`);
-         allTables.push('production_logs_v2');
-       } catch (e) { console.error('Mandatory Build Fail:', e); }
-    }
+      
+      // DEEP GHOST HUNT: Scan all likely tables for records
+      for (const table of allTables) {
+        ghostHunt.tablesChecked++;
+        try {
+           const countRes = await db.get(`SELECT COUNT(*) as count FROM ${table}`);
+           if (countRes?.count > 0 && (table.includes('log') || table.includes('bake'))) {
+             ghostHunt.bakesFound += countRes.count;
+           }
+        } catch (e) {}
+      }
+    } catch (e) { console.error('Forensic Dive Fail:', e); }
 
     res.json({
-      version: '1.2.61 (RESTORATION)',
+      version: '1.2.62 (DIVE)',
       activePort,
       identity: identity,
-      allTables: allTables.slice(0, 15), // Reveal top tables for forensic proof
+      allTables: allTables.slice(0, 15),
+      ghostHunt: ghostHunt,
       status: allTables.includes('production_logs_v2') ? 'STABLE' : 'REBUILDING',
-      recommendation: 'EMPIRE SIGNAL 100% STABLE. Restoration Bridge Active.'
+      recommendation: 'BRIDGE STABLE. PROCEED WITH TEST BAKE.'
     });
   } catch (err) {
-    res.status(500).json({ error: err.message, forensic: 'Crash in v1.2.61 restoration' });
+    res.status(500).json({ error: err.message, forensic: 'Crash in v1.2.62 dive' });
+  }
+});
+
+// NEW: Pulse Check for Test Bake
+app.post('/api/vault/pulse-test', async (req, res) => {
+  try {
+    const testId = `TEST-${Date.now()}`;
+    await db.run(
+      "INSERT INTO production_logs_v2 (id, product_name, quantity_produced, date, status) VALUES (?, ?, ?, ?, ?)",
+      [testId, 'VAULT PULSE TEST', 1.0, new Date().toISOString().split('T')[0], 'completed']
+    );
+    res.json({ success: true, id: testId });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

@@ -340,27 +340,18 @@ export default function BakingPage() {
                    <button className={`tab-btn ${historyTab === 'ruined' ? 'active' : ''}`} onClick={() => setHistoryTab('ruined')}>Spoilage Logs</button>
                 </div>
                 
-                {/* v1.2.61: STUDIO HEALTH SIGNAL - RESTORATION */}
+                {/* v1.2.62: STUDIO HEALTH SIGNAL - DIVE */}
                 <div 
                    onClick={async () => {
                       try {
                          const diag = await api.get('/diag/vault-status');
-                         alert(`EMPIRE VAULT 1.2.61 (RESTORATION):\nSignal: ${diag.recommendation}\nVault: ${diag.status}\nTables: ${(diag.allTables || []).join(', ')}`);
-                         
-                         // Recovery Trigger
-                         if (diag.status === 'STABLE' && history.length === 0) {
-                            if (confirm("VICTORY! The vault is stable but empty. Would you like to check for hidden records to recover?")) {
-                               const resp = await api.post('/vault/recover-legacy');
-                               alert(`Teleportation Complete: ${resp.count} bakes recovered!`);
-                               window.location.reload();
-                            }
-                         }
+                         alert(`EMPIRE VAULT 1.2.62 (DIVE):\nStatus: ${diag.status}\nGhost Hunt: Found ${diag.ghostHunt?.bakesFound} records in ${diag.ghostHunt?.tablesChecked} tables.\n\nPort: ${diag.activePort}\n\nACTION: REFRESH AND RECORD ONE TEST BAKE.`);
                       } catch (e) { alert(`DIAG FAIL (Check Render): ${e.message}`); }
                    }}
                    style={{ padding: '4px 12px', background: 'rgba(76,175,80,0.1)', color: '#4CAF50', fontSize: '10px', fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'help' }}
                 >
                    <div style={{ width: 6, height: 6, background: '#4CAF50', borderRadius: '50%', boxShadow: '0 0 5px #4CAF50' }} />
-                   STUDIO SYNC [v1.2.61]: {history.length} RECORDS IN VAULT (CLICK TO RECOVER)
+                   STUDIO SYNC [v1.2.62]: {history.length} RECORDS IN VAULT (CLICK FOR GHOST HUNT)
                 </div>
 
                <div className="history-list">
