@@ -486,22 +486,36 @@ app.get('/api/production/logs', async (req, res) => {
   res.json(logs);
 });
 
-// v1.2.41: TOTAL DATA BRIDGE - Forensic Diagnostic Route
+// v1.2.42: MASTER DIAGNOSTIC - Bulletproof Multi-DB Probe
 app.get('/api/diag/vault-status', async (req, res) => {
   try {
-    const tablesRes = await db.all("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'");
-    const tables = tablesRes.map(t => t.table_name || t.TABLE_NAME);
+    const isPostgres = !!process.env.DATABASE_URL;
+    let tables = [];
+    
+    if (isPostgres) {
+       const res = await db.all("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'");
+       tables = res.map(t => t.table_name || t.TABLE_NAME);
+    } else {
+       const res = await db.all("SELECT name as table_name FROM sqlite_master WHERE type='table'");
+       tables = res.map(t => t.table_name);
+    }
     
     let stats = {
-      isProduction: !!process.env.DATABASE_URL,
-      dbType: !!process.env.DATABASE_URL ? 'POSTGRES' : 'SQLITE',
-      tables: tables.filter(t => t.includes('production')),
-      counts: {}
+      isProduction: isPostgres,
+      dbType: isPostgres ? 'POSTGRES' : 'SQLITE (LOCAL)',
+      tables: tables.filter(t => t.toLowerCase().includes('production')),
+      counts: {},
+      envPresent: {
+        DATABASE_URL: !!process.env.DATABASE_URL,
+        PORT: !!process.env.PORT
+      }
     };
 
     for (const table of stats.tables) {
-       const c = await db.get(`SELECT COUNT(*) as count FROM ${table}`);
-       stats.counts[table] = c.count;
+       try {
+         const c = await db.get(`SELECT COUNT(*) as count FROM ${table}`);
+         stats.counts[table] = c.count;
+       } catch (e) { stats.counts[table] = `Error: ${e.message}`; }
     }
 
     res.json(stats);
