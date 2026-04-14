@@ -657,8 +657,8 @@ app.get('/api/production/active-batches', async (req, res) => {
 app.get('/api/production/logs', async (req, res) => {
   try {
     const { status, limit } = req.query;
-    // v1.2.20: UNIVERSAL RECOVERY - If we are looking for 'in_oven' or specific status, 
-    // bypass the branch filter to ensure data visibility during diagnostics.
+    // v1.2.33: ABSOLUTE SYNC - Simplified query to bypass any lingering gates
+    console.log(`[Diagnostic] History Fetch - Status: ${status}, Limit: ${limit}`);
     let sql = `
       SELECT 
         id, 
@@ -693,9 +693,12 @@ app.get('/api/production/logs', async (req, res) => {
     */
 
     sql += " ORDER BY date DESC LIMIT ?";
-    finalParams.push(limit ? parseInt(limit) : 100);
+    const finalLimit = limit ? parseInt(limit) : 100;
+    finalParams.push(finalLimit);
 
+    console.log(`[Diagnostic] SQL: ${sql} | Params: ${JSON.stringify(finalParams)}`);
     const logs = await db.all(sql, finalParams);
+    console.log(`[Diagnostic] Logs Found: ${logs?.length || 0}`);
     res.json(logs);
   } catch (err) {
     res.status(500).json({ error: err.message });
