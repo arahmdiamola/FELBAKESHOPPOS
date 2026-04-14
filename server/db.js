@@ -132,15 +132,6 @@ async function ensureColumnRenamed(db, table, oldColNames, newColName) {
       AND table_schema = 'public'
     `, [table]);
     
-    // Postgres returns column_name lowercase
-    const existingCols = result.map(r => r.column_name);
-    
-    // 2. If newColName (snake_case) already exists, skip
-    if (existingCols.includes(newColName)) return;
-
-    // 3. Check for any variants of the old name
-    // 3. Check for any variants of the old name
-    for (const oldCol of oldColNames) {
     const actualCols = result.map(r => r.column_name);
     
     // 2. Identify if target already exists
