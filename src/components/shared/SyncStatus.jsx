@@ -108,6 +108,9 @@ export default function SyncStatus({ mini = false }) {
           text-transform: uppercase;
           letter-spacing: 0.5px;
           color: white;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .status-pill-meta {

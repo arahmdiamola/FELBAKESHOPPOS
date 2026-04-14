@@ -167,6 +167,7 @@ h1, h2, h3, h4, h5, h6 {
   flex-shrink: 0;
   z-index: 50;
   transition: width var(--transition-base);
+  overflow-x: hidden;
 }
 
 .sidebar.collapsed {

@@ -193,10 +193,17 @@ export default function Sidebar() {
                 flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                 padding: 8, background: 'rgba(46, 204, 113, 0.1)', border: '1px solid rgba(46, 204, 113, 0.2)',
                 borderRadius: 8, color: '#2ecc71', fontSize: 10, fontWeight: 800, textTransform: 'uppercase',
-                cursor: 'pointer', border: '1px solid rgba(46, 204, 113, 0.2)'
+                cursor: 'pointer', border: '1px solid rgba(46, 204, 113, 0.2)',
+                overflow: 'hidden'
               }}
             >
-              <Shield size={14} /> <span>Secure Terminal</span>
+              <Shield size={14} style={{ flexShrink: 0 }} /> 
+              <span style={{ 
+                whiteSpace: 'nowrap', 
+                overflow: 'hidden', 
+                textOverflow: 'ellipsis',
+                flex: 1
+              }}>Secure Terminal</span>
             </button>
             <button 
               onClick={handleResetTerminal} 
