@@ -124,3 +124,122 @@
   70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(212, 118, 60, 0); }
   100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(212, 118, 60, 0); }
 }
+
+/* MOBILE REFINEMENT */
+.baking-mobile-nav { display: none; }
+
+@media (max-width: 1024px) {
+    .studio-container {
+        grid-template-columns: 320px 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .studio-container {
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 64px); /* Header might be smaller on mobile */
+        overflow: auto;
+    }
+
+    .baking-mobile-nav {
+        display: flex;
+        background: white;
+        border-bottom: 1px solid rgba(74, 55, 40, 0.08);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        padding: 4px;
+        gap: 4px;
+    }
+
+    .nav-btn {
+        flex: 1;
+        padding: 12px;
+        border: none;
+        background: none;
+        font-weight: 850;
+        font-size: 0.7rem;
+        color: #A0938A;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border-radius: 12px;
+        transition: all 0.2s;
+    }
+
+    .nav-btn.active {
+        background: #FDFBF8;
+        color: #D4763C;
+    }
+
+    .sidebar-studio, .workspace-studio {
+        width: 100%;
+        border-right: none;
+        height: auto;
+        overflow: visible;
+    }
+
+    .mobile-hidden {
+        display: none !important;
+    }
+
+    .sidebar-header { padding: 24px 16px; }
+    .studio-heading { font-size: 1.3rem; margin-bottom: 16px; }
+    
+    .sidebar-scroll { padding: 0 16px 16px; }
+    .material-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .material-item { padding: 12px; border-radius: 16px; }
+    .material-emoji { font-size: 1.5rem; }
+
+    .studio-sidebar-footer {
+        position: sticky;
+        bottom: 0;
+        padding: 12px;
+        background: rgba(253, 251, 248, 0.95);
+        backdrop-filter: blur(10px);
+        border-top: 1px solid rgba(74, 55, 40, 0.1);
+        z-index: 90;
+    }
+
+    .assembly-card {
+        padding: 16px;
+        border-radius: 20px;
+    }
+
+    .assembly-list { max-height: 100px; margin-bottom: 12px; }
+    .bake-btn { padding: 16px; margin-top: 12px; font-size: 0.8rem; }
+
+    .workspace-studio { padding: 16px; gap: 20px; }
+    .oven-monitor-glass { border-radius: 24px; min-height: auto; }
+    .oven-header { padding: 20px; }
+    .oven-grid { padding: 0 16px 20px; grid-template-columns: 1fr; gap: 16px; }
+    
+    .batch-card { padding: 20px; border-radius: 24px; }
+    .batch-emoji { width: 48px; height: 48px; font-size: 1.5rem; }
+    .batch-info h4 { font-size: 1rem; }
+
+    .history-studio { border-radius: 24px; }
+    .history-tabs { padding: 0 20px; gap: 20px; }
+    .tab-btn { padding: 16px 0; }
+    .history-list { padding: 0 20px 20px; }
+    .history-row { gap: 16px; }
+    .history-name { font-size: 0.95rem; }
+
+    .alerts-strip-studio {
+        flex-direction: column;
+        gap: 12px;
+        padding: 16px;
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+
+    .product-selection-grid { grid-template-columns: 1fr 1fr; padding: 12px; }
+    .p-item { padding: 16px; }
+
+    .keypad-ux { padding: 16px; gap: 16px; }
+    .keypad-screen { padding: 20px; }
+    .val { font-size: 2rem; }
+    .keypad-btns button { height: 54px; font-size: 1.1rem; }
+}

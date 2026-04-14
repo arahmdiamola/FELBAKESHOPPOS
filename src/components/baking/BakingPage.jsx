@@ -36,6 +36,7 @@ export default function BakingPage() {
   const [selectedMaterial, setSelectedMaterial] = useState(null);
   const [keypadMode, setKeypadMode] = useState('material'); 
   const [tempQty, setTempQty] = useState('');
+  const [activeTab, setActiveTab] = useState('prep'); // 'prep' or 'oven'
 
   useEffect(() => {
     fetchMaterials();
@@ -174,8 +175,18 @@ export default function BakingPage() {
     <>
       <Header />
       <div className="studio-container">
+        {/* Mobile Navbar */}
+        <div className="baking-mobile-nav">
+           <button className={`nav-btn ${activeTab === 'prep' ? 'active' : ''}`} onClick={() => setActiveTab('prep')}>
+              <Scale size={18} /> PREPARATION
+           </button>
+           <button className={`nav-btn ${activeTab === 'oven' ? 'active' : ''}`} onClick={() => setActiveTab('oven')}>
+              <ChefHat size={18} /> LIVE OVEN
+           </button>
+        </div>
+
         {/* Sidebar: Ingredients & Assembly */}
-        <div className="sidebar-studio">
+        <div className={`sidebar-studio ${activeTab !== 'prep' ? 'mobile-hidden' : ''}`}>
            <div className="sidebar-header">
               <h1 className="studio-heading">Ingredients</h1>
               <div className="studio-search">
@@ -258,7 +269,7 @@ export default function BakingPage() {
         </div>
 
         {/* Workspace: Oven & History */}
-        <div className="workspace-studio">
+        <div className={`workspace-studio ${activeTab !== 'oven' ? 'mobile-hidden' : ''}`}>
            {/* Section 1: LIVE OVEN */}
            <div className="oven-monitor-glass">
               <div className="oven-header">
