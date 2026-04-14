@@ -62,9 +62,8 @@ export default function BakingPage() {
 
   const fetchHistory = async () => {
     try {
-      const status = historyTab === 'success' ? 'completed' : 'ruined';
-      // v1.2.35: CACHE-BUSTER - Force fresh data by adding a unique timestamp
-      const data = await api.get(`/production/logs?status=${status}&_t=${Date.now()}`);
+      // v1.2.40: ABSOLUTE SYNC - We now fetch EVERYTHING for local filtering to ensure reliability
+      const data = await api.get(`/production/logs?limit=100&_t=${Date.now()}`);
       const unpacked = Array.isArray(data) ? data : (data?.logs || data?.batches || []);
       setHistory(unpacked);
     } catch (err) {
@@ -75,11 +74,12 @@ export default function BakingPage() {
   const fetchActiveBatches = async () => {
     try {
       const res = await api.get('/production/active-batches');
-      // v1.2.21: Handle both raw array and diagnostic object structure
       const data = res.batches || res; 
       setActiveBatches(Array.isArray(data) ? data : []);
-      const recentRuined = await api.get('/production/logs?status=ruined&limit=5');
-      setAlerts(Array.isArray(recentRuined) ? recentRuined : []);
+      
+      const ruinedData = await api.get('/production/logs?status=ruined&limit=5');
+      const alertsData = Array.isArray(ruinedData) ? ruinedData : (ruinedData?.logs || ruinedData?.batches || []);
+      setAlerts(alertsData.filter(h => h.status === 'ruined'));
     } catch (err) {
       addToast(`Live Oven Signal Lost: ${err.message}`, 'error');
     }
@@ -99,26 +99,25 @@ export default function BakingPage() {
 
   const handleConfirmQuantity = () => {
     if (selectedMaterial && selectedMaterial.productName) {
-      // Expected Yield case
       setQuantityToProduce(parseFloat(tempQty) || 1);
     } else if (selectedMaterial) {
-      // Material ingredient case
       const qtyUsed = parseFloat(tempQty) || 0;
       setActiveBatch(prev => {
-        const existing = prev.find(i => (i.materialId || i.id) === selectedMaterial.id);
+        const id = selectedMaterial.id;
+        const existing = prev.find(i => (i.materialId || i.id) === id);
         if (existing) {
-          return prev.map(i => (i.materialId || i.id) === selectedMaterial.id ? { ...i, quantityUsed: qtyUsed } : i);
+          return prev.map(i => (i.materialId || i.id) === id ? { ...i, quantityUsed: qtyUsed } : i);
         }
         return [...prev, { 
-          materialId: selectedMaterial.id, 
+          materialId: id, 
           materialName: selectedMaterial.name,
+          name: selectedMaterial.name, // v1.2.36 Fallback
           quantityUsed: qtyUsed,
           unit: selectedMaterial.unit,
           emoji: selectedMaterial.emoji
         }];
       });
     } else if (keypadMode === 'production' && selectedBatch) {
-      // PROD-SYNC: Finalize the batch with the actual yield entered
       handleFinalizeBatch(selectedBatch.id, parseFloat(tempQty) || 0);
     }
     setShowQtyModal(false);
@@ -153,7 +152,7 @@ export default function BakingPage() {
       setActiveBatch([]);
       setTargetProduct(null);
       setQuantityToProduce(1);
-      setActiveTab('oven'); // v1.2.18 AUTO-SWITCH: Show the oven immediately
+      setActiveTab('oven'); 
       fetchMaterials();
       fetchActiveBatches();
     } catch (err) {
@@ -166,7 +165,7 @@ export default function BakingPage() {
   const handleFinalizeBatch = async (logId, actual) => {
     try {
       await api.post('/production/finalize', { logId, actualYield: actual });
-      addToast('Production Completed & Inventory Synced!', 'success');
+      addToast('Production Completed!', 'success');
       fetchActiveBatches();
       fetchHistory();
     } catch (err) {
@@ -175,12 +174,12 @@ export default function BakingPage() {
   };
 
   const handleVoidBatch = async (logId) => {
-    const reason = prompt("Why is this batch being voided? (Burned, Spilled, etc.)");
+    const reason = prompt("Why is this batch being voided?");
     if (!reason) return;
 
     try {
       await api.post('/production/void', { logId, reason });
-      addToast('Batch Ruined. Spoilage Alert sent to Manager.', 'warning');
+      addToast('Batch Ruined.', 'warning');
       fetchActiveBatches();
       fetchHistory();
     } catch (err) {
@@ -192,7 +191,6 @@ export default function BakingPage() {
     <>
       <Header />
       <div className="studio-container">
-        {/* Mobile Navbar */}
         <div className="baking-mobile-nav">
            <button className={`nav-btn ${activeTab === 'prep' ? 'active' : ''}`} onClick={() => setActiveTab('prep')}>
               <Scale size={18} /> PREPARATION
@@ -202,7 +200,6 @@ export default function BakingPage() {
            </button>
         </div>
 
-        {/* Sidebar: Ingredients & Assembly */}
         <div className={`sidebar-studio ${activeTab !== 'prep' ? 'mobile-hidden' : ''}`}>
            <div className="sidebar-header">
               <h1 className="studio-heading">Ingredients</h1>
@@ -221,7 +218,7 @@ export default function BakingPage() {
                  {filteredMaterials.map(m => (
                     <button 
                        key={m.id}
-                       className={`material-item ${activeBatch.find(i => i.materialId === m.id) ? 'active' : ''}`}
+                       className={`material-item ${activeBatch.find(i => (i.materialId || i.id) === m.id) ? 'active' : ''}`}
                        onClick={() => addToBatch(m)}
                     >
                        <span className="material-emoji">{m.emoji}</span>
@@ -245,9 +242,9 @@ export default function BakingPage() {
                     ) : (
                        activeBatch.map(item => (
                           <div key={item.materialId} className="assembly-item">
-                             <span className="item-name">{item.name || 'Unknown Material'}</span>
-                             <span className="item-qty">{item.quantity} {item.unit}</span>
-                             <button className="item-del" onClick={() => setActiveBatch(prev => prev.filter(i => i.materialId !== item.materialId))}>
+                             <span className="item-name">{item.name || item.materialName || 'Material'}</span>
+                             <span className="item-qty">{item.quantityUsed} {item.unit}</span>
+                             <button className="item-del" onClick={() => setActiveBatch(prev => prev.filter(i => (i.materialId || i.id) !== item.materialId))}>
                                 <Plus size={14} style={{ transform: 'rotate(45deg)' }} />
                              </button>
                           </div>
@@ -269,25 +266,15 @@ export default function BakingPage() {
                     <label>Expected Yield</label>
                     <div className="yield-stepper">
                       <button onClick={() => setQuantityToProduce(Math.max(1, quantityToProduce - 1))}><Minus size={14} /></button>
-                    <div 
-                      className="yield-num" 
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => {
+                      <div className="yield-num" onClick={() => {
                         setSelectedMaterial({ productName: targetProduct?.name || 'Batch', unit: targetProduct?.unit || 'pcs' });
                         setTempQty(quantityToProduce.toString());
                         setShowQtyModal(true);
-                      }}
-                    >
-                      {quantityToProduce}
-                    </div>
+                      }}>{quantityToProduce}</div>
                       <button onClick={() => setQuantityToProduce(quantityToProduce + 1)}><Plus size={14} /></button>
                     </div>
 
-                    <button 
-                        className="bake-btn" 
-                        disabled={!targetProduct || activeBatch.length === 0 || isSaving}
-                        onClick={handleStartBatch}
-                    >
+                    <button className="bake-btn" disabled={!targetProduct || activeBatch.length === 0 || isSaving} onClick={handleStartBatch}>
                        {isSaving ? 'Processing...' : 'Place in Oven'}
                     </button>
                  </div>
@@ -295,9 +282,7 @@ export default function BakingPage() {
            </div>
         </div>
 
-        {/* Workspace: Oven & History */}
         <div className={`workspace-studio ${activeTab !== 'oven' ? 'mobile-hidden' : ''}`}>
-           {/* Section 1: LIVE OVEN */}
            <div className="oven-monitor-glass">
               <div className="oven-header">
                  <div className="oven-status">
@@ -307,10 +292,7 @@ export default function BakingPage() {
                     <span style={{ fontSize: '10px', background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px' }}>
                        SIGNAL: {activeBatches.length}
                     </span>
-                    <button 
-                       onClick={fetchActiveBatches}
-                       style={{ background: 'none', border: 'none', color: '#3b82f6', fontSize: '10px', cursor: 'pointer', textDecoration: 'underline' }}
-                    >RE-SYNC</button>
+                    <button onClick={fetchActiveBatches} style={{ background: 'none', border: 'none', color: '#3b82f6', fontSize: '10px', cursor: 'pointer', textDecoration: 'underline' }}>RE-SYNC</button>
                  </div>
               </div>
               
@@ -319,13 +301,11 @@ export default function BakingPage() {
                     <div className="oven-empty">
                        <ChefHat size={60} />
                        <h3>Oven is currently empty</h3>
-                       <p>Start a new batch from the assembly sidebar to begin production.</p>
                     </div>
                  ) : (
                     activeBatches.map(batch => {
                        const elapsed = Math.floor((now - new Date(batch.date)) / 1000);
-                       const m = Math.floor(elapsed / 60);
-                       const s = elapsed % 60;
+                       const m = Math.floor(elapsed / 60); const s = elapsed % 60;
                        return (
                           <div key={batch.id} className="batch-card">
                              <div className="batch-header">
@@ -333,15 +313,14 @@ export default function BakingPage() {
                                 <div className="batch-info">
                                    <h4>{batch.productName}</h4>
                                    <div className="batch-meta">
-                                      <span className="meta-yield">{batch.estimatedYield} {batch.unit}</span>
-                                      <span className="meta-time pulse-text"><ChefHat size={14} /> {m}m {s}s</span>
+                                      <span>{batch.estimatedYield} {batch.unit}</span>
+                                      <span className="pulse-text">{m}m {s}s</span>
                                    </div>
                                 </div>
                              </div>
                              <div className="batch-ops">
                                 <button className="finish-btn" onClick={() => {
                                    setSelectedBatch(batch);
-                                   // v1.2.31: Isolate from sidebar to prevent UX pollution
                                    setTempQty(batch.estimatedYield.toString());
                                    setKeypadMode('production');
                                    setShowQtyModal(true);
@@ -355,46 +334,49 @@ export default function BakingPage() {
               </div>
            </div>
 
-           {/* Section 2: Production Logs */}
            <div className="history-studio">
-               <div className="history-tabs">
-                  <button className={`tab-btn ${historyTab === 'success' ? 'active' : ''}`} onClick={() => setHistoryTab('success')}>Success Logs</button>
-                  <button className={`tab-btn ${historyTab === 'ruined' ? 'active' : ''}`} onClick={() => setHistoryTab('ruined')}>Spoilage Logs</button>
+                <div className="history-tabs">
+                   <button className={`tab-btn ${historyTab === 'success' ? 'active' : ''}`} onClick={() => setHistoryTab('success')}>Success Logs</button>
+                   <button className={`tab-btn ${historyTab === 'ruined' ? 'active' : ''}`} onClick={() => setHistoryTab('ruined')}>Spoilage Logs</button>
+                </div>
+                
+                {/* v1.2.40: STUDIO HEALTH SIGNAL */}
+                <div style={{ padding: '4px 12px', background: 'rgba(76,175,80,0.1)', color: '#4CAF50', fontSize: '10px', fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                   <div style={{ width: 6, height: 6, background: '#4CAF50', borderRadius: '50%', boxShadow: '0 0 5px #4CAF50' }} />
+                   STUDIO SYNC: {history.length} RECORDS IN VAULT
+                </div>
+
+               <div className="history-list">
+                  {history.filter(log => (historyTab === 'success' ? log.status === 'completed' : log.status === 'ruined')).length === 0 ? (
+                     <div className="history-empty">No activity in {historyTab} yet</div>
+                  ) : (
+                     history
+                        .filter(log => (historyTab === 'success' ? log.status === 'completed' : log.status === 'ruined'))
+                        .map(log => (
+                        <div key={log.id} className="history-row">
+                           <span className="history-emoji">{products.find(p => p.id === log.productId)?.emoji || '🥧'}</span>
+                           <div className="history-main">
+                              <div className="history-top">
+                                 <span className="history-name">{log.productName}</span>
+                                 <span className={`history-badge ${log.status}`}>{log.status === 'ruined' ? 'WASTE' : 'PRODUCED'}</span>
+                              </div>
+                              <div className="history-meta">
+                                 <span>Yield: {log.quantityProduced} {log.unit}</span>
+                                 <span>•</span>
+                                 <span>{new Date(log.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                              </div>
+                           </div>
+                        </div>
+                     ))
+                  )}
                </div>
-              <div className="history-list">
-                 {history.length === 0 ? (
-                    <div className="history-empty">No activity found</div>
-                 ) : (
-                    history.map(log => (
-                       <div key={log.id} className="history-row">
-                          <span className="history-emoji">{products.find(p => p.id === log.productId)?.emoji || '🥧'}</span>
-                          <div className="history-main">
-                             <div className="history-top">
-                                <span className="history-name">{log.productName}</span>
-                                <span className={`history-badge ${log.status}`}>{log.status === 'ruined' ? 'WASTE' : 'PRODUCED'}</span>
-                             </div>
-                             <div className="history-meta">
-                                <span>Yield: {log.quantityProduced} {log.unit}</span>
-                                <span>•</span>
-                                <span>{new Date(log.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                             </div>
-                          </div>
-                       </div>
-                    ))
-                 )}
-              </div>
            </div>
 
-           {/* Alerts Footer */}
            {alerts.length > 0 && (
               <div className="alerts-strip-studio">
                  <div className="alert-count"><Info size={16} /> Spoilage Alerts</div>
                  <div className="alert-ticker">
-                    {alerts.map(a => (
-                       <span key={a.id} className="ticker-item">
-                          <strong>{a.productName}</strong>: {a.notes || 'Ruined'}
-                       </span>
-                    ))}
+                    {alerts.map(a => <span key={a.id} className="ticker-item"><strong>{a.productName}</strong>: {a.notes || 'Ruined'}</span>)}
                  </div>
               </div>
            )}
@@ -418,19 +400,12 @@ export default function BakingPage() {
                <div className="val">{tempQty || '0'}<span className="unit">{keypadMode === 'production' ? (selectedBatch?.unit || 'pcs') : (selectedMaterial?.unit || 'kg')}</span></div>
             </div>
             <div className="keypad-btns">
-               {[1,2,3,4,5,6,7,8,9,'.',0].map(n => (
-                  <button key={n} onClick={() => setTempQty(prev => prev + n)}>{n}</button>
-               ))}
-               <button className="key-clear" onClick={() => setTempQty('')}>
-                 <RotateCcw size={20} />
-               </button>
+               {[1,2,3,4,5,6,7,8,9,'.',0].map(n => <button key={n} onClick={() => setTempQty(prev => prev + n)}>{n}</button>)}
+               <button className="key-clear" onClick={() => setTempQty('')}><RotateCcw size={20} /></button>
             </div>
-            <button className="confirm-btn-ux" style={{ marginTop: '20px' }} onClick={handleConfirmQuantity}>
-              Confirm Action
-            </button>
+            <button className="confirm-btn-ux" style={{ marginTop: '20px' }} onClick={handleConfirmQuantity}>Confirm Action</button>
          </div>
       </Modal>
-
     </>
   );
 }

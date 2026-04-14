@@ -14,7 +14,7 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
 // --- Server Shield: Deployment Version Marker ---
-console.log('--- BAKERY POS SERVER V1.2.21: SIGNAL RESTORATION ACTIVE ---');
+console.log('--- BAKERY POS SERVER V1.2.40: ABSOLUTE SYNC ACTIVE ---');
 
 app.use((req, res, next) => {
   res.set('Cache-Control', 'no-store');
@@ -660,7 +660,9 @@ app.get('/api/production/logs', async (req, res) => {
     const { status, limit } = req.query;
     // v1.2.33: ABSOLUTE SYNC - Simplified query to bypass any lingering gates
     console.log(`[Diagnostic] History Fetch - Status: ${status}, Limit: ${limit}`);
-    let sql = `
+    // v1.2.40: NUCLEAR UNLOCK - Forced 100% global visibility for all history logs
+    const finalLimit = 100; // Hardcoded safe limit for absolute sync
+    const logs = await db.all(`
       SELECT 
         id, 
         branch_id AS "branchId", 
@@ -674,37 +676,11 @@ app.get('/api/production/logs', async (req, res) => {
         unit,
         notes
       FROM production_logs_v2 
-      WHERE 1=1
-    `;
-    let finalParams = [];
-    
-    // v1.2.37: ABSOLUTE ANALYTICS UNLOCK - Hardcoded to return 100% to Command Center
-    /*
-    if (status) {
-      sql += " AND status = ?";
-      finalParams.push(status);
-    }
-    */
-    // We now return ALL logs regardless of status filter to ensure CommandCenter can calculate
-    // global losses. The frontend already knows how to filter these correctly.
-    
-    // v1.2.28: UNIVERSAL HISTORY UNLOCK - Bypassing branch filter to ensure 
-    // total visibility of production history across all studio monitors.
-    /*
-    if (!status || status === 'completed') {
-       const { query: v_query, params: v_params } = getBranchFilter(req);
-       sql += ` AND ${v_query}`;
-       finalParams.push(...v_params);
-    }
-    */
+      ORDER BY date DESC 
+      LIMIT ?
+    `, [finalLimit]);
 
-    sql += " ORDER BY date DESC LIMIT ?";
-    const finalLimit = limit ? parseInt(limit) : 100;
-    finalParams.push(finalLimit);
-
-    console.log(`[Diagnostic] SQL: ${sql} | Params: ${JSON.stringify(finalParams)}`);
-    const logs = await db.all(sql, finalParams);
-    console.log(`[Diagnostic] Final Metrics Deliverable: ${logs?.length || 0} records.`);
+    console.log(`[Nuclear Unlock] Delivering 100% of History: ${logs?.length || 0} records.`);
     res.json(logs);
   } catch (err) {
     res.status(500).json({ error: err.message });

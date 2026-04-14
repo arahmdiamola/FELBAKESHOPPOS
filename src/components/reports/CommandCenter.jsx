@@ -112,7 +112,10 @@ export default function CommandCenter({ isPublic = false }) {
     let totalSunkCost = 0;
     let totalPotentialLoss = 0;
 
-    ruinedProduction.forEach(log => {
+    (ruinedProduction || []).forEach(log => {
+      // v1.2.40: NUCLEAR FILTERING - Command center now filters the 100% log pulse locally
+      if (log.status !== 'ruined') return;
+
       // Sunk Cost: Sum of material costs
       const materialCost = log.items?.reduce((sum, item) => sum + (item.costPrice || 0) * item.quantityUsed, 0) || 0;
       totalSunkCost += materialCost;
