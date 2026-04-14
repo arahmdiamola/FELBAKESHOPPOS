@@ -12,6 +12,20 @@ import { ToastProvider } from './contexts/ToastContext';
 
 import { SyncProvider } from './contexts/SyncContext';
 
+// --- Resilience Shield for Rapid Deployments ---
+window.addEventListener('error', (e) => {
+  const isChunkError = e.message?.toLowerCase().includes('failed to fetch dynamically imported module') ||
+                       e.target?.tagName?.toLowerCase() === 'script';
+  
+  if (isChunkError) {
+    console.error('[Resilience Shield] Module load failure detected. Forcing clean reload...', e);
+    // Use a small delay to avoid infinite reload loops
+    setTimeout(() => {
+      window.location.reload();
+    }, 500);
+  }
+}, true);
+
 // Register Service Worker for PWA / Offline usage
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
