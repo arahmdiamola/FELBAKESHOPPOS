@@ -469,25 +469,28 @@ export async function initDb() {
     // 1.5 Absolute Factory Reset (v1.2.1 Giga-Nuclear)
     await forceNuclearReset(db);
 
-    // Initial table creation
+    // Initial table creation (Legacy cleanup still active for old tables)
     await db.run(`
-      CREATE TABLE IF NOT EXISTS production_logs (
+      CREATE TABLE IF NOT EXISTS production_logs_v2 (
         id TEXT PRIMARY KEY,
+        branch_id TEXT NOT NULL,
+        user_id TEXT,
+        user_name TEXT,
         product_id TEXT NOT NULL,
         product_name TEXT NOT NULL,
-        quantity_produced INTEGER NOT NULL,
-        unit TEXT,
-        estimated_yield INTEGER,
+        quantity_produced INTEGER DEFAULT 0,
+        actual_yield INTEGER DEFAULT 0,
+        estimated_yield INTEGER DEFAULT 0,
+        date TEXT,
+        notes TEXT,
         status TEXT DEFAULT 'started',
         start_time TEXT,
-        end_time TEXT,
-        user_id TEXT,
-        branch_id TEXT
+        end_time TEXT
       )
     `);
 
     await db.run(`
-      CREATE TABLE IF NOT EXISTS production_log_items (
+      CREATE TABLE IF NOT EXISTS production_log_items_v2 (
         id TEXT PRIMARY KEY,
         production_log_id TEXT NOT NULL,
         material_id TEXT NOT NULL,

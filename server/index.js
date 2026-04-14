@@ -14,7 +14,7 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
 // --- Server Shield: Deployment Version Marker ---
-console.log('--- BAKERY POS SERVER V1.2.1: GIGA-NUCLEAR RESET ACTIVE ---');
+console.log('--- BAKERY POS SERVER V1.2.2: V2 INFRASTRUCTURE ACTIVE ---');
 
 app.use((req, res, next) => {
   res.set('Cache-Control', 'no-store');
@@ -501,7 +501,7 @@ app.post('/api/production/log', async (req, res) => {
     await db.transaction(async (tx) => {
       // 1. Create Production Log
       await tx.run(
-        "INSERT INTO production_logs (id, branch_id, user_id, user_name, product_id, product_name, quantity_produced, estimated_yield, date, notes, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO production_logs_v2 (id, branch_id, user_id, user_name, product_id, product_name, quantity_produced, estimated_yield, date, notes, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [id, branchId, userId, userNameToken, productId, productName, quantityProduced || 0, estimatedYield || 0, date, notes, finalStatus]
       );
 
@@ -518,7 +518,7 @@ app.post('/api/production/log', async (req, res) => {
           const costPrice = material?.cost_price || 0;
 
           await tx.run(
-            "INSERT INTO production_log_items (id, production_log_id, material_id, material_name, quantity_used, unit, cost_price) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO production_log_items_v2 (id, production_log_id, material_id, material_name, quantity_used, unit, cost_price) VALUES (?, ?, ?, ?, ?, ?, ?)",
             [uuidv4(), id, item.materialId, item.materialName, item.quantityUsed, item.unit, costPrice]
           );
           // ALWAYS Deduct from raw materials stock
@@ -551,12 +551,12 @@ app.post('/api/production/finalize', async (req, res) => {
   
   try {
     await db.transaction(async (tx) => {
-      const log = await tx.get("SELECT * FROM production_logs WHERE id = ?", [logId]);
+      const log = await tx.get("SELECT * FROM production_logs_v2 WHERE id = ?", [logId]);
       if (!log) throw new Error('Production log not found');
 
       // 1. Update status and yield
       await tx.run(
-        "UPDATE production_logs SET status = 'completed', quantity_produced = ? WHERE id = ?",
+        "UPDATE production_logs_v2 SET status = 'completed', quantity_produced = ? WHERE id = ?",
         [actualYield, logId]
       );
 
@@ -566,7 +566,7 @@ app.post('/api/production/finalize', async (req, res) => {
       }
     });
 
-    const finalLog = await db.get("SELECT product_name FROM production_logs WHERE id = ?", [logId]);
+    const finalLog = await db.get("SELECT product_name FROM production_logs_v2 WHERE id = ?", [logId]);
     await logAction(req, 'PRODUCTION_FINALIZED', { product: finalLog?.product_name, actual: actualYield });
     res.json({ success: true });
   } catch (err) {
@@ -579,11 +579,11 @@ app.post('/api/production/void', async (req, res) => {
   
   try {
     await db.transaction(async (tx) => {
-      const log = await tx.get("SELECT * FROM production_logs WHERE id = ?", [logId]);
+      const log = await tx.get("SELECT * FROM production_logs_v2 WHERE id = ?", [logId]);
       if (!log) throw new Error('Production log not found');
 
       // 1. Mark as ruined
-      await tx.run("UPDATE production_logs SET status = 'ruined', notes = ? WHERE id = ?", [reason, logId]);
+      await tx.run("UPDATE production_logs_v2 SET status = 'ruined', notes = ? WHERE id = ?", [reason, logId]);
 
       // 2. Audit Log (Notification for Owner)
       await logAction(req, 'PRODUCTION_SPOILAGE', { 
