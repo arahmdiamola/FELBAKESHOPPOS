@@ -339,7 +339,7 @@ export default function BakingPage() {
                              <div className="batch-ops">
                                 <button className="finish-btn" onClick={() => {
                                    setSelectedBatch(batch);
-                                   setTargetProduct(products.find(p => p.id === batch.productId));
+                                   // v1.2.31: Isolate from sidebar to prevent UX pollution
                                    setTempQty(batch.estimatedYield.toString());
                                    setKeypadMode('production');
                                    setShowQtyModal(true);
@@ -410,10 +410,10 @@ export default function BakingPage() {
          </div>
       </Modal>
 
-      <Modal isOpen={showQtyModal} onClose={() => setShowQtyModal(false)} title={keypadMode === 'production' ? 'Confirm Final Yield' : 'Enter Quantity'}>
+      <Modal isOpen={showQtyModal} onClose={() => setShowQtyModal(false)} title={keypadMode === 'production' ? `Final Yield: ${selectedBatch?.productName}` : 'Enter Quantity'}>
          <div className="keypad-ux">
             <div className="keypad-screen">
-               <div className="val">{tempQty || '0'}<span className="unit">{selectedMaterial?.unit || 'kg'}</span></div>
+               <div className="val">{tempQty || '0'}<span className="unit">{keypadMode === 'production' ? (selectedBatch?.unit || 'pcs') : (selectedMaterial?.unit || 'kg')}</span></div>
             </div>
             <div className="keypad-btns">
                {[1,2,3,4,5,6,7,8,9,'.',0].map(n => (
