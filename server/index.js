@@ -14,7 +14,7 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
 // --- Server Shield: Deployment Version Marker ---
-console.log('--- BAKERY POS SERVER V1.2.12: TOTAL RESTORATION ACTIVE ---');
+console.log('--- BAKERY POS SERVER V1.2.14: VISIBILITY UNLOCK ACTIVE ---');
 
 app.use((req, res, next) => {
   res.set('Cache-Control', 'no-store');
@@ -489,7 +489,7 @@ app.post('/api/production/log', async (req, res) => {
     const {
       id, productId, productName, quantityProduced, estimatedYield,
       items, date, notes, status, branchId: bodyBranchId, bakerId, bakerName,
-      estimatedReadyTime
+      estimatedReadyTime, unit
     } = req.body;
 
     // SELF-HEALING: Use branchId from body OR fallback to header
@@ -515,8 +515,8 @@ app.post('/api/production/log', async (req, res) => {
       await db.transaction(async (tx) => {
         // 1. Create Production Log
         await tx.run(
-          "INSERT INTO production_logs_v2 (id, branch_id, user_id, user_name, product_id, product_name, quantity_produced, estimated_yield, date, notes, status, estimated_ready_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-          [id, branchId, userId, userNameToken, productId, productName, quantityProduced || 0, estimatedYield || 0, date, notes, finalStatus, finalReadyTime]
+          "INSERT INTO production_logs_v2 (id, branch_id, user_id, user_name, product_id, product_name, quantity_produced, estimated_yield, date, notes, status, estimated_ready_time, unit) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          [id, branchId, userId, userNameToken, productId, productName, quantityProduced || 0, estimatedYield || 0, date, notes, finalStatus, finalReadyTime, unit || 'pcs']
         );
 
       // 2. Add Finished Product stock (ONLY if completed immediately)
