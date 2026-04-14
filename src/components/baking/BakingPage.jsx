@@ -128,6 +128,9 @@ export default function BakingPage() {
         items: activeBatch,
         date: new Date().toISOString(),
         notes: `Started batch for ${targetProduct.name}`,
+        bakerId: currentUser?.id,
+        bakerName: currentUser?.name,
+        branchId: currentUser?.branchId,
         status: 'in_oven'
       };
 
