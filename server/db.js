@@ -492,9 +492,12 @@ export async function initDb() {
       "ALTER TABLE production_logs ADD COLUMN IF NOT EXISTS quantity_produced REAL DEFAULT 0",
       "ALTER TABLE production_logs ADD COLUMN IF NOT EXISTS date TEXT",
       "ALTER TABLE production_logs ADD COLUMN IF NOT EXISTS notes TEXT",
+      "ALTER TABLE production_log_items ADD COLUMN IF NOT EXISTS production_log_id TEXT",
+      "ALTER TABLE production_log_items ADD COLUMN IF NOT EXISTS material_id TEXT",
       "ALTER TABLE production_log_items ADD COLUMN IF NOT EXISTS material_name TEXT",
-      "ALTER TABLE production_log_items ADD COLUMN IF NOT EXISTS cost_price REAL DEFAULT 0",
+      "ALTER TABLE production_log_items ADD COLUMN IF NOT EXISTS quantity_used REAL DEFAULT 0",
       "ALTER TABLE production_log_items ADD COLUMN IF NOT EXISTS unit TEXT",
+      "ALTER TABLE production_log_items ADD COLUMN IF NOT EXISTS cost_price REAL DEFAULT 0",
       "ALTER TABLE branch_sessions ADD COLUMN IF NOT EXISTS last_seen TEXT"
     ];
 

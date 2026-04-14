@@ -14,7 +14,7 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
 // --- Server Shield: Deployment Version Marker ---
-console.log('--- BAKERY POS SERVER V1.1.5: CASING STANDARDIZATION ACTIVE ---');
+console.log('--- BAKERY POS SERVER V1.1.6: TOTAL RESTORATION & SENSING ACTIVE ---');
 
 app.use((req, res, next) => {
   res.set('Cache-Control', 'no-store');
@@ -537,7 +537,12 @@ app.post('/api/production/log', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error('[Production Log Failed]', err);
-    res.status(500).json({ error: err.message });
+    // V1.1.6 Sensing: Return detailed error message if column missing
+    res.status(500).json({ 
+      error: `Production Log Error: ${err.message}`,
+      detail: err.toString(),
+      code: err.code
+    });
   }
 });
 
