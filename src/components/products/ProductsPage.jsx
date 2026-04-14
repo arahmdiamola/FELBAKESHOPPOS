@@ -18,8 +18,8 @@ const BAKERY_EMOJIS = [
 
 function EmojiSelector({ selected, onSelect }) {
   return (
-    <div className="emoji-grid-container luxury-mobile-scroll">
-      <div className="emoji-grid" style={{ display: 'flex', width: 'max-content', gap: 8, padding: 4 }}>
+    <div className="emoji-grid-container">
+      <div className="emoji-grid">
         {BAKERY_EMOJIS.map(emoji => (
           <button 
             key={emoji} 
