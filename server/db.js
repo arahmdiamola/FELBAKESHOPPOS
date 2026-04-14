@@ -141,18 +141,40 @@ async function ensureColumnRenamed(db, table, oldColNames, newColName) {
     // 3. Check for any variants of the old name
     // 3. Check for any variants of the old name
     for (const oldCol of oldColNames) {
-      // Check both quoted exact match and unquoted lowercase
-      const variant = existingCols.find(c => c === oldCol || c === oldCol.toLowerCase());
-      if (variant) {
-        // Quote the variant if it has uppercase letters
-        const actualRef = /[A-Z]/.test(variant) ? `"${variant}"` : variant;
-        console.log(`[Migration] Transitioning ${table}.${variant} -> ${newColName}...`);
-        await db.run(`ALTER TABLE ${table} RENAME COLUMN ${actualRef} TO "${newColName}"`);
-        return;
+    const actualCols = result.map(r => r.column_name);
+    
+    // 2. Identify if target already exists
+    if (actualCols.includes(newColName)) {
+      console.log(`[Migration] Target ${table}.${newColName} exists. Cleaning ghosts...`);
+      for (const variant of oldColNames) {
+        if (actualCols.includes(variant) && variant.toLowerCase() !== newColName.toLowerCase()) {
+          console.log(`[Migration] INCINERATING legacy column: ${table}.${variant}`);
+          try {
+            await db.run(`ALTER TABLE ${table} DROP COLUMN "${variant}"`);
+          } catch (e) {
+            console.error(`[Migration] Failed to drop ghost ${variant}:`, e.message);
+          }
+        }
+      }
+      return; // Cleanup complete
+    }
+
+    // 3. Fallback: Check variants and rename if possible
+    for (const variant of oldColNames) {
+      if (actualCols.includes(variant)) {
+        console.log(`[Migration] Renaming legacy column: ${table}.${variant} -> ${newColName}`);
+        try {
+          // Wrap in quotes for safety with Postgres casing
+          const actualVariant = /[A-Z]/.test(variant) ? `"${variant}"` : variant;
+          await db.run(`ALTER TABLE ${table} RENAME COLUMN ${actualVariant} TO "${newColName}"`);
+          return; // Success
+        } catch (e) {
+          console.error(`[Migration] Rename failed for ${variant}:`, e.message);
+        }
       }
     }
-  } catch (e) {
-    console.error(`[Migration Error] Fault in ${table} rename logic:`, e.message);
+  } catch (err) {
+    console.error(`[Migration Error] Casing Guard failed for ${table}:`, err.message);
   }
 }
 
