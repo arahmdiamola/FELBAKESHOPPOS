@@ -245,7 +245,7 @@ export default function BakingPage() {
                     ) : (
                        activeBatch.map(item => (
                           <div key={item.materialId} className="assembly-item">
-                             <span className="item-name">{item.name}</span>
+                             <span className="item-name">{item.name || 'Unknown Material'}</span>
                              <span className="item-qty">{item.quantity} {item.unit}</span>
                              <button className="item-del" onClick={() => setActiveBatch(prev => prev.filter(i => i.materialId !== item.materialId))}>
                                 <Plus size={14} style={{ transform: 'rotate(45deg)' }} />
@@ -284,9 +284,9 @@ export default function BakingPage() {
                     </div>
 
                     <button 
-                       className="bake-btn" 
-                       disabled={!targetProduct || activeBatch.length === 0 || isSaving}
-                       onClick={handleStartBatch}
+                        className="bake-btn" 
+                        disabled={!targetProduct || activeBatch.length === 0 || isSaving}
+                        onClick={handleStartBatch}
                     >
                        {isSaving ? 'Processing...' : 'Place in Oven'}
                     </button>
