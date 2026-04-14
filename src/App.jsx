@@ -4,21 +4,34 @@ import { useAuth } from './contexts/AuthContext';
 import ToastContainer from './components/shared/ToastContainer';
 import LoginScreen from './components/users/LoginScreen';
 
-// Lazy load heavy components
-const Sidebar = lazy(() => import('./components/layout/Sidebar'));
-const POSTerminal = lazy(() => import('./components/pos/POSTerminal'));
-const DashboardPage = lazy(() => import('./components/reports/DashboardPage'));
-const ProductsPage = lazy(() => import('./components/products/ProductsPage'));
-const InventoryPage = lazy(() => import('./components/inventory/InventoryPage'));
-const PreOrdersPage = lazy(() => import('./components/preorders/PreOrdersPage'));
-const CustomersPage = lazy(() => import('./components/customers/CustomersPage'));
-const ExpensesPage = lazy(() => import('./components/expenses/ExpensesPage'));
-const UsersPage = lazy(() => import('./components/users/UsersPage'));
-const SettingsPage = lazy(() => import('./components/settings/SettingsPage'));
-const ReportsPage = lazy(() => import('./components/reports/ReportsPage'));
-const CommandCenter = lazy(() => import('./components/reports/CommandCenter'));
-const BakingPage = lazy(() => import('./components/baking/BakingPage'));
-const RawMaterialsPage = lazy(() => import('./components/inventory/RawMaterialsPage'));
+// Helper to handle ChunkLoadErrors during deployments
+const lazyWithRetry = (componentImport) => 
+  lazy(async () => {
+    try {
+      return await componentImport();
+    } catch (error) {
+      // If the module fails to load (due to hash mismatch on redeploy), force a reload
+      console.error('Module load failed. Refreshing for latest version...', error);
+      window.location.reload();
+      return { default: () => null };
+    }
+  });
+
+// Lazy load heavy components with retry harness
+const Sidebar = lazyWithRetry(() => import('./components/layout/Sidebar'));
+const POSTerminal = lazyWithRetry(() => import('./components/pos/POSTerminal'));
+const DashboardPage = lazyWithRetry(() => import('./components/reports/DashboardPage'));
+const ProductsPage = lazyWithRetry(() => import('./components/products/ProductsPage'));
+const InventoryPage = lazyWithRetry(() => import('./components/inventory/InventoryPage'));
+const PreOrdersPage = lazyWithRetry(() => import('./components/preorders/PreOrdersPage'));
+const CustomersPage = lazyWithRetry(() => import('./components/customers/CustomersPage'));
+const ExpensesPage = lazyWithRetry(() => import('./components/expenses/ExpensesPage'));
+const UsersPage = lazyWithRetry(() => import('./components/users/UsersPage'));
+const SettingsPage = lazyWithRetry(() => import('./components/settings/SettingsPage'));
+const ReportsPage = lazyWithRetry(() => import('./components/reports/ReportsPage'));
+const CommandCenter = lazyWithRetry(() => import('./components/reports/CommandCenter'));
+const BakingPage = lazyWithRetry(() => import('./components/baking/BakingPage'));
+const RawMaterialsPage = lazyWithRetry(() => import('./components/inventory/RawMaterialsPage'));
 
 const PageLoader = () => (
   <div style={{ 
