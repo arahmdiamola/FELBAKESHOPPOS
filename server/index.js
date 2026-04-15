@@ -1033,6 +1033,58 @@ app.get('/api/logs', async (req, res) => {
   }
 });
 
+// --- ANALYTICS & DASHBOARD AGGREGATION ---
+app.get('/api/analytics/today-summary', async (req, res) => {
+  try {
+    const today = req.query.date || new Date().toISOString().split('T')[0];
+    const branchId = req.headers['x-branch-id'];
+    const isOwner = ['system_admin', 'owner'].includes(req.headers['x-user-role']);
+
+    // 1. Global Aggregates (Total Revenue, Order Count)
+    const globalFilter = (branchId && branchId !== 'all') ? 'AND branch_id = ?' : '';
+    const globalParams = (branchId && branchId !== 'all') ? [`${today}%`, branchId] : [`${today}%`];
+
+    const globalStats = await db.get(`
+      SELECT 
+        COALESCE(SUM(total), 0) as revenue, 
+        COUNT(*) as count,
+        COALESCE(SUM(subtotal), 0) as subtotal
+      FROM transactions 
+      WHERE date LIKE ? ${globalFilter}
+    `, globalParams);
+
+    // 2. Branch Breakdown (For Executive Dashboard)
+    // Owners see all, others only see their branch
+    const branchBreakdownSql = isOwner 
+      ? `SELECT branch_id as "branchId", COALESCE(SUM(total), 0) as revenue, COUNT(*) as count FROM transactions WHERE date LIKE ? GROUP BY branch_id`
+      : `SELECT branch_id as "branchId", COALESCE(SUM(total), 0) as revenue, COUNT(*) as count FROM transactions WHERE date LIKE ? AND branch_id = ? GROUP BY branch_id`;
+    
+    const branchBreakdownParams = isOwner ? [`${today}%`] : [`${today}%`, branchId];
+    const branchStats = await db.all(branchBreakdownSql, branchBreakdownParams);
+
+    // 3. Hourly Pulse
+    // Postgres strftime is different than SQLite. Handled by pg-adapter but we'll use a portable LIKE pattern for hours if possible
+    // Actually, simple way: fetch all for pulse but keep it aggregated
+    const hourlySql = isProduction 
+      ? `SELECT EXTRACT(HOUR FROM date::timestamp) as hour, SUM(total) as revenue, COUNT(*) as count FROM transactions WHERE date LIKE ? ${globalFilter} GROUP BY hour ORDER BY hour ASC`
+      : `SELECT strftime('%H', date) as hour, SUM(total) as revenue, COUNT(*) as count FROM transactions WHERE date LIKE ? ${globalFilter} GROUP BY hour ORDER BY hour ASC`;
+
+    const hourlyPulse = await db.all(hourlySql, globalParams);
+
+    res.json({
+      revenue: globalStats.revenue,
+      orderCount: globalStats.count,
+      subtotal: globalStats.subtotal,
+      branchStats,
+      hourlyPulse,
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error('[Analytics Error]', err);
+    res.status(500).json({ error: 'Failed to aggregate today\'s stats', message: err.message });
+  }
+});
+
 app.get('/api/backup-full', async (req, res) => {
   try {
     const backup = {

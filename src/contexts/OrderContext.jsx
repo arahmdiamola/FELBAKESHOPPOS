@@ -8,6 +8,7 @@ const OrderContext = createContext();
 
 export function OrderProvider({ children }) {
   const [transactions, setTransactions] = useState([]);
+  const [stats, setStats] = useState({ revenue: 0, orderCount: 0 });
   const [preOrders, setPreOrders] = useState([]);
   const { deductStock } = useProducts();
   const { currentUser, activeBranch } = useAuth();
@@ -19,12 +20,14 @@ export function OrderProvider({ children }) {
       return;
     }
     try {
-      const [tx, po] = await Promise.all([
-        api.get('/transactions?limit=60000&summary=true'),
-        api.get('/preorders')
+      const [tx, po, summary] = await Promise.all([
+        api.get('/transactions?limit=200&summary=true'),
+        api.get('/preorders'),
+        api.get('/analytics/today-summary')
       ]);
       setTransactions(tx || []);
       setPreOrders(po || []);
+      setStats(summary || { revenue: 0, orderCount: 0 });
     } catch (e) {
       console.error(e);
     }
@@ -154,23 +157,12 @@ export function OrderProvider({ children }) {
   }, [updatePreOrder]);
 
   const getTodayStats = useCallback(() => {
-    // robust midnight calculation in local time
-    const today = new Date().toDateString();
-
-    const todayTxns = transactions.filter(t => {
-      if (!t.date) return false;
-      const d = new Date(t.date);
-      return d.toDateString() === today;
-    });
-
-    const revenue = todayTxns.reduce((sum, t) => sum + Number(t.total || 0), 0);
-
     return {
-      revenue,
-      count: todayTxns.length,
-      items: todayTxns.reduce((sum, t) => sum + (t.items || []).reduce((s, i) => s + (i.quantity || 0), 0), 0),
+      revenue: stats.revenue || 0,
+      count: stats.orderCount || 0,
+      items: 0 // Item count removed for performance
     };
-  }, [transactions]);
+  }, [stats]);
 
   const allSales = useMemo(() => {
     return [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));

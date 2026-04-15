@@ -31,6 +31,7 @@ export default function CommandCenter({ isPublic = false }) {
   const [justSoldBranch, setJustSoldBranch] = useState(null);
   const [activeSlide, setActiveSlide] = useState(1);
   const [activeProduction, setActiveProduction] = useState([]);
+  const [summaryData, setSummaryData] = useState(null);
   
   // Achievement System
   const prevRanksRef = useRef({});
@@ -71,16 +72,18 @@ export default function CommandCenter({ isPublic = false }) {
         'X-User-Role': 'system_admin' // Force full access for dashboard
       };
 
-      // FETCH BUFFER: Get the last 500 transactions to ensure we capture everything around midnight
-      const [tx, branchesData, prodData] = await Promise.all([
-        api.get('/transactions?limit=60000&summary=true', { headers }),
+      // FETCH BUFFER: Use the new summary endpoint for speed and the transactions for live toasts
+      const [tx, branchesData, prodData, summary] = await Promise.all([
+        api.get('/transactions?limit=200&summary=true', { headers }),
         api.get('/branches', { headers }),
-        api.get('/production/logs?status=in_oven', { headers })
+        api.get('/production/logs?status=in_oven', { headers }),
+        api.get('/analytics/today-summary')
       ]);
 
       setGlobalSales(tx || []);
       setBranches(branchesData || []);
-      // v1.2.38: UNPACKING RESILIENCE - Extracting batches from diagnostic wrapper if present
+      setSummaryData(summary);
+      
       const activeBatches = Array.isArray(prodData) ? prodData : (prodData?.batches || prodData?.logs || []);
       setActiveProduction(activeBatches);
       
@@ -167,28 +170,15 @@ export default function CommandCenter({ isPublic = false }) {
 
   // Branch Performance Analysis
   const branchPerformance = useMemo(() => {
-    const map = {};
-    const todayStr = new Date().toDateString();
-
-    // CALCULATE BRANCH REVENUE (Strictly filtered to Today's Local Date)
-    globalSales.forEach(t => {
-      if (!t.date) return;
-      const tDateStr = new Date(t.date).toDateString();
-      
-      if (tDateStr === todayStr) {
-        if (!map[t.branchId]) {
-          map[t.branchId] = { revenue: 0, orders: 0 };
-        }
-        map[t.branchId].revenue += t.total;
-        map[t.branchId].orders += 1;
-      }
-    });
-
-    const currentRanks = branches.map(b => ({
-      ...b,
-      revenue: map[b.id]?.revenue || 0,
-      orders: map[b.id]?.orders || 0,
-    })).sort((a, b) => b.revenue - a.revenue);
+    // CALCULATE BRANCH REVENUE (Using Server-Side Summary)
+    const currentRanks = branches.map(b => {
+      const stats = summaryData?.branchStats?.find(s => s.branchId === b.id);
+      return {
+        ...b,
+        revenue: stats?.revenue || 0,
+        orders: stats?.count || 0
+      };
+    }).sort((a, b) => b.revenue - a.revenue);
 
     const finalData = currentRanks.map((b, index) => {
        const criticalProducts = globalLowStock.filter(p => p.branchId === b.id);
@@ -232,36 +222,24 @@ export default function CommandCenter({ isPublic = false }) {
 
   // Hourly Activity
   const pulseMetrics = useMemo(() => {
-    const data = [];
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    let total = 0;
+    if (!summaryData) return { data: [], total: 0, peakHour: 'None', todayTxCount: 0 };
 
-    for (let h = 0; h <= 23; h++) {
-      const hSales = globalSales.filter(t => {
-        const d = new Date(t.date);
-        return d >= today && d.getHours() === h;
-      });
-      const revenue = hSales.reduce((sum, t) => sum + t.total, 0);
-      total += revenue;
-      
-      data.push({
-        hour: h,
-        hourLabel: h > 12 ? `${h - 12} PM` : h === 12 ? '12 PM' : h === 0 ? '12 AM' : `${h} AM`,
-        revenue
-      });
-    }
+    const data = summaryData.hourlyPulse.map(p => ({
+      hour: parseInt(p.hour),
+      hourLabel: p.hour > 12 ? `${p.hour - 12} PM` : p.hour === '12' ? '12 PM' : p.hour === '00' ? '12 AM' : `${parseInt(p.hour)} AM`,
+      revenue: p.revenue
+    }));
+
     const peak = [...data].sort((a, b) => b.revenue - a.revenue)[0];
     const peakHour = (peak && peak.revenue > 0) ? peak.hourLabel : 'None';
 
-    const todayStr = new Date().toDateString();
-    const todayTxCount = globalSales.filter(t => {
-       if (!t.date) return false;
-       return new Date(t.date).toDateString() === todayStr;
-    }).length;
-
-    return { data, total, peakHour, todayTxCount };
-  }, [globalSales]);
+    return { 
+      data, 
+      total: summaryData.revenue || 0, 
+      peakHour, 
+      todayTxCount: summaryData.orderCount || 0 
+    };
+  }, [summaryData]);
 
   const tickerItems = useMemo(() => {
       const sales = globalSales.slice(0, 5).map(t => ({
