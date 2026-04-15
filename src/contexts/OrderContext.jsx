@@ -20,7 +20,7 @@ export function OrderProvider({ children }) {
     }
     try {
       const [tx, po] = await Promise.all([
-        api.get('/transactions?limit=10000&summary=true'),
+        api.get('/transactions?limit=60000&summary=true'),
         api.get('/preorders')
       ]);
       setTransactions(tx || []);

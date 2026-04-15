@@ -73,7 +73,7 @@ export default function CommandCenter({ isPublic = false }) {
 
       // FETCH BUFFER: Get the last 500 transactions to ensure we capture everything around midnight
       const [tx, branchesData, prodData] = await Promise.all([
-        api.get('/transactions?limit=30000&summary=true', { headers }),
+        api.get('/transactions?limit=60000&summary=true', { headers }),
         api.get('/branches', { headers }),
         api.get('/production/logs?status=in_oven', { headers })
       ]);
