@@ -676,11 +676,21 @@ app.get('/api/production/active-batches', async (req, res) => {
 // --- TRANSACTIONS ---
 app.get('/api/transactions', async (req, res) => {
   const limit = req.query.limit ? `LIMIT ${req.query.limit}` : '';
+  const isSummary = req.query.summary === 'true';
   const { query, params } = getBranchFilter(req);
+  
   const txns = await db.all(`SELECT * FROM transactions WHERE ${query} ORDER BY date DESC ${limit}`, params);
-  for (const t of txns) {
-    t.items = await db.all("SELECT * FROM transaction_items WHERE transaction_id = ?", [t.id]);
+  
+  // v1.2.45: PERFORMANCE PROTECTION - Skip heavy item fetch if summary mode is requested (for dashboards)
+  if (!isSummary) {
+    for (const t of txns) {
+      t.items = await db.all("SELECT * FROM transaction_items WHERE transaction_id = ?", [t.id]);
+    }
+  } else {
+    // Return empty items array to maintain object structure compatibility
+    txns.forEach(t => t.items = []);
   }
+  
   res.json(txns);
 });
 

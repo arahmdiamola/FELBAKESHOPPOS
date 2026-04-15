@@ -390,14 +390,13 @@ export default function DashboardPage() {
           </div>
           <div className="table-container" style={{ border: 'none' }}>
             <table className="table">
-              <thead><tr><th>Type</th><th>Receipt</th><th>Customer</th><th>Items</th><th>Amount</th><th>Method</th><th style={{ textAlign: 'right' }}>Action</th></tr></thead>
+              <thead><tr><th>Type</th><th>Receipt</th><th>Customer</th><th>Amount</th><th>Method</th><th style={{ textAlign: 'right' }}>Action</th></tr></thead>
               <tbody>
                 {allSales.slice(0, 10).map(t => (
                   <tr key={t.id}>
                     <td><span className={`badge ${t.isPreorder ? 'badge-blue' : 'badge-gray'}`}>{t.isPreorder ? 'Pre-order' : 'POS'}</span></td>
                     <td className="primary">{t.receiptNumber}</td>
                     <td>{t.customerName || 'Walk-in'}</td>
-                    <td>{t.items?.reduce((s, i) => s + i.quantity, 0) || 0} pcs</td>
                     <td className="font-bold">{formatCurrency(t.total)}</td>
                     <td><span className={`badge badge-${t.paymentMethod === 'cash' ? 'green' : t.paymentMethod === 'gcash' ? 'blue' : 'amber'}`}>{t.paymentMethod}</span></td>
                     <td style={{ textAlign: 'right' }}>
