@@ -236,3 +236,35 @@ export async function initDb() {
     throw e;
   }
 }
+
+/**
+ * SELECTIVE SYSTEM RESET
+ * Purges operational data (Sales, Logs, Expenses, etc.)
+ * Preserves structural data (Users, Branches, Products, Settings)
+ */
+export async function resetOperationalData() {
+  const db = pgAdapter;
+  console.log("🧹 Initializing Selective System Reset...");
+  
+  return await db.transaction(async (tx) => {
+    // 1. Wipe Transactional operational data (Deep layers first)
+    await tx.run("DELETE FROM transaction_items");
+    await tx.run("DELETE FROM transactions");
+    await tx.run("DELETE FROM production_log_items_v2");
+    await tx.run("DELETE FROM production_logs_v2");
+    await tx.run("DELETE FROM preorders");
+    await tx.run("DELETE FROM expenses");
+    await tx.run("DELETE FROM system_logs");
+    await tx.run("DELETE FROM branch_sessions");
+    
+    // 2. Wipe Operational CRM data
+    await tx.run("DELETE FROM customers");
+    
+    // 3. Reset Inventory counters to 0 (Keep the items, but reset the counts)
+    await tx.run("UPDATE products SET stock = 0");
+    await tx.run("UPDATE raw_materials SET stock = 0");
+
+    console.log("✨ Selective Reset Successful. Users and Structural data preserved.");
+    return { success: true };
+  });
+}

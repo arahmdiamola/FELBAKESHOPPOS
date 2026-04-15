@@ -3,7 +3,7 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
-import { initDb } from './db.js';
+import { initDb, resetOperationalData } from './db.js';
 import { isProduction } from './pg-adapter.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -1068,6 +1068,23 @@ app.use('/api', (err, req, res, next) => {
     path: req.path
   });
 });
+
+// --- ADMIN: Selective System Reset ---
+app.post('/api/admin/selective-reset', async (req, res) => {
+  try {
+    const { confirm } = req.body;
+    if (confirm !== 'I_AM_SURE') {
+      return res.status(400).json({ error: 'Reset rejected: Missing safety confirmation.' });
+    }
+
+    const result = await resetOperationalData();
+    res.json(result);
+  } catch (err) {
+    console.error('Reset Failed:', err);
+    res.status(500).json({ error: 'System reset failed', message: err.message });
+  }
+});
+
 
 // Catch-all to support React Router natively
 app.use((req, res) => {

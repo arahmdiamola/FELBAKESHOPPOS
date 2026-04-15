@@ -25,6 +25,7 @@ export default function SettingsPage() {
   const [systemLogs, setSystemLogs] = useState([]);
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [isMasterResetting, setIsMasterResetting] = useState(false);
   const [selectedBackupFile, setSelectedBackupFile] = useState(null);
   const { lastBackupTime, triggerBackupDownload } = useSafetyShield();
   
@@ -166,6 +167,34 @@ export default function SettingsPage() {
       addToast(e.message || 'Reset failed', 'error');
     } finally {
       setIsResetting(false);
+    }
+  };
+
+  const handleMasterReset = async () => {
+    if (!confirm("🚨 EXTREME CAUTION: This will PERMANENTLY DELETE all Sales, Expenses, Customers, and Production Logs. ONLY Staff Accounts and Your Product Menu will remain. Inventory counts will be reset to 0. Proceed?")) return;
+    
+    const doubleCheck = prompt('Type "I_AM_SURE" to confirm this operation:');
+    if (doubleCheck !== 'I_AM_SURE') {
+      addToast('Reset cancelled: Confirmation mismatch.', 'warning');
+      return;
+    }
+
+    // Safety Shield
+    addToast('SAFETY SHIELD: Securing final state before master reset...', 'info');
+    await triggerBackupDownload('FINAL_STATE_PRE_MASTER_RESET');
+
+    setIsMasterResetting(true);
+    try {
+      await api.post('/admin/selective-reset', { confirm: 'I_AM_SURE' });
+      addToast('Selective System Reset Successful! Users Preserved. Refreshing...', 'success');
+      
+      // Clear all local caches
+      localStorage.removeItem('fel_active_branch');
+      setTimeout(() => window.location.reload(), 2000);
+    } catch (err) {
+      addToast(`Reset Failed: ${err.message}`, 'error');
+    } finally {
+      setIsMasterResetting(false);
     }
   };
 
@@ -486,6 +515,16 @@ export default function SettingsPage() {
                   </div>
                   <button className="btn btn-danger" onClick={() => setIsResetModalOpen(true)}>
                     <RotateCcw size={16} /> Open Reset Tool
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between" style={{ padding: 16, background: 'rgba(231, 76, 60, 0.1)', borderRadius: 'var(--radius-md)', border: '2px dashed var(--danger)' }}>
+                  <div>
+                    <div className="font-bold text-red-700 uppercase tracking-tighter">Master Operational Reset</div>
+                    <div className="text-xs text-muted mt-1">Purge ALL operational data (Sales, Logs, Customers, Expenses). <br/><span className="font-bold text-red-600">Preserves Staff Accounts (Users) and your Product Menu.</span></div>
+                  </div>
+                  <button className="btn btn-danger" onClick={handleMasterReset} disabled={isMasterResetting}>
+                    {isMasterResetting ? 'Processing...' : 'Perform FULL Operational Wipe'}
                   </button>
                 </div>
               </div>
