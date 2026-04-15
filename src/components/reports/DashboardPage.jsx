@@ -126,27 +126,32 @@ export default function DashboardPage() {
     return products.reduce((sum, p) => sum + (p.costPrice * p.stock), 0);
   }, [products]);
 
-  // Today's Sales Pulse (Hourly)
+  // Today's Sales Pulse (Hourly - Using Server-Side Stats for speed)
   const todayPulseData = useMemo(() => {
-    const data = [];
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    // Typical bakeshop hours: 6 AM to 9 PM
-    for (let h = 6; h <= 21; h++) {
-      const hSales = allSales.filter(t => {
-        const d = new Date(t.date);
-        return d >= today && d.getHours() === h;
-      });
-      
-      data.push({
-        hour: h > 12 ? `${h - 12} PM` : h === 12 ? '12 PM' : `${h} AM`,
-        revenue: hSales.reduce((sum, t) => sum + t.total, 0),
-        count: hSales.length
+    if (!todayStats.hourlyPulse || todayStats.hourlyPulse.length === 0) {
+      // Return empty skeleton if no data yet
+      return Array.from({ length: 16 }, (_, i) => {
+        const h = i + 6;
+        return {
+          hour: h > 12 ? `${h - 12} PM` : h === 12 ? '12 PM' : `${h} AM`,
+          revenue: 0,
+          count: 0
+        };
       });
     }
-    return data;
-  }, [allSales]);
+
+    return todayStats.hourlyPulse.map(p => {
+      const h = parseInt(p.hour);
+      return {
+        hour: h > 12 ? `${h - 12} PM` : h === 12 ? '12 PM' : h === 0 ? '12 AM' : `${h} AM`,
+        revenue: p.revenue,
+        count: p.count
+      };
+    }).filter(p => {
+      const h = parseInt(p.hour || 0);
+      return h >= 6 && h <= 21; // Match the bakeshop operational window
+    });
+  }, [todayStats.hourlyPulse]);
 
   const COLORS = ['#D4763C', '#5B9BD5', '#4CAF50', '#F5A623', '#9C27B0', '#E74C3C'];
 

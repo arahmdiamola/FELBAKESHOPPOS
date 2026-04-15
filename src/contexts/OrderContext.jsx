@@ -8,7 +8,7 @@ const OrderContext = createContext();
 
 export function OrderProvider({ children }) {
   const [transactions, setTransactions] = useState([]);
-  const [stats, setStats] = useState({ revenue: 0, orderCount: 0 });
+  const [stats, setStats] = useState({ revenue: 0, orderCount: 0, hourlyPulse: [] });
   const [preOrders, setPreOrders] = useState([]);
   const { deductStock } = useProducts();
   const { currentUser, activeBranch } = useAuth();
@@ -160,7 +160,8 @@ export function OrderProvider({ children }) {
     return {
       revenue: stats.revenue || 0,
       count: stats.orderCount || 0,
-      items: 0 // Item count removed for performance
+      items: 0,
+      hourlyPulse: stats.hourlyPulse || []
     };
   }, [stats]);
 
