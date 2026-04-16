@@ -289,7 +289,8 @@ export default function UsersPage() {
               <option value="baker">Baker</option>
               <option value="admin">Admin</option>
               <option value="owner">Global Owner</option>
-              {currentUser?.role === 'system_admin' && <option value="system_admin">System Admin (Developer)</option>}
+              {/* STRICTOR SECURITY: Only show developer role if logged in as the master dev ID */}
+              {currentUser?.id === 'dev-001' && <option value="system_admin">System Admin (Developer)</option>}
             </select>
           </div>
           <div className="input-group">
