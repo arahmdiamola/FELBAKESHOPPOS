@@ -44,7 +44,7 @@ export function ExpenseProvider({ children }) {
   }, [expenses]);
 
   return (
-    <ExpenseContext.Provider value={{ expenses, addExpense, deleteExpense, getTotalExpenses }}>
+    <ExpenseContext.Provider value={{ expenses, addExpense, deleteExpense, getTotalExpenses, refetch: fetchExpenses }}>
       {children}
     </ExpenseContext.Provider>
   );

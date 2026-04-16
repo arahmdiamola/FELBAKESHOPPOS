@@ -27,7 +27,7 @@ export function OrderProvider({ children }) {
       ]);
       setTransactions(tx || []);
       setPreOrders(po || []);
-      setStats(summary || { revenue: 0, orderCount: 0 });
+      setStats(summary || { revenue: 0, orderCount: 0, hourlyPulse: [] });
     } catch (e) {
       console.error(e);
     }
@@ -182,7 +182,8 @@ export function OrderProvider({ children }) {
   return (
     <OrderContext.Provider value={{
       transactions, preOrders, allSales, dueTodayOrders, dueTodayCount,
-      addTransaction, addPreOrder, updatePreOrder, deletePreOrder, completePreOrder, getTodayStats
+      addTransaction, addPreOrder, updatePreOrder, deletePreOrder, completePreOrder, getTodayStats,
+      refetch: fetchData
     }}>
       {children}
     </OrderContext.Provider>

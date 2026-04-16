@@ -1,7 +1,11 @@
 import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
+import { useOrders } from './contexts/OrderContext';
+import { useProducts } from './contexts/ProductContext';
+import { useExpenses } from './contexts/ExpenseContext';
 import ToastContainer from './components/shared/ToastContainer';
+import PullToRefresh from './components/shared/PullToRefresh';
 import LoginScreen from './components/users/LoginScreen';
 
 // Helper to handle ChunkLoadErrors during deployments
@@ -44,7 +48,19 @@ const PageLoader = () => (
 
 function AppRoutes() {
   const { currentUser } = useAuth();
+  const { refetch: refetchOrders } = useOrders();
+  const { refetch: refetchProducts } = useProducts();
+  const { refetch: refetchExpenses } = useExpenses();
   const location = useLocation();
+
+  const handleGlobalRefresh = async () => {
+    console.log('[App] Coordinated refresh triggered...');
+    await Promise.all([
+      refetchOrders().catch(e => console.warn('Order refresh failed', e)),
+      refetchProducts().catch(e => console.warn('Product refresh failed', e)),
+      refetchExpenses().catch(e => console.warn('Expense refresh failed', e))
+    ]);
+  };
 
   // --- PUBLIC OVERRIDE (FOR DEMO) ---
   if (location.pathname === '/demo') {
@@ -80,21 +96,23 @@ function AppRoutes() {
       <div className="app-layout">
         <Sidebar />
         <div className="main-area">
-          <Routes>
-            <Route path="/pos" element={<POSTerminal />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/products" element={<ProductsPage />} />
-            <Route path="/inventory" element={<InventoryPage />} />
-            <Route path="/preorders" element={<PreOrdersPage />} />
-            <Route path="/customers" element={<CustomersPage />} />
-            <Route path="/expenses" element={<ExpensesPage />} />
-            <Route path="/users" element={<UsersPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/reports" element={<ReportsPage />} />
-            <Route path="/baking" element={<BakingPage />} />
-            <Route path="/raw-materials" element={<RawMaterialsPage />} />
-            <Route path="*" element={<Navigate to={currentUser.role === 'baker' ? '/baking' : '/pos'} replace />} />
-          </Routes>
+          <PullToRefresh onRefresh={handleGlobalRefresh}>
+            <Routes>
+              <Route path="/pos" element={<POSTerminal />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/products" element={<ProductsPage />} />
+              <Route path="/inventory" element={<InventoryPage />} />
+              <Route path="/preorders" element={<PreOrdersPage />} />
+              <Route path="/customers" element={<CustomersPage />} />
+              <Route path="/expenses" element={<ExpensesPage />} />
+              <Route path="/users" element={<UsersPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/reports" element={<ReportsPage />} />
+              <Route path="/baking" element={<BakingPage />} />
+              <Route path="/raw-materials" element={<RawMaterialsPage />} />
+              <Route path="*" element={<Navigate to={currentUser.role === 'baker' ? '/baking' : '/pos'} replace />} />
+            </Routes>
+          </PullToRefresh>
         </div>
         <ToastContainer />
       </div>

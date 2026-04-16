@@ -128,7 +128,9 @@ export default function DashboardPage() {
 
   // Today's Sales Pulse (Hourly - Using Server-Side Stats for speed)
   const todayPulseData = useMemo(() => {
-    if (!todayStats.hourlyPulse || todayStats.hourlyPulse.length === 0) {
+    const pulse = todayStats?.hourlyPulse || [];
+    
+    if (pulse.length === 0) {
       // Return empty skeleton if no data yet
       return Array.from({ length: 16 }, (_, i) => {
         const h = i + 6;
@@ -140,18 +142,18 @@ export default function DashboardPage() {
       });
     }
 
-    return todayStats.hourlyPulse.map(p => {
-      const h = parseInt(p.hour);
+    return pulse.map(p => {
+      const h = parseInt(p?.hour ?? 0);
       return {
         hour: h > 12 ? `${h - 12} PM` : h === 12 ? '12 PM' : h === 0 ? '12 AM' : `${h} AM`,
-        revenue: p.revenue,
-        count: p.count
+        revenue: Number(p?.revenue || 0),
+        count: Number(p?.count || 0)
       };
     }).filter(p => {
-      const h = parseInt(p.hour || 0);
-      return h >= 6 && h <= 21; // Match the bakeshop operational window
+      const h = parseInt(p?.hour || 0);
+      return h >= 0; // Show all available hours from server
     });
-  }, [todayStats.hourlyPulse]);
+  }, [todayStats?.hourlyPulse]);
 
   const COLORS = ['#D4763C', '#5B9BD5', '#4CAF50', '#F5A623', '#9C27B0', '#E74C3C'];
 
