@@ -42,10 +42,11 @@ const FeatureGate = ({ moduleId, children }) => {
   const { currentUser } = useAuth();
   const { settings, isLoaded } = useSettings();
   
-  // v1.2.65: ADMINISTRATIVE BYPASS - Ensure Owners and Admins always see Analytics/Reports
-  const isGlobalAdmin = ['system_admin', 'owner'].includes(currentUser?.role);
-  const isMaintenanceRoute = ['module_users', 'module_settings', 'module_analytics'].includes(moduleId);
-  if (isGlobalAdmin && isMaintenanceRoute) return children;
+  // v1.2.66: THE GOD MODE RESTORATION
+  // System Admins (Developers) bypass everything. 
+  // Owners bypass Analytics so they never lose access to their data.
+  if (currentUser?.role === 'system_admin') return children;
+  if (currentUser?.role === 'owner' && moduleId === 'module_analytics') return children;
 
   // Grace Period: Wait for settings
   if (!isLoaded) return <PageLoader />;
