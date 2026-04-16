@@ -42,6 +42,7 @@ export default function CommandCenter({ isPublic = false }) {
     return saved !== null ? JSON.parse(saved) : true; // Default to TRUE for live monitoring
   });
   const [activeToast, setActiveToast] = useState(null);
+  const [streamStatus, setStreamStatus] = useState('connecting'); // 'connecting', 'live', 'error'
   const lastSaleIdRef = useRef(null);
 
   // Audio Engine: Custom Anvil Bell MP3
@@ -112,13 +113,30 @@ export default function CommandCenter({ isPublic = false }) {
     const streamUrl = `/api/notifications/stream`;
     const eventSource = new EventSource(streamUrl);
 
+    eventSource.onopen = () => {
+      console.log('📡 EMPIRE CONNECTION ESTABLISHED');
+      setStreamStatus('live');
+    };
+
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+        if (data.type === 'HEARTBEAT') return;
+
         if (data.type === 'SALE_COMPLETED') {
           console.log('⚡ EMPIRE SIGNAL: Sale Completed', data);
           
-          // 1. OPTIMISTIC REVENUE BUMP: Add to counter instantly
+          // --- INSTANT NOTIFICATION (ZERO LATENCY) ---
+          // We trigger the sound and toast IMMEDIATELY from the signal
+          const branchName = branches.find(b => b.id === data.branchId)?.name || 'New Sale';
+          setActiveToast({ branchName, total: Number(data.total || 0), id: data.receiptNumber });
+          playSoftBell(); // Ring the bell!
+
+          setJustSoldBranch(data.branchId);
+          setTimeout(() => setJustSoldBranch(null), 3000);
+          setTimeout(() => setActiveToast(null), 5000);
+          
+          // --- OPTIMISTIC REVENUE BUMP ---
           setSummaryData(prev => {
             if (!prev) return prev;
             return {
@@ -128,31 +146,20 @@ export default function CommandCenter({ isPublic = false }) {
             };
           });
 
-          // 2. OPTIMISTIC TOAST: Push to list for immediate notification logic
-          setGlobalSales(prev => {
-            const newItem = {
-              id: data.receiptNumber || `temp-${Date.now()}`,
-              total: Number(data.total || 0),
-              branchId: data.branchId,
-              date: new Date().toISOString(),
-              isOptimistic: true
-            };
-            return [newItem, ...prev.slice(0, 199)];
-          });
-
-          // 3. BACKGROUND SYNC: Still do the full sync to get detailed metrics
+          // Fetch full data in background to keep graphs accurate
           fetchGlobalData();
         } else if (data.type === 'PRODUCTION_FINALIZED') {
           console.log('🥖 EMPIRE SIGNAL: Production Finalized', data);
           fetchGlobalData();
         }
       } catch (e) {
-        // Silent catch for heartbeats/noise
+        // Handle heartbeats or malformed JSON
       }
     };
 
     eventSource.onerror = () => {
       console.warn('Real-time sync lost. Retrying...');
+      setStreamStatus('error');
       eventSource.close();
     };
 
@@ -193,28 +200,7 @@ export default function CommandCenter({ isPublic = false }) {
     return { totalSunkCost, totalPotentialLoss };
   }, [ruinedProduction, products, isPublic]);
 
-  // Detect new sales
-  useEffect(() => {
-    if (globalSales.length > 0) {
-      const topSale = globalSales[0];
-      
-      // TRIGGER: If the latest sale is different from what we last saw
-      if (lastSaleIdRef.current && topSale.id !== lastSaleIdRef.current) {
-        setJustSoldBranch(topSale.branchId);
-        
-        // Trigger Toast
-        const branchName = branches.find(b => b.id === topSale.branchId)?.name || 'Branch';
-        setActiveToast({ branchName, total: topSale.total, id: topSale.id });
-        
-        playSoftBell(); // Ring the bell!
-        
-        setTimeout(() => setJustSoldBranch(null), 3000);
-        setTimeout(() => setActiveToast(null), 5000); // Toast stays 5 seconds
-      }
-      
-      lastSaleIdRef.current = topSale.id;
-    }
-  }, [globalSales[0]?.id, soundEnabled]);
+  // Detect new sales logic removed - now handled directly by SSE onmessage for sub-second latency
 
   const stats = getTodayStats();
 
@@ -373,8 +359,16 @@ export default function CommandCenter({ isPublic = false }) {
                {isPublic && <span className="demo-badge">PUBLIC DEMO</span>}
                {!isPublic && <span className="secure-badge"><Zap size={14} /> SECURE LINK</span>}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--success)', fontWeight: 800, fontSize: '0.9rem', opacity: 0.8, marginTop: 5 }}>
-              <div className="pulse-orb" style={{ width: 10, height: 10 }} /> LIVE EMPIRE MONITORING — {settings.storeName}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: streamStatus === 'live' ? 'var(--success)' : streamStatus === 'error' ? '#ef4444' : '#fbbf24', fontWeight: 800, fontSize: '0.9rem', opacity: 1, marginTop: 5 }}>
+              <div className={`pulse-orb ${streamStatus === 'live' ? 'live' : streamStatus === 'error' ? 'error' : 'connecting'}`} 
+                   style={{ 
+                     width: 12, 
+                     height: 12, 
+                     backgroundColor: streamStatus === 'live' ? '#4CAF50' : streamStatus === 'error' ? '#ef4444' : '#fbbf24',
+                     borderRadius: '50%',
+                     boxShadow: streamStatus === 'live' ? '0 0 10px #4CAF50' : 'none'
+                   }} /> 
+              {streamStatus === 'live' ? 'LIVE EMPIRE MONITORING' : streamStatus === 'error' ? 'SIGNAL INTERRUPTED - RECONNECTING' : 'ESTABLISHING SECURE LINK'} — {settings.storeName}
             </div>
           </div>
         </div>

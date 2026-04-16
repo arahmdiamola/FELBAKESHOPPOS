@@ -1187,10 +1187,11 @@ app.get('/api/notifications/stream', (req, res) => {
   res.write('retry: 10000\n\n');
   res.write('data: {"type": "CONNECTED"}\n\n');
 
-  // Keep connection alive with heartbeats every 30s
+  // --- ACTIVE SIGNAL PULSE (15s) ---
+  // We send a JSON heartbeat instead of a comment to keep cloud gateways open
   const heartbeat = setInterval(() => {
-    res.write(': heartbeat\n\n');
-  }, 30000);
+    res.write(`data: ${JSON.stringify({ type: 'HEARTBEAT', timestamp: new Date().toISOString() })}\n\n`);
+  }, 15000);
 
   req.on('close', () => {
     clearInterval(heartbeat);
