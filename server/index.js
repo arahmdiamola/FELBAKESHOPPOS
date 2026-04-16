@@ -1,4 +1,5 @@
 import express from 'express';
+import { EventEmitter } from 'events';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -12,6 +13,8 @@ const __dirname = path.dirname(__filename);
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
+const notificationHub = new EventEmitter();
+notificationHub.setMaxListeners(100); // Support up to 100 simultaneous dashboards
 
 // --- Server Shield: Deployment Header ---
 console.log('--- BAKERY POS SERVER: PRODUCTION READY ---');
@@ -604,6 +607,14 @@ app.post('/api/production/finalize', async (req, res) => {
 
     const finalLog = await db.get("SELECT product_name FROM production_logs_v2 WHERE id = ?", [logId]);
     await logAction(req, 'PRODUCTION_FINALIZED', { product: finalLog?.product_name, actual: actualYield });
+    
+    // BROADCAST: Notify all live dashboards
+    notificationHub.emit('broadcast', { 
+      type: 'PRODUCTION_FINALIZED', 
+      productName: finalLog?.product_name, 
+      actualYield 
+    });
+
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -736,6 +747,15 @@ app.post('/api/transactions', async (req, res) => {
     });
     
     await logAction(req, 'SALE_COMPLETED', { receiptNumber: t.receiptNumber, total: t.total });
+    
+    // BROADCAST: Notify all live dashboards in <1s
+    notificationHub.emit('broadcast', { 
+      type: 'SALE_COMPLETED', 
+      receiptNumber: t.receiptNumber, 
+      total: t.total,
+      branchId: branchId
+    });
+
     res.json({ success: true });
   } catch (error) {
     console.error('[Transaction Sync Error]', error);
@@ -1147,6 +1167,36 @@ app.post('/api/admin/selective-reset', async (req, res) => {
   }
 });
 
+
+// --- REAL-TIME NOTIFICATION STREAM (SSE) ---
+app.get('/api/notifications/stream', (req, res) => {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache, no-transform',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no' // Critical for Render/Nginx
+  });
+
+  const onEvent = (event) => {
+    res.write(`data: ${JSON.stringify(event)}\n\n`);
+  };
+
+  notificationHub.on('broadcast', onEvent);
+
+  // Send initial keep-alive
+  res.write('retry: 10000\n\n');
+  res.write('data: {"type": "CONNECTED"}\n\n');
+
+  // Keep connection alive with heartbeats every 30s
+  const heartbeat = setInterval(() => {
+    res.write(': heartbeat\n\n');
+  }, 30000);
+
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    notificationHub.removeListener('broadcast', onEvent);
+  });
+});
 
 // Catch-all to support React Router natively
 app.use((req, res) => {

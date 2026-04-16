@@ -106,9 +106,37 @@ export default function CommandCenter({ isPublic = false }) {
 
   useEffect(() => {
     fetchGlobalData();
-    const interval = setInterval(fetchGlobalData, 30000); // Relaxed to 30s to be kinder to Free Tier
-    return () => clearInterval(interval);
-  }, [fetchGlobalData]); // Stable dependency
+
+    // --- EMPIRE REAL-TIME SIGNAL PIPE (SSE) ---
+    // This allows sub-second updates without constant server polling
+    const streamUrl = `/api/notifications/stream`;
+    const eventSource = new EventSource(streamUrl);
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'SALE_COMPLETED' || data.type === 'PRODUCTION_FINALIZED') {
+          // Trigger immediate sync when a broadcast signal is received
+          fetchGlobalData();
+        }
+      } catch (e) {
+        // Silent catch for heartbeats/noise
+      }
+    };
+
+    eventSource.onerror = () => {
+      console.warn('Real-time sync lost. Retrying...');
+      eventSource.close();
+    };
+
+    // Safety Polling (Reduced to 60s as a fallback for the Live Stream)
+    const interval = setInterval(fetchGlobalData, 60000); 
+
+    return () => {
+      eventSource.close();
+      clearInterval(interval);
+    };
+  }, [fetchGlobalData]); 
 
   // Calculations for Loss
   const lossStats = useMemo(() => {
