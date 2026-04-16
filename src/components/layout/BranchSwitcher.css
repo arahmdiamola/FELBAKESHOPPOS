@@ -1,0 +1,232 @@
+.branch-hub-container {
+  position: relative;
+  height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.branch-hub-pill {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-dashboard);
+  border: 1px solid var(--border);
+  padding: 6px 16px 6px 6px;
+  border-radius: 22px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 180px;
+  max-width: 280px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  color: var(--text-main);
+  text-align: left;
+}
+
+.branch-hub-pill:hover {
+  border-color: var(--accent);
+  background: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(212, 118, 60, 0.1);
+}
+
+.branch-hub-pill.global-active {
+  border-color: var(--accent);
+  background: rgba(212, 118, 60, 0.05);
+}
+
+.pill-icon {
+  width: 32px;
+  height: 32px;
+  background: var(--bg-main);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.pill-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.pill-label {
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  opacity: 0.5;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.pill-value {
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pill-chevron {
+  opacity: 0.3;
+  transition: transform 0.3s;
+}
+
+.pill-chevron.rotated {
+  transform: rotate(180deg);
+}
+
+.branch-hub-dropdown {
+  position: absolute;
+  top: 52px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 320px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+  z-index: 1001;
+  overflow: hidden;
+}
+
+.hub-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-dashboard);
+}
+
+.hub-search input {
+  border: none;
+  background: transparent;
+  width: 100%;
+  font-size: 13px;
+  outline: none;
+}
+
+.hub-options-list {
+  max-height: 380px;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.hub-divider {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--text-secondary);
+  padding: 12px 12px 4px;
+  letter-spacing: 1px;
+  opacity: 0.5;
+}
+
+.hub-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.hub-option:hover {
+  background: var(--bg-dashboard);
+}
+
+.hub-option.active {
+  background: rgba(212, 118, 60, 0.05);
+}
+
+.option-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--bg-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.hub-option:hover .option-icon {
+  color: var(--accent);
+  background: #fff;
+}
+
+.hub-option.active .option-icon {
+  background: var(--accent);
+  color: #fff;
+}
+
+.option-meta {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.option-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.option-sub {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.hub-empty {
+  padding: 20px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* MOBILE RESPONSIVE */
+@media (max-width: 768px) {
+  .branch-hub-container {
+    flex: 1;
+    justify-content: center;
+  }
+  
+  .branch-hub-pill {
+    min-width: auto;
+    width: auto;
+    padding: 6px 12px 6px 6px;
+  }
+  
+  .pill-label { display: none; }
+  
+  .branch-hub-dropdown {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    transform: none;
+    border-radius: 24px 24px 0 0;
+    border-top: 1px solid var(--border);
+  }
+}
+
+.pulse-slow {
+  animation: pulseColor 4s infinite;
+}
+
+@keyframes pulseColor {
+  0%, 100% { color: var(--accent); }
+  50% { color: var(--success); }
+}

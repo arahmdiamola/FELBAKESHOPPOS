@@ -12,7 +12,8 @@ function getHeaders() {
       headers['X-User-Role'] = user.role;
       if (user.branchId) headers['X-Branch-Id'] = user.branchId;
       const activeBranch = localStorage.getItem('fel_active_branch');
-      if (user.role === 'system_admin' && activeBranch && activeBranch !== 'all') {
+      const isGlobalAdmin = user.role === 'system_admin' || (user.role === 'owner' && !user.branchId);
+      if (isGlobalAdmin && activeBranch && activeBranch !== 'all') {
         headers['X-Branch-Id'] = activeBranch;
       }
     }
@@ -52,7 +53,8 @@ const apiCall = async (path, options = {}) => {
             const activeBranch = localStorage.getItem('fel_active_branch');
             
             let targetBranchId = user?.branchId;
-            if (user?.role === 'system_admin' && activeBranch && activeBranch !== 'all') {
+            const isGlobalAdmin = user?.role === 'system_admin' || (user?.role === 'owner' && !user?.branchId);
+            if (isGlobalAdmin && activeBranch && activeBranch !== 'all') {
               targetBranchId = activeBranch;
             }
 

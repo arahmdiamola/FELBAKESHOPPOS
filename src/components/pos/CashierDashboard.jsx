@@ -148,40 +148,60 @@ export default function CashierDashboard({ activeBranch, settings, products, onC
         .deck-close { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-weight: 800; font-size: 0.8rem; transition: all 0.2s; }
         .deck-close:hover { background: #ef4444; border-color: #ef4444; }
 
-        .deck-grid { display: grid; grid-template-columns: 1.2fr 1fr; grid-template-rows: 1fr 1fr; gap: 20px; flex: 1; }
-        .deck-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 24px; padding: 30px; display: flex; flex-direction: column; }
-        .card-label { font-size: 0.8rem; font-weight: 900; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 25px; border-left: 3px solid var(--accent); padding-left: 12px; }
+        .deck-grid { display: grid; grid-template-columns: 1.2fr 1fr; grid-template-rows: 1fr 1fr; gap: 20px; flex: 1; min-height: 0; }
+        .deck-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 24px; padding: 24px; display: flex; flex-direction: column; overflow: hidden; }
+        .card-label { font-size: 0.75rem; font-weight: 900; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px; border-left: 3px solid var(--accent); padding-left: 12px; }
 
         .mission-card { background: linear-gradient(135deg, rgba(212, 118, 60, 0.05), rgba(0,0,0,0)); }
-        .revenue-display { display: flex; align-items: baseline; gap: 10px; margin-bottom: 20px; }
-        .current { font-size: 4rem; font-weight: 900; letter-spacing: -2px; }
-        .separator { font-size: 2rem; opacity: 0.2; }
-        .goal { font-size: 2rem; opacity: 0.4; font-weight: 700; }
-        .progress-container { height: 16px; background: rgba(255,255,255,0.05); border-radius: 10px; overflow: hidden; margin-bottom: 15px; }
+        .revenue-display { display: flex; align-items: baseline; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .current { font-size: clamp(2rem, 8vw, 4rem); font-weight: 900; letter-spacing: -2px; }
+        .separator { font-size: 1.5rem; opacity: 0.2; }
+        .goal { font-size: 1.5rem; opacity: 0.4; font-weight: 700; }
+        .progress-container { height: 12px; background: rgba(255,255,255,0.05); border-radius: 10px; overflow: hidden; margin-bottom: 12px; }
         .progress-bar { height: 100%; background: var(--accent); border-radius: 10px; position: relative; }
         .progress-glow { position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent); animation: sweep 3s infinite; }
         @keyframes sweep { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
-        .mission-status { font-weight: 900; font-size: 0.9rem; color: var(--accent); }
+        .mission-status { font-weight: 900; font-size: 0.8rem; color: var(--accent); }
 
-        .oven-list { display: flex; flex-direction: column; gap: 12px; }
-        .oven-item { background: rgba(255,255,255,0.03); padding: 15px 20px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.03); }
-        .oven-info { display: flex; align-items: center; gap: 15px; }
-        .oven-info .emoji { font-size: 1.5rem; }
-        .oven-info .name { font-weight: 800; font-size: 1.1rem; }
-        .oven-timer { display: flex; align-items: center; gap: 8px; color: var(--accent); font-weight: 900; background: rgba(212,118,60,0.1); padding: 6px 12px; border-radius: 10px; }
+        .oven-list { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
+        .oven-item { background: rgba(255,255,255,0.03); padding: 12px 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.03); }
+        .oven-info { display: flex; align-items: center; gap: 12px; }
+        .oven-info .emoji { font-size: 1.2rem; }
+        .oven-info .name { font-weight: 800; font-size: 0.95rem; }
+        .oven-timer { display: flex; align-items: center; gap: 6px; color: var(--accent); font-weight: 900; background: rgba(212,118,60,0.1); padding: 4px 10px; border-radius: 8px; font-size: 0.8rem; }
         .empty-oven { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0.5; gap: 10px; font-weight: 700; }
 
         .promo-card { background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(0,0,0,0)); justify-content: center; }
-        .promo-content { display: flex; align-items: center; gap: 25px; }
-        .promo-icon { background: var(--accent); color: #fff; width: 80px; height: 80px; border-radius: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
-        .promo-title { font-weight: 900; font-size: 1.4rem; color: var(--accent); margin-bottom: 5px; }
-        .promo-desc { font-size: 1.1rem; opacity: 0.8; font-weight: 600; line-height: 1.4; }
+        .promo-content { display: flex; align-items: center; gap: 20px; }
+        .promo-icon { background: var(--accent); color: #fff; width: 60px; height: 60px; border-radius: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+        .promo-title { font-weight: 900; font-size: 1.2rem; color: var(--accent); margin-bottom: 2px; }
+        .promo-desc { font-size: 0.95rem; opacity: 0.8; font-weight: 600; line-height: 1.3; }
 
-        .stock-list { display: flex; flex-direction: column; gap: 10px; }
-        .stock-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.1); border-radius: 12px; }
-        .stock-item .name { font-weight: 700; }
-        .stock-item .value { font-weight: 900; color: #ef4444; }
+        .stock-list { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+        .stock-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.1); border-radius: 10px; }
+        .stock-item .name { font-weight: 700; font-size: 0.9rem; }
+        .stock-item .value { font-weight: 900; color: #ef4444; font-size: 0.85rem; }
         .stock-all-good { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; opacity: 0.6; font-weight: 700; }
+
+        /* MOBILE OPTIMIZATION */
+        @media (max-width: 768px) {
+            .cashier-deck-overlay { padding: 15px; }
+            .deck-header { margin-bottom: 20px; }
+            .deck-brand span { font-size: 1rem; }
+            .deck-grid { 
+                grid-template-columns: 1fr !important;
+                grid-template-rows: auto !important;
+                display: flex;
+                flex-direction: column;
+                overflow-y: auto;
+                padding-bottom: 40px;
+            }
+            .deck-card { min-height: 180px; padding: 20px; }
+            .promo-content { gap: 15px; }
+            .promo-icon { width: 50px; height: 50px; }
+            .promo-title { font-size: 1rem; }
+            .promo-desc { font-size: 0.85rem; }
+        }
       `}</style>
     </div>
   );

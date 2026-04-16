@@ -194,17 +194,18 @@ export default function ReportsPage() {
         if (!map[item.materialId]) {
           map[item.materialId] = {
             id: item.materialId,
-            name: item.name,
-            emoji: item.emoji || '📦',
-            unit: item.unit,
+            name: item.material_name || item.materialName || item.name || 'Unknown',
+            emoji: item.material_emoji || item.emoji || '📦',
+            unit: item.unit || 'pcs',
             used: 0,
             wasted: 0
           };
         }
+        const qty = parseFloat(item.quantity_used || item.quantityUsed || item.quantity) || 0;
         if (log.status === 'ruined') {
-          map[item.materialId].wasted += item.quantity;
+          map[item.materialId].wasted += qty;
         } else {
-          map[item.materialId].used += item.quantity;
+          map[item.materialId].used += qty;
         }
       });
     });

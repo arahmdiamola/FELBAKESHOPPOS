@@ -42,10 +42,12 @@ const FeatureGate = ({ moduleId, children }) => {
   const { currentUser } = useAuth();
   const { settings, isLoaded } = useSettings();
   
-  if (currentUser?.role === 'system_admin') return children;
+  // v1.2.60: STRICT ENFORCEMENT - Even System Admins respect the license 
+  // so they can test tiered configurations. Only bypass for maintenance routes.
+  const isMaintenanceRoute = ['module_users', 'module_settings'].includes(moduleId);
+  if (currentUser?.role === 'system_admin' && isMaintenanceRoute) return children;
 
-  // 1. Grace Period: If settings aren't loaded yet, show a subtle loader
-  // This prevents accidental redirect loops on page refresh
+  // Grace Period: Wait for settings
   if (!isLoaded) return <PageLoader />;
 
   const licenseFeatures = (() => {
@@ -58,8 +60,7 @@ const FeatureGate = ({ moduleId, children }) => {
 
   if (!licenseFeatures.includes(moduleId)) {
     console.warn(`[Licensing] Access denied to gated module: ${moduleId}`);
-    // Safe Fallback: Don't redirect to /pos because /pos might also be gated!
-    // Instead, send to a neutral page like settings or users.
+    // If blocked, send to the neutral hub (Settings) where they can fix the license
     return <Navigate to="/settings" replace />;
   }
 

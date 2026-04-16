@@ -38,22 +38,6 @@ export default function Sidebar() {
   const { triggerBackupDownload } = useSafetyShield();
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [branches, setBranches] = useState([]);
-
-  useEffect(() => {
-    if (currentUser?.role === 'system_admin') {
-      api.get('/branches')
-        .then(data => {
-          const sorted = data.sort((a, b) => a.name.localeCompare(b.name));
-          setBranches(sorted);
-        })
-        .catch(console.error);
-    }
-  }, [currentUser]);
-
-  const handleBranchChange = (e) => {
-    switchBranch(e.target.value);
-  };
 
   const handleResetTerminal = async () => {
     if (!confirm("SAFETY SHIELD: This will clear your terminal and fix sync issues. We will download a safety backup for you first. Proceed?")) return;
@@ -155,21 +139,6 @@ export default function Sidebar() {
         )}
       </div>
 
-      {currentUser?.role === 'system_admin' && !isCollapsed && (
-        <div style={{ padding: '0 20px', marginBottom: '16px' }}>
-          <select 
-            className="select" 
-            style={{ width: '100%', background: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.1)', color: 'var(--text-sidebar)', outline: 'none' }}
-            value={activeBranch}
-            onChange={handleBranchChange}
-          >
-            <option value="all" style={{ color: '#000' }}>🌐 All Branches</option>
-            {branches.map(b => (
-              <option key={b.id} value={b.id} style={{ color: '#000' }}>🏢 {b.name} {b.address ? `- ${b.address}` : ''}</option>
-            ))}
-          </select>
-        </div>
-      )}
 
       <nav className="sidebar-nav">
         {finalNavItems.map((item, i) => {
@@ -197,7 +166,7 @@ export default function Sidebar() {
       </nav>
 
       <div className="sidebar-footer">
-        {!isCollapsed && (
+        {!isCollapsed && ['system_admin', 'owner', 'manager'].includes(currentUser?.role) && (
           <div className="sidebar-footer-actions">
             <button 
               onClick={() => triggerBackupDownload('UNIVERSAL_SECURE')} 
