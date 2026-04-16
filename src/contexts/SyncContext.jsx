@@ -32,11 +32,16 @@ export function SyncProvider({ children }) {
     return () => clearInterval(interval);
   }, [refreshPendingCount]);
 
-  // --- CONNECTIVITY HEARTBEAT (Every 2 mins) ---
+  // --- CONNECTIVITY HEARTBEAT (Every 30 secs) ---
   useEffect(() => {
     const sendHeartbeat = async () => {
        const user = JSON.parse(localStorage.getItem('fel_currentUser'));
        if (!user || !user.branchId || !navigator.onLine) return;
+
+       // V1.2.65: OBSERVER MODE - Exclude Admin/Owner from heartbeat
+       const restrictedRoles = ['system_admin', 'owner'];
+       if (restrictedRoles.includes(user.role)) return;
+
        try {
           await api.post(`/branches/${user.branchId}/heartbeat`);
        } catch (err) {}

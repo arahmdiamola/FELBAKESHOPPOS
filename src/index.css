@@ -1332,6 +1332,27 @@ td.primary {
   flex: 1;
 }
 
+@media (max-width: 768px) {
+  .cart-action-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    padding-bottom: 20px;
+  }
+  
+  .cart-action-buttons .btn {
+    flex: none;
+    height: 44px;
+    font-size: 11px;
+    padding: 0 8px;
+  }
+
+  /* Make Cockpit button stand out if it's the last one */
+  .cart-action-buttons .btn:last-child:nth-child(odd) {
+    grid-column: span 2;
+  }
+}
+
 /* ---------- Login Screen ---------- */
 .login-screen {
   height: 100vh;

@@ -69,6 +69,11 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (!currentUser || !activeBranch || activeBranch === 'all') return;
 
+    // V1.2.65: OBSERVER MODE - Only operational roles trigger the "Online" status 
+    // in the Executive Dashboard. Owners and Developers are invisible observers.
+    const operationalRoles = ['cashier', 'manager', 'admin', 'baker'];
+    if (!operationalRoles.includes(currentUser.role)) return;
+
     const sendPulse = () => {
       // Pass userId to track independent sessions
       api.post(`/branches/${activeBranch}/pulse`, { userId: currentUser.id }).catch(() => {});
@@ -81,7 +86,7 @@ export function AuthProvider({ children }) {
     const interval = setInterval(sendPulse, 15000); 
 
     return () => clearInterval(interval);
-  }, [currentUser?.id, activeBranch]);
+  }, [currentUser?.id, activeBranch, currentUser?.role]);
 
   const login = async (userId, pin) => {
     const isOnline = navigator.onLine;
