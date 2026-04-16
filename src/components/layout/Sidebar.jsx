@@ -55,8 +55,8 @@ export default function Sidebar() {
   const visibleNavItems = navItems.filter(item => {
     if (item.section) return true;
 
-    // 1. SYSTEM DEVELOPER (GOD MODE): Always see everything
-    if (currentUser?.role === 'system_admin') return true;
+    // 1. SYSTEM DEVELOPER / GLOBAL OWNER: Always see everything
+    if (currentUser?.role === 'system_admin' || currentUser?.role === 'owner') return true;
 
     // 2. FEATURE GATEKEEPING: Check if the module is unlocked in the shop license
     // (If no moduleId is defined, the item is considered 'Core' and always visible to appropriate roles)

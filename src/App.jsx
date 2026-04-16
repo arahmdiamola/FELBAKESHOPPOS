@@ -42,10 +42,10 @@ const FeatureGate = ({ moduleId, children }) => {
   const { currentUser } = useAuth();
   const { settings, isLoaded } = useSettings();
   
-  // v1.2.60: STRICT ENFORCEMENT - Even System Admins respect the license 
-  // so they can test tiered configurations. Only bypass for maintenance routes.
-  const isMaintenanceRoute = ['module_users', 'module_settings'].includes(moduleId);
-  if (currentUser?.role === 'system_admin' && isMaintenanceRoute) return children;
+  // v1.2.65: ADMINISTRATIVE BYPASS - Ensure Owners and Admins always see Analytics/Reports
+  const isGlobalAdmin = ['system_admin', 'owner'].includes(currentUser?.role);
+  const isMaintenanceRoute = ['module_users', 'module_settings', 'module_analytics'].includes(moduleId);
+  if (isGlobalAdmin && isMaintenanceRoute) return children;
 
   // Grace Period: Wait for settings
   if (!isLoaded) return <PageLoader />;
