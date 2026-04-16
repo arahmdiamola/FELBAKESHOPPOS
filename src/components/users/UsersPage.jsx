@@ -8,7 +8,8 @@ import Modal from '../shared/Modal';
 import { Shield, Key, Plus, Edit3, Trash2, UserPlus, Lock } from 'lucide-react';
 
 const roleColors = {
-  admin: 'badge-amber',
+  owner: 'badge-amber',
+  admin: 'badge-blue',
   manager: 'badge-blue',
   cashier: 'badge-green',
   baker: 'badge-purple',
@@ -287,7 +288,8 @@ export default function UsersPage() {
               <option value="manager">Manager</option>
               <option value="baker">Baker</option>
               <option value="admin">Admin</option>
-              {currentUser?.role === 'system_admin' && <option value="system_admin">System Admin</option>}
+              <option value="owner">Global Owner</option>
+              {currentUser?.role === 'system_admin' && <option value="system_admin">System Admin (Developer)</option>}
             </select>
           </div>
           <div className="input-group">

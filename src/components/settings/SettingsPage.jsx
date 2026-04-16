@@ -19,9 +19,9 @@ export default function SettingsPage() {
   // Licensing State Helpers
   const currentFeatures = (() => {
     try {
-      return typeof settings.license_features === 'string' 
-        ? JSON.parse(settings.license_features) 
-        : (settings.license_features || []);
+      return typeof form.license_features === 'string' 
+        ? JSON.parse(form.license_features) 
+        : (form.license_features || []);
     } catch (e) { return []; }
   })();
 
