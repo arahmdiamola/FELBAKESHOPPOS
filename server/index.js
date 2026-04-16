@@ -34,6 +34,37 @@ app.use('/api', (req, res, next) => {
 
 let db;
 
+// --- REAL-TIME NOTIFICATION STREAM (SSE) ---
+// HIGH PRIORITY: Established early to ensure zero-latency Master monitoring
+app.get('/api/notifications/stream', (req, res) => {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache, no-transform',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no' // Critical for Cloud Gateways (Render/Nginx)
+  });
+
+  const onEvent = (event) => {
+    res.write(`data: ${JSON.stringify(event)}\n\n`);
+  };
+
+  notificationHub.on('broadcast', onEvent);
+
+  // Send initial acknowledge
+  res.write('retry: 5000\n\n'); // Faster retry
+  res.write('data: {"type": "CONNECTED"}\n\n');
+
+  // --- ACTIVE SIGNAL PULSE (15s) ---
+  const heartbeat = setInterval(() => {
+    res.write(`data: ${JSON.stringify({ type: 'HEARTBEAT', timestamp: new Date().toISOString() })}\n\n`);
+  }, 15000);
+
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    notificationHub.removeListener('broadcast', onEvent);
+  });
+});
+
 // --- AUDIT LOG HELPER ---
 async function logAction(req, action, details = null) {
   try {
@@ -1168,36 +1199,6 @@ app.post('/api/admin/selective-reset', async (req, res) => {
 });
 
 
-// --- REAL-TIME NOTIFICATION STREAM (SSE) ---
-app.get('/api/notifications/stream', (req, res) => {
-  res.writeHead(200, {
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache, no-transform',
-    'Connection': 'keep-alive',
-    'X-Accel-Buffering': 'no' // Critical for Render/Nginx
-  });
-
-  const onEvent = (event) => {
-    res.write(`data: ${JSON.stringify(event)}\n\n`);
-  };
-
-  notificationHub.on('broadcast', onEvent);
-
-  // Send initial keep-alive
-  res.write('retry: 10000\n\n');
-  res.write('data: {"type": "CONNECTED"}\n\n');
-
-  // --- ACTIVE SIGNAL PULSE (15s) ---
-  // We send a JSON heartbeat instead of a comment to keep cloud gateways open
-  const heartbeat = setInterval(() => {
-    res.write(`data: ${JSON.stringify({ type: 'HEARTBEAT', timestamp: new Date().toISOString() })}\n\n`);
-  }, 15000);
-
-  req.on('close', () => {
-    clearInterval(heartbeat);
-    notificationHub.removeListener('broadcast', onEvent);
-  });
-});
 
 // Catch-all to support React Router natively
 app.use((req, res) => {

@@ -121,22 +121,23 @@ export default function CommandCenter({ isPublic = false }) {
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        if (data.type === 'HEARTBEAT') return;
+        if (data.type === 'HEARTBEAT' || data.type === 'CONNECTED') {
+          setStreamStatus('live'); // Confirm we are still receiving pulses
+          return;
+        }
 
         if (data.type === 'SALE_COMPLETED') {
           console.log('⚡ EMPIRE SIGNAL: Sale Completed', data);
           
           // --- INSTANT NOTIFICATION (ZERO LATENCY) ---
-          // We trigger the sound and toast IMMEDIATELY from the signal
           const branchName = branches.find(b => b.id === data.branchId)?.name || 'New Sale';
           setActiveToast({ branchName, total: Number(data.total || 0), id: data.receiptNumber });
-          playSoftBell(); // Ring the bell!
+          playSoftBell(); 
 
           setJustSoldBranch(data.branchId);
           setTimeout(() => setJustSoldBranch(null), 3000);
           setTimeout(() => setActiveToast(null), 5000);
           
-          // --- OPTIMISTIC REVENUE BUMP ---
           setSummaryData(prev => {
             if (!prev) return prev;
             return {
@@ -146,21 +147,20 @@ export default function CommandCenter({ isPublic = false }) {
             };
           });
 
-          // Fetch full data in background to keep graphs accurate
           fetchGlobalData();
         } else if (data.type === 'PRODUCTION_FINALIZED') {
           console.log('🥖 EMPIRE SIGNAL: Production Finalized', data);
           fetchGlobalData();
         }
       } catch (e) {
-        // Handle heartbeats or malformed JSON
+        // Silent catch for heartbeats
       }
     };
 
-    eventSource.onerror = () => {
-      console.warn('Real-time sync lost. Retrying...');
+    eventSource.onerror = (err) => {
+      console.warn('Real-time sync interrupted. Browser will auto-reconnect...', err);
       setStreamStatus('error');
-      eventSource.close();
+      // DO NOT close() here - letting the browser's native retry logic work its magic
     };
 
     // Safety Polling (Reduced to 60s as a fallback for the Live Stream)
