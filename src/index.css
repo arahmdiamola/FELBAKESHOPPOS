@@ -1313,6 +1313,7 @@ td.primary {
 
 .cart-action-buttons {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
 

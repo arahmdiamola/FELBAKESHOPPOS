@@ -125,17 +125,41 @@ function AppRoutes() {
         <div className="main-area">
           <PullToRefresh onRefresh={handleGlobalRefresh}>
             <Routes>
-              <Route path="/pos" element={<POSTerminal />} />
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/products" element={<ProductsPage />} />
+              <Route path="/pos" element={
+                <FeatureGate moduleId="module_pos">
+                  <POSTerminal />
+                </FeatureGate>
+              } />
+              <Route path="/dashboard" element={
+                <FeatureGate moduleId="module_dashboard">
+                  <DashboardPage />
+                </FeatureGate>
+              } />
+              <Route path="/products" element={
+                <FeatureGate moduleId="module_products">
+                  <ProductsPage />
+                </FeatureGate>
+              } />
               <Route path="/inventory" element={
                 <FeatureGate moduleId="module_bakery">
                   <InventoryPage />
                 </FeatureGate>
               } />
-              <Route path="/preorders" element={<PreOrdersPage />} />
-              <Route path="/customers" element={<CustomersPage />} />
-              <Route path="/expenses" element={<ExpensesPage />} />
+              <Route path="/preorders" element={
+                <FeatureGate moduleId="module_preorders">
+                  <PreOrdersPage />
+                </FeatureGate>
+              } />
+              <Route path="/customers" element={
+                <FeatureGate moduleId="module_customers">
+                  <CustomersPage />
+                </FeatureGate>
+              } />
+              <Route path="/expenses" element={
+                <FeatureGate moduleId="module_expenses">
+                  <ExpensesPage />
+                </FeatureGate>
+              } />
               <Route path="/users" element={<UsersPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/reports" element={
@@ -153,7 +177,7 @@ function AppRoutes() {
                   <RawMaterialsPage />
                 </FeatureGate>
                } />
-              <Route path="*" element={<Navigate to={currentUser.role === 'baker' ? '/baking' : '/pos'} replace />} />
+              <Route path="*" element={<Navigate to={currentUser.role === 'baker' ? '/baking' : currentUser.role === 'system_admin' ? '/settings' : '/pos'} replace />} />
             </Routes>
           </PullToRefresh>
         </div>
