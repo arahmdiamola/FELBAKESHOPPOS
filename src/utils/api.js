@@ -220,7 +220,7 @@ const apiCall = async (path, options = {}) => {
 };
 
 export const api = {
-  get: (path) => apiCall(path),
+  get: (path, options) => apiCall(path, options),
   post: (path, body) => apiCall(path, { method: 'POST', body: JSON.stringify(body) }),
   put: (path, body) => apiCall(path, { method: 'PUT', body: JSON.stringify(body) }),
   del: (path) => apiCall(path, { method: 'DELETE' }),

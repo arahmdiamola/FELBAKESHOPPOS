@@ -77,7 +77,7 @@ export default function CommandCenter({ isPublic = false }) {
         api.get('/transactions?limit=200&summary=true', { headers }),
         api.get('/branches', { headers }),
         api.get('/production/logs?status=in_oven', { headers }),
-        api.get('/analytics/today-summary')
+        api.get('/analytics/today-summary', { headers })
       ]);
 
       setGlobalSales(tx || []);

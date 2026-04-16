@@ -32,7 +32,7 @@ async function seed() {
     // 3. BULK GENERATION & INSERTION
     const TX_PER_BRANCH = 5000;
     const CHUNK_SIZE = 100; // Safe chunk size for SQL parameter limits
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = '2026-04-16';
     
     console.log(`🏗️ Generating ${TX_PER_BRANCH * branches.length} Transactions using True Bulk Insert...`);
 
