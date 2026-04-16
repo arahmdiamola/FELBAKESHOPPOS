@@ -26,12 +26,27 @@ window.addEventListener('error', (e) => {
   }
 }, true);
 
-// Register Service Worker for PWA / Offline usage
+// --- NUCLEAR CACHE PURGE (Sync v13) ---
 if ('serviceWorker' in navigator) {
+  // 1. One-time clean sweep of all existing registrations
+  navigator.serviceWorker.getRegistrations().then(registrations => {
+    for (const registration of registrations) {
+      registration.unregister().then(() => console.log('[SW Purge] Stale worker wiped.'));
+    }
+  });
+
+  // 2. Register fresh v13 worker
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
-      .then(reg => console.log('[SW] Registered', reg))
-      .catch(err => console.error('[SW] Registration failed', err));
+      .then(reg => {
+        console.log('[SW v13] Registered', reg);
+        // Force a one-time reload to ensure the browser switches to the fresh server version
+        if (!localStorage.getItem('fel_v13_purged')) {
+          localStorage.setItem('fel_v13_purged', 'true');
+          window.location.reload();
+        }
+      })
+      .catch(err => console.error('[SW Registration failed]', err));
   });
 }
 

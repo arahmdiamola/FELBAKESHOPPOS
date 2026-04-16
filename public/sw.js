@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fel-bakery-pos-v12';
+const CACHE_NAME = 'fel-bakery-pos-v13';
 
 // 1. Install: Cache the core entry point
 self.addEventListener('install', (event) => {
@@ -8,8 +8,7 @@ self.addEventListener('install', (event) => {
         '/',
         '/index.html',
         '/manifest.json',
-        '/favicon.png',
-        'https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap'
+        '/favicon.png'
       ]);
     })
   );
@@ -29,57 +28,50 @@ self.addEventListener('activate', (event) => {
   return self.clients.claim();
 });
 
-// 3. Fetch: Dynamic Caching (Stale-While-Revalidate)
-// This is the "secret sauce" that makes development mode and hashed VITE builds work offline.
-// It caches EVERY file the app requests during the first "online" visit.
+// 3. Fetch Handler: HARD NETWORK-FIRST for HTML/JS
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // IGNORE API calls, external domains, and Vite-specific dev assets
-  if (
-    url.pathname.startsWith('/api') || 
-    url.hostname !== self.location.hostname ||
-    url.pathname.startsWith('/@') ||
-    url.pathname.includes('node_modules') ||
-    url.pathname.endsWith('.jsx') ||
-    url.search.includes('v=') // Vite versioning params
-  ) {
+  // IGNORE API calls and external domains
+  if (url.pathname.startsWith('/api') || url.hostname !== self.location.hostname) {
     return;
   }
 
-  // Only handle GET requests
-  if (request.method !== 'GET') return;
+  // FORCE NETWORK-FIRST for navigation (index.html) and JS/CSS bundles
+  // This ensures we always get the latest code if online.
+  const isCoreAsset = request.mode === 'navigate' || 
+                      url.pathname.endsWith('.js') || 
+                      url.pathname.endsWith('.css') ||
+                      url.pathname.includes('/assets/');
 
-  event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      // 1. Cache First: If we have it, use it and STOP. Don't hammer the network.
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-
-      // 2. Network Fallback: Only fetch if we don't have it yet
-      return fetch(request).then((networkResponse) => {
-        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-          return networkResponse;
-        }
-
+  if (isCoreAsset) {
+    event.respondWith(
+      fetch(request).then((networkResponse) => {
         const responseToCache = networkResponse.clone();
         caches.open(CACHE_NAME).then((cache) => {
           cache.put(request, responseToCache);
-        }).catch(() => {});
-        
+        });
         return networkResponse;
-      }).catch((err) => {
-        // --- NAVIGATION FALLBACK --- 
-        if (request.mode === 'navigate' || (request.method === 'GET' && request.headers.get('accept').includes('text/html'))) {
-          return caches.match('/index.html');
-        }
-        
-        console.warn('[SW Fetch Failure]', request.url, err);
-        // Instead of returning a 503 (which looks like a crash), return a neutral fail
-        return new Response('Offline', { status: 200, statusText: 'Offline' });
-      });
+      }).catch(() => {
+        return caches.match(request); // Fallback to cache only if network is down
+      })
+    );
+    return;
+  }
+
+  // Stale-While-Revalidate for other assets (images, fonts)
+  event.respondWith(
+    caches.match(request).then((cachedResponse) => {
+      const fetchPromise = fetch(request).then((networkResponse) => {
+        const responseToCache = networkResponse.clone();
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(request, responseToCache);
+        });
+        return networkResponse;
+      }).catch(() => cachedResponse);
+
+      return cachedResponse || fetchPromise;
     })
   );
 });
