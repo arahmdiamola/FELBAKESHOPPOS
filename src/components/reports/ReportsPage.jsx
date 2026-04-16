@@ -76,14 +76,16 @@ export default function ReportsPage() {
       // 1. Fetch High-Detail Transactions (Summary=false to get items)
       // We use start/end dates to pull deep history
       const data = await api.get(`/transactions?start=${dateRange.start}&end=${dateRange.end}&summary=false`);
-      setFullTransactions(data || []);
+      setFullTransactions(Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []));
       
       // 2. Fetch Production Logs for the audit
       const [completed, ruined] = await Promise.all([
-        api.get('/production/logs?status=completed'),
-        api.get('/production/logs?status=ruined')
+        api.get('/production/logs?status=completed').catch(() => []),
+        api.get('/production/logs?status=ruined').catch(() => [])
       ]);
-      setProductionLogs([...(completed || []), ...(ruined || [])]);
+      const compArr = Array.isArray(completed) ? completed : [];
+      const ruinArr = Array.isArray(ruined) ? ruined : [];
+      setProductionLogs([...compArr, ...ruinArr]);
     } catch (err) {
       console.error('[Analytics] Sync failed', err);
     } finally {
@@ -98,7 +100,7 @@ export default function ReportsPage() {
 
   // Filter Transactions for UI (already filtered by API, but we keep the sort/memo logic)
   const filteredSales = useMemo(() => {
-    return [...fullTransactions].sort((a, b) => new Date(b.date) - new Date(a.date));
+    return [...(Array.isArray(fullTransactions) ? fullTransactions : [])].sort((a, b) => new Date(b.date) - new Date(a.date));
   }, [fullTransactions]);
 
   const filteredExpenses = useMemo(() => {
@@ -223,10 +225,10 @@ export default function ReportsPage() {
   }
 
   return (
-    <>
-      <Header />
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
+      <Header title="Analytics Studio" subtitle="High-fidelity business intelligence & material audit" />
       {isCrunshing && (
-        <div className="analytics-overlay-lux">
+        <div className="analytics-overlay-lux" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
            <Database size={32} className="pulse-slow" />
            <span className="crunch-label">CRUNCHING BUSINESS DATA...</span>
            <div className="shimmer-line" />
@@ -237,7 +239,8 @@ export default function ReportsPage() {
         {/* Top Control Bar */}
         <div className="studio-control-bar">
            <div className="control-left">
-              <h1 className="studio-page-title">Analytics Studio</h1>
+               {/* Redundant title removed as it is now in the main Header */}
+               <div style={{ padding: '0 0 10px 0' }}></div>
               <div className="range-selector-lux">
                  <div className="preset-buttons">
                     {['today', 'week', 'month'].map(p => (
@@ -449,6 +452,6 @@ export default function ReportsPage() {
         />
       )}
 
-    </>
+    </div>
   );
 }

@@ -5,7 +5,7 @@
    background: #FDFBF8;
    font-family: 'Inter', sans-serif;
    overflow-y: auto;
-   height: 1px; /* Allow flex to control height */
+   min-height: 0;
 }
 
 .analytics-overlay-lux {
