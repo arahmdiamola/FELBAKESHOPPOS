@@ -1066,9 +1066,9 @@ app.get('/api/analytics/today-summary', async (req, res) => {
 
     const globalStats = await db.get(`
       SELECT 
-        COALESCE(SUM(total), 0) as revenue, 
+        CAST(COALESCE(SUM(total), 0) AS FLOAT) as revenue, 
         COUNT(*) as count,
-        COALESCE(SUM(subtotal), 0) as subtotal
+        CAST(COALESCE(SUM(subtotal), 0) AS FLOAT) as subtotal
       FROM transactions 
       WHERE date LIKE ? ${globalFilter}
     `, globalParams);
@@ -1076,8 +1076,8 @@ app.get('/api/analytics/today-summary', async (req, res) => {
     // 2. Branch Breakdown (For Executive Dashboard)
     // Owners see all, others only see their branch
     const branchBreakdownSql = isOwner 
-      ? `SELECT branch_id as "branchId", COALESCE(SUM(total), 0) as revenue, COUNT(*) as count FROM transactions WHERE date LIKE ? GROUP BY branch_id`
-      : `SELECT branch_id as "branchId", COALESCE(SUM(total), 0) as revenue, COUNT(*) as count FROM transactions WHERE date LIKE ? AND branch_id = ? GROUP BY branch_id`;
+      ? `SELECT branch_id as "branchId", CAST(COALESCE(SUM(total), 0) AS FLOAT) as revenue, COUNT(*) as count FROM transactions WHERE date LIKE ? GROUP BY branch_id`
+      : `SELECT branch_id as "branchId", CAST(COALESCE(SUM(total), 0) AS FLOAT) as revenue, COUNT(*) as count FROM transactions WHERE date LIKE ? AND branch_id = ? GROUP BY branch_id`;
     
     const branchBreakdownParams = isOwner ? [`${today}%`] : [`${today}%`, branchId];
     const branchStats = await db.all(branchBreakdownSql, branchBreakdownParams);
@@ -1086,8 +1086,8 @@ app.get('/api/analytics/today-summary', async (req, res) => {
     // Postgres strftime is different than SQLite. Handled by pg-adapter but we'll use a portable LIKE pattern for hours if possible
     // Actually, simple way: fetch all for pulse but keep it aggregated
     const hourlySql = isProduction 
-      ? `SELECT EXTRACT(HOUR FROM date::timestamp) as hour, SUM(total) as revenue, COUNT(*) as count FROM transactions WHERE date LIKE ? ${globalFilter} GROUP BY hour ORDER BY hour ASC`
-      : `SELECT strftime('%H', date) as hour, SUM(total) as revenue, COUNT(*) as count FROM transactions WHERE date LIKE ? ${globalFilter} GROUP BY hour ORDER BY hour ASC`;
+      ? `SELECT EXTRACT(HOUR FROM date::timestamp) as hour, CAST(SUM(total) AS FLOAT) as revenue, COUNT(*) as count FROM transactions WHERE date LIKE ? ${globalFilter} GROUP BY hour ORDER BY hour ASC`
+      : `SELECT strftime('%H', date) as hour, CAST(SUM(total) AS FLOAT) as revenue, COUNT(*) as count FROM transactions WHERE date LIKE ? ${globalFilter} GROUP BY hour ORDER BY hour ASC`;
 
     const hourlyPulse = await db.all(hourlySql, globalParams);
 

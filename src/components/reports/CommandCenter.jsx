@@ -115,8 +115,35 @@ export default function CommandCenter({ isPublic = false }) {
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        if (data.type === 'SALE_COMPLETED' || data.type === 'PRODUCTION_FINALIZED') {
-          // Trigger immediate sync when a broadcast signal is received
+        if (data.type === 'SALE_COMPLETED') {
+          console.log('⚡ EMPIRE SIGNAL: Sale Completed', data);
+          
+          // 1. OPTIMISTIC REVENUE BUMP: Add to counter instantly
+          setSummaryData(prev => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              revenue: Number(prev.revenue || 0) + Number(data.total || 0),
+              orderCount: Number(prev.orderCount || 0) + 1
+            };
+          });
+
+          // 2. OPTIMISTIC TOAST: Push to list for immediate notification logic
+          setGlobalSales(prev => {
+            const newItem = {
+              id: data.receiptNumber || `temp-${Date.now()}`,
+              total: Number(data.total || 0),
+              branchId: data.branchId,
+              date: new Date().toISOString(),
+              isOptimistic: true
+            };
+            return [newItem, ...prev.slice(0, 199)];
+          });
+
+          // 3. BACKGROUND SYNC: Still do the full sync to get detailed metrics
+          fetchGlobalData();
+        } else if (data.type === 'PRODUCTION_FINALIZED') {
+          console.log('🥖 EMPIRE SIGNAL: Production Finalized', data);
           fetchGlobalData();
         }
       } catch (e) {
@@ -254,20 +281,24 @@ export default function CommandCenter({ isPublic = false }) {
   const pulseMetrics = useMemo(() => {
     if (!summaryData) return { data: [], total: 0, peakHour: 'None', todayTxCount: 0 };
 
-    const data = summaryData.hourlyPulse.map(p => ({
-      hour: parseInt(p.hour),
-      hourLabel: p.hour > 12 ? `${p.hour - 12} PM` : p.hour === '12' ? '12 PM' : p.hour === '00' ? '12 AM' : `${parseInt(p.hour)} AM`,
-      revenue: p.revenue
-    }));
+    const data = summaryData.hourlyPulse.map(p => {
+      const hNum = Number(p.hour);
+      const hStr = hNum < 10 ? `0${hNum}` : `${hNum}`;
+      return {
+        hour: hNum,
+        hourLabel: hNum > 12 ? `${hNum - 12} PM` : hNum === 12 ? '12 PM' : hNum === 0 ? '12 AM' : `${hNum} AM`,
+        revenue: parseFloat(p.revenue || 0)
+      };
+    });
 
     const peak = [...data].sort((a, b) => b.revenue - a.revenue)[0];
     const peakHour = (peak && peak.revenue > 0) ? peak.hourLabel : 'None';
 
     return { 
       data, 
-      total: summaryData.revenue || 0, 
+      total: Number(summaryData.revenue || 0), 
       peakHour, 
-      todayTxCount: summaryData.orderCount || 0 
+      todayTxCount: Number(summaryData.orderCount || 0) 
     };
   }, [summaryData]);
 
