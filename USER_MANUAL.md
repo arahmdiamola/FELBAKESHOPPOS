@@ -1,64 +1,60 @@
-# 🏪 FEL Bakeshop POS - Official User Manual
+# 🧁 Welcome to the FEL Bakeshop POS Family!
 
-Welcome to your professional Point of Sale (POS) system. This manual is designed to help you manage your bakery's growth, staff, and financial data with confidence.
-
----
-
-## 👥 User Roles & Hierarchy
-The system uses a tiered security model to protect your data and ensure staff focus on their specific tasks.
-
-| Role | Access Level | Primary Responsibility |
-| :--- | :--- | :--- |
-| **Global Owner** | **Enterprise** | Full visibility of all branches, staff management, and system settings. |
-| **Admin** | **Branch Lead** | Branch management, staff oversight, and product updates for their location. |
-| **Manager** | **Operations** | Managing sales, inventory, expenses, and production logs. |
-| **Cashier / Baker** | **Staff** | Transaction entry or production tracking. |
-
-> [!IMPORTANT]
-> **Owner Tip**: Only share the "Global Owner" login with trusted business partners. This account can change system-wide settings like tax rates and logos.
+Congratulations on your new Point of Sale system! This guide was created to help you master your new digital storefront. Whether you're at the shop or checking in from home, this system is your partner in growing your bakery.
 
 ---
 
-## ⚙️ Settings & Customization
-To customize your shop, navigate to the **Settings** tab.
+## 👨‍👩‍👧‍👦 Understanding Your Team (Roles)
+The system is built to help your staff focus on what they do best while keeping your most sensitive information reserved for you.
 
-### Store Information
-- Update your **Shop Name**, **Address**, and **Phone Number**.
-- **Store Logo**: Upload high-resolution images for the login screen and digital receipts.
-
-### Tax & Promos
-- **Tax Rate**: Set your local VAT or Sales Tax percentage. Set to `0` to disable.
-- **VIP Threshold**: Define how many visits a customer needs to become a "Regular" and earn a gold star.
+*   **👑 Global Owner (YOU)**: The "Master Key" account. You see every sale from every branch and can change everything from tax rates to store logos.
+*   **🛡️ Admin**: Your trusted Branch Supervisors. They can manage the inventory and staff at their specific location.
+*   **📋 Manager**: Your daily shift leads. They can handle sales, track expenses, and manage baking logs, but they cannot change your system settings or see other staff PINs.
+*   **🥖 Staff (Cashiers/Bakers)**: Focused purely on serving customers and tracking production.
 
 ---
 
-## 🗳️ Data Management & Safety
-Your data is your most valuable asset. The system provides tools to keep it safe.
-
-### Database Backups
-Located in **Settings > Data**, the backup tool allows you to download a `.json` file containing your entire empire's history. 
-> [!TIP]
-> Download a backup at the end of every business month for your own records.
-
-### System Restore
-If you move to a new device or need to revert to a previous state, use the **Upload & Restore** tool.
-> [!CAUTION]
-> Restoring a backup will **delete all current data** on the device and replace it with the records in the backup file.
-
-### Selective System Reset
-Need a clean slate for a new year or a new branch? Use the **Selective Reset Tool** to wipe specific categories while keeping your staff accounts and product list intact.
-- **Wipe Transactions**: Deletes all sales history.
-- **Wipe Expenses**: Clears all expenditure records.
-- **Wipe System Logs**: Clears the staff activity audit trail.
+## 🏠 Managing Your Business From Anywhere
+### The Global Dashboard
+As the **Owner**, you can log in from any device to see your "Empire" in real-time. Look for the **Mission Control** tab to see every cake sold and every peso earned across all your branches as it happens.
 
 ---
 
-## 📈 Monitoring Your Success
-### Dashboard & Analytics
-- **Live Pulse**: Use the Dashboard to see your hourly revenue and top-selling products.
-- **Mission Control**: For multi-branch owners, Mission Control provides a real-time feed of every transaction happening across your entire empire.
+## 🛠️ Shop Owner's Toolbox
+You can find these tools in the **Settings** menu.
+
+### 🎨 Customizing Your Brand
+Want to change your receipt footer? Or upload a new holiday logo?
+- Go to **Settings > Store Info**.
+- Upload your logo once, and it will automatically appear on all screens and receipts!
+
+### 💰 Tax & VIP Customers
+- **Set Your Tax**: Easily toggle your VAT or Sales tax in **Settings > Tax**.
+- **Reward Your Regulars**: In **Settings > Promos**, you can decide how many times a customer needs to visit before they earn a "Regular" status and a gold star on their profile.
 
 ---
 
-## 🆘 Support & Maintenance
-For technical issues or feature requests, contact your system administrator. Always have a recent **Database Backup** ready before requesting system-level support.
+## 🔐 Keeping Your Data Safe (No Geeks Required!)
+Treat your data like your most secret recipes—it needs to be backed up!
+
+### 💾 Your Digital Safety Net (Backups)
+Think of a "Backup" as a snapshot of your entire business. 
+- **Action**: Once a month, go to **Settings > Data** and click **"Download Full Backup"**.
+- Keep this file on your computer. If you ever lose your phone or tablet, you can upload this file to a new one and your entire bakeshop history will be back in seconds.
+
+### 🧹 The "Fresh Start" Tool (Reset)
+At the end of a year or when starting a new branch, you might want to clear out old sales records to keep things fast and tidy.
+- Use the **Selective Reset Tool** to safely wipe old receipts and expenses while **keeping** your products and staff accounts perfectly intact.
+
+---
+
+## 🌟 Pro-Tip for iPhone/Android
+You can run this system exactly like a real App!
+1. Open the POS in your mobile browser.
+2. Tap **"Add to Home Screen"**.
+3. Now, you can open FEL Bakeshop POS with one tap from your phone's home screen!
+
+---
+
+### Need Help?
+Your system is designed to be self-healing and robust. For any high-level technical adjustments, please contact your **System Developer**.
