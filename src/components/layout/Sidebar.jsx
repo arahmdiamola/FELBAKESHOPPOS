@@ -173,7 +173,7 @@ export default function Sidebar() {
               title="Secure Terminal Now"
               style={{
                 flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                padding: 8, background: 'rgba(46, 204, 113, 0.1)', border: '1px solid rgba(46, 204, 113, 0.2)',
+                padding: 8, background: 'rgba(46, 204, 113, 0.1)',
                 borderRadius: 8, color: '#2ecc71', fontSize: 10, fontWeight: 800, textTransform: 'uppercase',
                 cursor: 'pointer', border: '1px solid rgba(46, 204, 113, 0.2)',
                 overflow: 'hidden'

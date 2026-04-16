@@ -243,7 +243,6 @@ app.post('/api/branches/:id/pulse', async (req, res) => {
     await db.run("UPDATE branches SET last_seen = ? WHERE id = ?", [timestamp, branchId]);
     
     // 2. Update specific session with Resilient Strategy (Delete then Insert)
-    // This avoids "ON CONFLICT" errors if the unique index migration failed.
     if (userId) {
        await db.transaction(async (tx) => {
          await tx.run("DELETE FROM branch_sessions WHERE branch_id = ? AND user_id = ?", [branchId, userId]);
@@ -253,6 +252,9 @@ app.post('/api/branches/:id/pulse', async (req, res) => {
          );
        });
     }
+
+    // 3. Broadcast status to dashboards in real-time
+    notificationHub.emit('broadcast', { type: 'BRANCH_STATUS_CHANGE', branchId, status: 'online' });
     
     res.json({ success: true, timestamp });
   } catch (error) {
@@ -275,6 +277,9 @@ app.post('/api/branches/:id/disconnect', async (req, res) => {
       if (remaining && remaining.count === 0) {
         // Only if NO sessions left, nuke the branch last_seen for instant dashboard feedback
         await db.run("UPDATE branches SET last_seen = NULL WHERE id = ?", [branchId]);
+        
+        // Broadcast OFFLINE status to dashboards
+        notificationHub.emit('broadcast', { type: 'BRANCH_STATUS_CHANGE', branchId, status: 'offline' });
       }
     } else {
       // Force whole branch offline

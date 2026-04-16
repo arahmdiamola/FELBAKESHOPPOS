@@ -145,10 +145,14 @@ export function AuthProvider({ children }) {
     return false;
   };
 
-  const logout = () => {
+  const logout = async () => {
     // Send immediate disconnect pulse before clearing state
     if (activeBranch && activeBranch !== 'all' && currentUser) {
-      api.post(`/branches/${activeBranch}/disconnect`, { userId: currentUser.id }).catch(() => {});
+      try {
+        await api.post(`/branches/${activeBranch}/disconnect`, { userId: currentUser.id });
+      } catch (e) {
+        console.warn('[Auth] Disconnect relay failed during logout');
+      }
     }
 
     setCurrentUser(null);

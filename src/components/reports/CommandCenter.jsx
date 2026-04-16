@@ -151,6 +151,12 @@ export default function CommandCenter({ isPublic = false }) {
         } else if (data.type === 'PRODUCTION_FINALIZED') {
           console.log('🥖 EMPIRE SIGNAL: Production Finalized', data);
           fetchGlobalData();
+        } else if (data.type === 'BRANCH_STATUS_CHANGE') {
+          console.log('📡 EMPIRE SIGNAL: Presence Update', data);
+          // Zero-Latency UI Flip: Update branch list in-place
+          setBranches(prev => prev.map(b => 
+            b.id === data.branchId ? { ...b, isOnline: data.status === 'online' } : b
+          ));
         }
       } catch (e) {
         // Silent catch for heartbeats
