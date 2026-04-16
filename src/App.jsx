@@ -40,9 +40,13 @@ const RawMaterialsPage = lazyWithRetry(() => import('./components/inventory/RawM
 
 const FeatureGate = ({ moduleId, children }) => {
   const { currentUser } = useAuth();
-  const { settings } = useSettings();
+  const { settings, isLoaded } = useSettings();
   
   if (currentUser?.role === 'system_admin') return children;
+
+  // 1. Grace Period: If settings aren't loaded yet, show a subtle loader
+  // This prevents accidental redirect loops on page refresh
+  if (!isLoaded) return <PageLoader />;
 
   const licenseFeatures = (() => {
     try {
@@ -54,7 +58,9 @@ const FeatureGate = ({ moduleId, children }) => {
 
   if (!licenseFeatures.includes(moduleId)) {
     console.warn(`[Licensing] Access denied to gated module: ${moduleId}`);
-    return <Navigate to="/pos" replace />;
+    // Safe Fallback: Don't redirect to /pos because /pos might also be gated!
+    // Instead, send to a neutral page like settings or users.
+    return <Navigate to="/settings" replace />;
   }
 
   return children;

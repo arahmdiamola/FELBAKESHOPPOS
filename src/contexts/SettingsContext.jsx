@@ -18,14 +18,17 @@ const DEFAULT_SETTINGS = {
 
 export function SettingsProvider({ children }) {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     const fetchSettings = async () => {
       try {
         const data = await api.get('/settings');
         setSettings(prev => ({ ...prev, ...data }));
+        setIsLoaded(true);
       } catch (e) {
         console.error(e);
+        setIsLoaded(true); // Still mark as loaded to unblock UI on error
       }
     };
     fetchSettings();
@@ -75,7 +78,7 @@ export function SettingsProvider({ children }) {
   };
 
   return (
-    <SettingsContext.Provider value={{ settings, updateSettings, resetData }}>
+    <SettingsContext.Provider value={{ settings, isLoaded, updateSettings, resetData }}>
       {children}
     </SettingsContext.Provider>
   );

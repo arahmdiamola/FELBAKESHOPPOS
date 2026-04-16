@@ -87,8 +87,10 @@ export default function UsersPage() {
           addToast('Password cannot be empty', 'error');
           return;
         }
-        if (currentUser?.role === 'system_admin' && !form.branchId && form.role !== 'system_admin') {
-          addToast('Please assign a branch', 'error');
+        // Validation: Only force a branch for non-global roles
+        const needsBranch = !['system_admin', 'owner'].includes(form.role);
+        if (currentUser?.role === 'system_admin' && !form.branchId && needsBranch) {
+          addToast('Please assign a branch for this role', 'error');
           return;
         }
         const id = uuidv4();
