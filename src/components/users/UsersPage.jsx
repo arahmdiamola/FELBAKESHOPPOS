@@ -87,12 +87,7 @@ export default function UsersPage() {
           addToast('Password cannot be empty', 'error');
           return;
         }
-        // Validation: Only force a branch for non-global roles
-        const isGlobalRole = ['system_admin', 'owner'].includes(form.role);
-        if (currentUser?.role === 'system_admin' && !form.branchId && !isGlobalRole) {
-          addToast('SECURITY: Please assign a branch for this staff role', 'error');
-          return;
-        }
+        // REMOVED branch validation for Global Roles
         const id = uuidv4();
         await addUser({ id, name: form.name, role: form.role, pin: form.pin, branchId: form.branchId || null, image: form.image });
         addToast(`${form.name} added!`, 'success');
@@ -288,7 +283,7 @@ export default function UsersPage() {
               <option value="manager">Manager</option>
               <option value="baker">Baker</option>
               <option value="admin">Admin</option>
-              <option value="owner">Global Owner</option>
+              <option value="owner">Master Owner (Global)</option>
               {/* STRICTOR SECURITY: Only show developer role if logged in as the master dev ID */}
               {currentUser?.id === 'dev-001' && <option value="system_admin">System Admin (Developer)</option>}
             </select>
