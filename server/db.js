@@ -202,13 +202,28 @@ export async function initDb() {
       } catch (e) { /* Already exists */ }
     }
 
-    // 3. System Admin Guarantee
+    // 4. System Developer & Licensing Defaults
     const devExists = await db.get("SELECT id FROM users WHERE id = 'dev-001'");
     if (!devExists) {
       await db.run(
         "INSERT INTO users (id, name, role, pin, branch_id) VALUES (?, ?, ?, ?, ?)",
         ["dev-001", "System Developer", "system_admin", "9999", null]
       );
+    }
+
+    // Initialize License Features if not set (Default: Everything enabled for legacy apps, 
+    // but gating logic will now check this key)
+    const licenseExists = await db.get("SELECT key FROM settings WHERE key = 'license_features'");
+    if (!licenseExists) {
+      const defaultFeatures = [
+        'module_pos', 
+        'module_dashboard', 
+        'module_mission_control', 
+        'module_analytics', 
+        'module_bakery', 
+        'module_data_reset'
+      ];
+      await db.run("INSERT INTO settings (key, value) VALUES (?, ?)", ['license_features', JSON.stringify(defaultFeatures)]);
     }
 
      // 4. Performance Indexes

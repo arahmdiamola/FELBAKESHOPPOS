@@ -14,18 +14,18 @@ import {
 } from 'lucide-react';
 
 const navItems = [
-  { to: '/pos', icon: ShoppingBag, label: 'POS Register' },
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/baking', icon: ChefHat, label: 'Baking Batch' },
-  { to: '/reports', icon: BarChart3, label: 'Analytics Studio' },
+  { to: '/pos', icon: ShoppingBag, label: 'POS Register', moduleId: 'module_pos' },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', moduleId: 'module_dashboard' },
+  { to: '/baking', icon: ChefHat, label: 'Baking Batch', moduleId: 'module_bakery' },
+  { to: '/reports', icon: BarChart3, label: 'Analytics Studio', moduleId: 'module_analytics' },
   { section: 'Management' },
   { to: '/products', icon: Package, label: 'Products' },
-  { to: '/inventory', icon: Boxes, label: 'Inventory' },
-  { to: '/raw-materials', icon: Wheat, label: 'Raw Materials' },
+  { to: '/inventory', icon: Boxes, label: 'Inventory', moduleId: 'module_bakery' },
+  { to: '/raw-materials', icon: Wheat, label: 'Raw Materials', moduleId: 'module_bakery' },
   { to: '/preorders', icon: CalendarClock, label: 'Pre-Orders' },
   { to: '/customers', icon: Users, label: 'Customers' },
   { to: '/expenses', icon: Wallet, label: 'Expenses' },
-  { to: '/command-center', icon: Activity, label: 'Mission Control' },
+  { to: '/command-center', icon: Activity, label: 'Mission Control', moduleId: 'module_mission_control' },
   { section: 'System' },
   { to: '/users', icon: Users, label: 'Users' },
   { to: '/settings', icon: Settings, label: 'Settings' },
@@ -70,14 +70,28 @@ export default function Sidebar() {
 
   const visibleNavItems = navItems.filter(item => {
     if (item.section) return true;
-    
-    // Mission Control is for System Admins and Owners
-    if (item.to === '/command-center') {
-      return ['system_admin', 'owner'].includes(currentUser?.role);
+
+    // 1. SYSTEM DEVELOPER (GOD MODE): Always see everything
+    if (currentUser?.role === 'system_admin') return true;
+
+    // 2. FEATURE GATEKEEPING: Check if the module is unlocked in the shop license
+    // (If no moduleId is defined, the item is considered 'Core' and always visible to appropriate roles)
+    if (item.moduleId) {
+      try {
+        const licenseFeatures = typeof settings.license_features === 'string' 
+          ? JSON.parse(settings.license_features) 
+          : (settings.license_features || []);
+        
+        if (!licenseFeatures.includes(item.moduleId)) return false;
+      } catch (e) {
+        // If license check fails, we default to showing it for resilience, 
+        // but log the issue
+        console.warn(`[Licensing] Failed to check module: ${item.moduleId}`);
+      }
     }
 
+    // 3. ROLE-BASED ACCESS CONTROL (RBAC)
     if (currentUser?.role === 'cashier') {
-      // Cashiers see POS, Dashboard, and only specific Management items
       const allowedPaths = ['/pos', '/dashboard', '/preorders', '/customers', '/reports'];
       return allowedPaths.includes(item.to);
     }
@@ -90,9 +104,7 @@ export default function Sidebar() {
       return !['/users', '/settings'].includes(item.to);
     }
     
-    if (currentUser?.role === 'admin' || currentUser?.role === 'system_admin' || currentUser?.role === 'owner') {
-       return true;
-    }
+    // Default: Owners see everything that is licensed
     return true;
   });
 

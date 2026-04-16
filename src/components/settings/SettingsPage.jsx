@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../utils/api';
 import Header from '../layout/Header';
 import Modal from '../shared/Modal';
-import { Save, RotateCcw, Store, Receipt, Percent, Database, MapPin, Edit2, Trash2, Plus, AlertTriangle, CheckCircle, Smartphone, Star, TrendingUp, List, History, Upload, DownloadCloud } from 'lucide-react';
+import { Save, RotateCcw, Store, Receipt, Percent, Database, MapPin, Edit2, Trash2, Plus, AlertTriangle, CheckCircle, Smartphone, Star, TrendingUp, List, History, Upload, DownloadCloud, ShieldCheck, Lock } from 'lucide-react';
 import BranchForm from './BranchForm';
 import { useSafetyShield } from '../../hooks/useSafetyShield';
 
@@ -15,6 +15,23 @@ export default function SettingsPage() {
   const { addToast } = useToast();
   const [form, setForm] = useState({ ...settings });
   const [activeTab, setActiveTab] = useState('store');
+  
+  // Licensing State Helpers
+  const currentFeatures = (() => {
+    try {
+      return typeof settings.license_features === 'string' 
+        ? JSON.parse(settings.license_features) 
+        : (settings.license_features || []);
+    } catch (e) { return []; }
+  })();
+
+  const toggleFeature = (featureKey) => {
+    const updated = currentFeatures.includes(featureKey)
+      ? currentFeatures.filter(f => f !== featureKey)
+      : [...currentFeatures, featureKey];
+    
+    setForm(p => ({ ...p, license_features: JSON.stringify(updated) }));
+  };
 
   const [branches, setBranches] = useState([]);
   const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
@@ -269,6 +286,12 @@ export default function SettingsPage() {
           {currentUser?.role === 'system_admin' && (
             <button className={`tab ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => { setActiveTab('logs'); fetchLogs(); }}>
               <History size={14} style={{ marginRight: 6 }} />Logs
+            </button>
+          )}
+
+          {currentUser?.role === 'system_admin' && (
+            <button className={`tab ${activeTab === 'licensing' ? 'active' : ''}`} onClick={() => setActiveTab('licensing')}>
+              <ShieldCheck size={14} style={{ marginRight: 6 }} />Licensing
             </button>
           )}
         </div>
@@ -599,6 +622,69 @@ export default function SettingsPage() {
                     )}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'licensing' && currentUser?.role === 'system_admin' && (
+          <div className="animate-fade-in">
+             <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="text-2xl font-bold m-0 flex items-center gap-3">
+                  <ShieldCheck size={24} className="text-indigo-600" /> Empire Feature Licensing
+                </h2>
+                <p className="text-muted text-sm mt-1">Gatekeeping Control: Enable or restrict premium modules for this installation.</p>
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="card-header bg-indigo-50 border-indigo-100 mb-4" style={{ background: 'rgba(79, 70, 229, 0.05)', borderRadius: 12, padding: 16, border: '1px solid rgba(79, 70, 229, 0.1)' }}>
+                <div className="flex gap-4 items-start">
+                  <Lock className="text-indigo-600 mt-1" size={20} />
+                  <div>
+                    <div className="font-bold text-indigo-900">Developer Offering Model</div>
+                    <div className="text-xs text-indigo-700 leading-relaxed mt-1">
+                      Modules checked below will be visible to the Owner and staff. Uncheck a module to restrict access (useful for tiered subscriptions or phase-based rollouts). 
+                      <strong> Note:</strong> You (System Developer) will always see all features for maintenance.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="card-body">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[
+                    { id: 'module_pos', label: 'POS Register (Core)', desc: 'The heart of sales and receipt generation.' },
+                    { id: 'module_dashboard', label: 'Store Dashboard (Core)', desc: 'Daily stats, recent sales, and branch goals.' },
+                    { id: 'module_mission_control', label: 'Mission Control (Executive)', desc: 'Sub-second real-time SSE alerting and total revenue pulse.', premium: true },
+                    { id: 'module_analytics', label: 'Analytics Studio (Reports)', desc: 'Historical charts, comparative insights, and data exports.', premium: true },
+                    { id: 'module_bakery', label: 'Baking & Raw Materials', desc: 'Inventory sync, batch logs, and materials tracking.', premium: true },
+                    { id: 'module_data_reset', label: 'System Reset Tools', desc: 'Ability to wipe data. Powerful and dangerous.', premium: true },
+                  ].map(f => (
+                    <label key={f.id} className={`flex items-start gap-4 p-4 border rounded-xl transition-all cursor-pointer hover:shadow-md ${currentFeatures.includes(f.id) ? 'bg-white border-indigo-200 shadow-sm' : 'bg-gray-50 border-transparent opacity-60'}`}>
+                       <input 
+                         type="checkbox" 
+                         className="checkbox mt-1" 
+                         checked={currentFeatures.includes(f.id)} 
+                         onChange={() => toggleFeature(f.id)}
+                       />
+                       <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                             <span className="font-bold text-sm text-gray-900">{f.label}</span>
+                             {f.premium && <span className="text-[9px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-full font-black uppercase tracking-widest">Premium</span>}
+                          </div>
+                          <div className="text-xs text-muted mt-0.5">{f.desc}</div>
+                       </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="card-footer mt-6">
+                <div className="text-xs text-muted italic flex items-center justify-center gap-2">
+                  <AlertTriangle size={12} /> Changes here impact the Sidebar visibility for all non-developer users.
+                </div>
               </div>
             </div>
           </div>

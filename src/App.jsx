@@ -4,6 +4,7 @@ import { useAuth } from './contexts/AuthContext';
 import { useOrders } from './contexts/OrderContext';
 import { useProducts } from './contexts/ProductContext';
 import { useExpenses } from './contexts/ExpenseContext';
+import { useSettings } from './contexts/SettingsContext';
 import ToastContainer from './components/shared/ToastContainer';
 import PullToRefresh from './components/shared/PullToRefresh';
 import LoginScreen from './components/users/LoginScreen';
@@ -36,6 +37,28 @@ const ReportsPage = lazyWithRetry(() => import('./components/reports/ReportsPage
 const CommandCenter = lazyWithRetry(() => import('./components/reports/CommandCenter'));
 const BakingPage = lazyWithRetry(() => import('./components/baking/BakingPage'));
 const RawMaterialsPage = lazyWithRetry(() => import('./components/inventory/RawMaterialsPage'));
+
+const FeatureGate = ({ moduleId, children }) => {
+  const { currentUser } = useAuth();
+  const { settings } = useSettings();
+  
+  if (currentUser?.role === 'system_admin') return children;
+
+  const licenseFeatures = (() => {
+    try {
+      return typeof settings.license_features === 'string' 
+        ? JSON.parse(settings.license_features) 
+        : (settings.license_features || []);
+    } catch (e) { return []; }
+  })();
+
+  if (!licenseFeatures.includes(moduleId)) {
+    console.warn(`[Licensing] Access denied to gated module: ${moduleId}`);
+    return <Navigate to="/pos" replace />;
+  }
+
+  return children;
+};
 
 const PageLoader = () => (
   <div style={{ 
@@ -83,7 +106,11 @@ function AppRoutes() {
     return (
       <>
         <Routes>
-          <Route path="/command-center" element={<CommandCenter isPublic={false} />} />
+          <Route path="/command-center" element={
+            <FeatureGate moduleId="module_mission_control">
+              <CommandCenter isPublic={false} />
+            </FeatureGate>
+          } />
         </Routes>
         <ToastContainer />
       </>
@@ -101,15 +128,31 @@ function AppRoutes() {
               <Route path="/pos" element={<POSTerminal />} />
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/products" element={<ProductsPage />} />
-              <Route path="/inventory" element={<InventoryPage />} />
+              <Route path="/inventory" element={
+                <FeatureGate moduleId="module_bakery">
+                  <InventoryPage />
+                </FeatureGate>
+              } />
               <Route path="/preorders" element={<PreOrdersPage />} />
               <Route path="/customers" element={<CustomersPage />} />
               <Route path="/expenses" element={<ExpensesPage />} />
               <Route path="/users" element={<UsersPage />} />
               <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/reports" element={<ReportsPage />} />
-              <Route path="/baking" element={<BakingPage />} />
-              <Route path="/raw-materials" element={<RawMaterialsPage />} />
+              <Route path="/reports" element={
+                <FeatureGate moduleId="module_analytics">
+                  <ReportsPage />
+                </FeatureGate>
+              } />
+              <Route path="/baking" element={
+                <FeatureGate moduleId="module_bakery">
+                  <BakingPage />
+                </FeatureGate>
+              } />
+              <Route path="/raw-materials" element={
+                <FeatureGate moduleId="module_bakery">
+                  <RawMaterialsPage />
+                </FeatureGate>
+               } />
               <Route path="*" element={<Navigate to={currentUser.role === 'baker' ? '/baking' : '/pos'} replace />} />
             </Routes>
           </PullToRefresh>
