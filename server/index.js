@@ -989,6 +989,11 @@ app.post('/api/reset', requireSystemAdmin, async (req, res) => {
     if (targets.includes('preorders')) {
       await db.run("DELETE FROM preorders");
     }
+    
+    if (targets.includes('systemLogs')) {
+      await db.run("DELETE FROM system_logs");
+      console.log("[Reset] Wiped System Logs");
+    }
 
       await db.run("DELETE FROM settings WHERE key LIKE 'sync_%'");
 

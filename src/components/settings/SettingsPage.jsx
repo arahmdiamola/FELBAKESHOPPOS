@@ -52,6 +52,7 @@ export default function SettingsPage() {
     customers: false,
     expenses: false,
     preorders: false,
+    systemLogs: false,
     syncQueue: false
   });
 
@@ -757,6 +758,14 @@ export default function SettingsPage() {
               <div>
                 <div className="font-bold text-sm">Pre-orders</div>
                 <div className="text-xs text-muted">Wipes all active and pending advance orders.</div>
+              </div>
+            </label>
+
+            <label className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors" style={{ margin: 0 }}>
+              <input type="checkbox" className="checkbox" checked={resetTargets.systemLogs} onChange={e => setResetTargets(p => ({ ...p, systemLogs: e.target.checked }))} />
+              <div>
+                <div className="font-bold text-sm">System Activity Logs</div>
+                <div className="text-xs text-muted">Wipes the audit trail of all staff actions and login history.</div>
               </div>
             </label>
 
