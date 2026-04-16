@@ -8,6 +8,54 @@
    height: 1px; /* Allow flex to control height */
 }
 
+.analytics-overlay-lux {
+    position: fixed;
+    top: 80px;
+    left: 260px;
+    right: 0;
+    bottom: 0;
+    background: rgba(18, 12, 10, 0.85);
+    backdrop-filter: blur(12px);
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    color: var(--accent-gold);
+    transition: all 0.3s ease;
+}
+
+.crunch-label {
+    font-size: 11px;
+    letter-spacing: 4px;
+    font-weight: 700;
+    opacity: 0.8;
+}
+
+.pulse-slow {
+    animation: pulseSlow 3s infinite ease-in-out;
+    opacity: 0.6;
+}
+
+.shimmer-line {
+    width: 200px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent-gold), transparent);
+    background-size: 200% 100%;
+    animation: shimmerMove 1.5s infinite linear;
+}
+
+@keyframes pulseSlow {
+    0%, 100% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+@keyframes shimmerMove {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
 .studio-control-bar {
    padding: 32px 40px;
    display: flex;

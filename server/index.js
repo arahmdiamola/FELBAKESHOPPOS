@@ -737,23 +737,41 @@ app.get('/api/production/active-batches', async (req, res) => {
 
 // --- TRANSACTIONS ---
 app.get('/api/transactions', async (req, res) => {
-  const limit = req.query.limit ? `LIMIT ${req.query.limit}` : '';
-  const isSummary = req.query.summary === 'true';
-  const { query, params } = getBranchFilter(req);
+  const { limit, summary, start, end } = req.query;
+  const isSummary = summary === 'true';
+  const { query: branchQuery, params: branchParams } = getBranchFilter(req);
   
-  const txns = await db.all(`SELECT * FROM transactions WHERE ${query} ORDER BY date DESC ${limit}`, params);
+  let dateQuery = '';
+  const dateParams = [];
   
-  // v1.2.45: PERFORMANCE PROTECTION - Skip heavy item fetch if summary mode is requested (for dashboards)
-  if (!isSummary) {
-    for (const t of txns) {
-      t.items = await db.all("SELECT * FROM transaction_items WHERE transaction_id = ?", [t.id]);
-    }
-  } else {
-    // Return empty items array to maintain object structure compatibility
-    txns.forEach(t => t.items = []);
+  if (start && end) {
+    // Ensure dates are compared as strings 'YYYY-MM-DD' against the stored ISO strings
+    dateQuery = ' AND date >= ? AND date <= ?';
+    dateParams.push(`${start} 00:00:00`, `${end} 23:59:59`);
   }
+
+  const limitClause = limit ? `LIMIT ${limit}` : '';
   
-  res.json(txns);
+  try {
+    const txns = await db.all(
+      `SELECT * FROM transactions WHERE ${branchQuery}${dateQuery} ORDER BY date DESC ${limitClause}`, 
+      [...branchParams, ...dateParams]
+    );
+    
+    // v1.2.45: PERFORMANCE PROTECTION - Skip heavy item fetch if summary mode is requested
+    if (!isSummary) {
+      for (const t of txns) {
+        t.items = await db.all("SELECT * FROM transaction_items WHERE transaction_id = ?", [t.id]);
+      }
+    } else {
+      txns.forEach(t => t.items = []);
+    }
+    
+    res.json(txns);
+  } catch (err) {
+    console.error('[GET /api/transactions] Error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.get('/api/transactions/today', async (req, res) => {

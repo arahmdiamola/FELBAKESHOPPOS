@@ -27,6 +27,10 @@ export default function ReportsPage() {
   const [productionLogs, setProductionLogs] = useState([]);
   const [isLoadingProd, setIsLoadingProd] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
+  
+  // v1.2.55: ANALYTICS INDEPENDENCE - Independent high-fidelity transaction store
+  const [fullTransactions, setFullTransactions] = useState([]);
+  const [isCrunshing, setIsCrunshing] = useState(false);
 
   // Initialize dates
   useEffect(() => {
@@ -64,42 +68,38 @@ export default function ReportsPage() {
     });
   };
 
-  const fetchProductionHistory = async () => {
-    setIsLoadingProd(true);
+  const fetchReportData = async () => {
+    if (!dateRange.start || !dateRange.end) return;
+    
+    setIsCrunshing(true);
     try {
-      // Fetch both completed and ruined logs for full audit
+      // 1. Fetch High-Detail Transactions (Summary=false to get items)
+      // We use start/end dates to pull deep history
+      const data = await api.get(`/transactions?start=${dateRange.start}&end=${dateRange.end}&summary=false`);
+      setFullTransactions(data || []);
+      
+      // 2. Fetch Production Logs for the audit
       const [completed, ruined] = await Promise.all([
         api.get('/production/logs?status=completed'),
         api.get('/production/logs?status=ruined')
       ]);
       setProductionLogs([...(completed || []), ...(ruined || [])]);
     } catch (err) {
-      console.error('Failed to fetch production logs', err);
+      console.error('[Analytics] Sync failed', err);
     } finally {
-      setIsLoadingProd(false);
+      setIsCrunshing(false);
     }
   };
 
+  // Trigger sync on date range or branch change (branch is handled by api.js headers)
   useEffect(() => {
-    fetchProductionHistory();
-  }, []);
+    fetchReportData();
+  }, [dateRange, settings]);
 
-  // Filter transactions and pre-orders by range
+  // Filter Transactions for UI (already filtered by API, but we keep the sort/memo logic)
   const filteredSales = useMemo(() => {
-    if (!dateRange.start || !dateRange.end || !Array.isArray(transactions)) return [];
-    
-    const start = new Date(dateRange.start);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(dateRange.end);
-    end.setHours(23, 59, 59, 999);
-
-      const tx = transactions.filter(t => {
-      const d = new Date(t.date);
-      return d >= start && d <= end;
-    });
-
-    return [...tx].sort((a, b) => new Date(b.date) - new Date(a.date));
-  }, [transactions, dateRange]);
+    return [...fullTransactions].sort((a, b) => new Date(b.date) - new Date(a.date));
+  }, [fullTransactions]);
 
   const filteredExpenses = useMemo(() => {
     if (!dateRange.start || !dateRange.end || !Array.isArray(allExpenses)) return [];
@@ -225,6 +225,13 @@ export default function ReportsPage() {
   return (
     <>
       <Header />
+      {isCrunshing && (
+        <div className="analytics-overlay-lux">
+           <Database size={32} className="pulse-slow" />
+           <span className="crunch-label">CRUNCHING BUSINESS DATA...</span>
+           <div className="shimmer-line" />
+        </div>
+      )}
       <div className="studio-reports-container">
         
         {/* Top Control Bar */}
