@@ -15,7 +15,7 @@ import './BakingPage.css';
 
 export default function BakingPage() {
   const { currentUser } = useAuth();
-  const { products } = useProducts();
+  const { products, refetch: refetchProducts } = useProducts();
   const { addToast } = useToast();
   
   const [materials, setMaterials] = useState([]);
@@ -150,6 +150,7 @@ export default function BakingPage() {
       };
 
       await api.post('/production/log', payload);
+      refetchProducts().catch(e => console.warn('Inventory sync delayed', e));
       addToast(`Batch for ${targetProduct.name} is now IN THE OVEN 🥧`, 'success');
       
       setActiveBatch([]);
@@ -168,6 +169,7 @@ export default function BakingPage() {
   const handleFinalizeBatch = async (batch, actual) => {
     try {
       await api.post('/production/finalize', { logId: batch.id, actualYield: actual });
+      refetchProducts().catch(e => console.warn('Inventory sync delayed', e));
       
       // Post-Bake Success Flow
       setLastBakeInfo({
