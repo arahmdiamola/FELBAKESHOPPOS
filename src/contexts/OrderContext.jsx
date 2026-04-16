@@ -20,16 +20,22 @@ export function OrderProvider({ children }) {
       return;
     }
     try {
-      const [tx, po, summary] = await Promise.all([
-        api.get('/transactions?limit=200&summary=true'),
-        api.get('/preorders'),
-        api.get('/analytics/today-summary')
-      ]);
-      setTransactions(tx || []);
-      setPreOrders(po || []);
-      setStats(summary || { revenue: 0, orderCount: 0, hourlyPulse: [] });
+      // 1. Transactions
+      api.get('/transactions?limit=200&summary=true')
+        .then(data => setTransactions(data || []))
+        .catch(e => console.error('Transactions fetch failed', e));
+
+      // 2. Pre-orders
+      api.get('/preorders')
+        .then(data => setPreOrders(data || []))
+        .catch(e => console.error('Preorders fetch failed', e));
+
+      // 3. Analytics Summary
+      api.get('/analytics/today-summary')
+        .then(data => setStats(data || { revenue: 0, orderCount: 0, hourlyPulse: [] }))
+        .catch(e => console.error('Analytics fetch failed', e));
     } catch (e) {
-      console.error(e);
+      console.error('[OrderContext] General fetch failure', e);
     }
   }, [currentUser]);
 

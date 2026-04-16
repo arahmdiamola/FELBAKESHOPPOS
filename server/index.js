@@ -1197,6 +1197,44 @@ app.use('/api', (req, res) => {
   res.status(404).json({ error: `API Route not found: ${req.method} ${req.originalUrl}` });
 });
 
+// --- ANALYTICS & DASHBOARD ---
+app.get('/api/analytics/today-summary', async (req, res) => {
+  try {
+    const { query, params } = getBranchFilter(req);
+    // Use the explicit date from query if provided (for local time alignment), otherwise fallback to UTC today
+    const dateStr = req.query.date || new Date().toISOString().split('T')[0];
+
+    // 1. Core Metrics
+    const stats = await db.get(`
+      SELECT 
+        COUNT(*) as order_count,
+        SUM(total) as revenue
+      FROM transactions 
+      WHERE ${query} AND date LIKE ?
+    `, [...params, `${dateStr}%`]);
+
+    // 2. Hourly Pulse (for charts)
+    const hourly = await db.all(`
+      SELECT 
+        strftime('%H', date) as hour,
+        SUM(total) as revenue
+      FROM transactions 
+      WHERE ${query} AND date LIKE ?
+      GROUP BY hour
+      ORDER BY hour ASC
+    `, [...params, `${dateStr}%`]);
+
+    res.json({
+      revenue: stats.revenue || 0,
+      orderCount: stats.order_count || 0,
+      hourlyPulse: hourly.map(h => ({ hour: parseInt(h.hour), revenue: h.revenue }))
+    });
+  } catch (err) {
+    console.error('[Analytics Error]', err);
+    res.status(500).json({ error: 'Failed to calculate analytics summary' });
+  }
+});
+
 // Global Error Handler for API (prevents HTML fallbacks)
 app.use('/api', (err, req, res, next) => {
   console.error('[API Error Interceptor]', err);

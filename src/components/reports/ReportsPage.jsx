@@ -86,7 +86,7 @@ export default function ReportsPage() {
 
   // Filter transactions and pre-orders by range
   const filteredSales = useMemo(() => {
-    if (!dateRange.start || !dateRange.end) return [];
+    if (!dateRange.start || !dateRange.end || !Array.isArray(transactions)) return [];
     
     const start = new Date(dateRange.start);
     start.setHours(0, 0, 0, 0);
@@ -99,10 +99,10 @@ export default function ReportsPage() {
     });
 
     return [...tx].sort((a, b) => new Date(b.date) - new Date(a.date));
-  }, [transactions, preOrders, dateRange]);
+  }, [transactions, dateRange]);
 
   const filteredExpenses = useMemo(() => {
-    if (!dateRange.start || !dateRange.end) return [];
+    if (!dateRange.start || !dateRange.end || !Array.isArray(allExpenses)) return [];
     const start = new Date(dateRange.start);
     start.setHours(0, 0, 0, 0);
     const end = new Date(dateRange.end);
@@ -116,14 +116,16 @@ export default function ReportsPage() {
 
   const productStats = useMemo(() => {
     const map = {};
-    products.forEach(p => { map[p.id] = { ...p, sold: 0, revenue: 0 }; });
+    if (Array.isArray(products)) {
+        products.forEach(p => { map[p.id] = { ...p, sold: 0, revenue: 0 }; });
+    }
     map['custom'] = { id: 'custom', name: 'Custom Items', emoji: '✨', categoryId: 'custom', sold: 0, revenue: 0 };
 
     filteredSales.forEach(t => {
       t.items?.forEach(i => {
         const key = map[i.productId] ? i.productId : 'custom';
-        map[key].sold += i.quantity;
-        map[key].revenue += (i.price * i.quantity);
+        map[key].sold += (i.quantity || 0);
+        map[key].revenue += ((i.price || 0) * (i.quantity || 0));
       });
     });
     
@@ -209,6 +211,16 @@ export default function ReportsPage() {
   }, [productionLogs, dateRange]);
 
   const netProfit = totalRevenue - totalExpenses;
+
+  // Render a graceful loading state if core data is still null (initial load)
+  if (!transactions || !products || !allExpenses) {
+    return (
+        <div className="studio-loader" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', gap: '20px', color: 'var(--accent-gold)' }}>
+            <div className="shimmer" style={{ width: '200px', height: '2px' }} />
+            <span style={{ fontSize: '12px', letterSpacing: '2px', opacity: 0.5 }}>SYNCHRONIZING ANALYTICS...</span>
+        </div>
+    );
+  }
 
   return (
     <>
