@@ -279,8 +279,8 @@ export default function CommandCenter({ isPublic = false }) {
   };
 
   return (
-    <PullToRefresh onRefresh={fetchGlobalData}>
-      <div className={`tv-background ${isPublic ? 'public-mode' : 'owner-mode'}`} style={{ fontFamily: '"Outfit", sans-serif' }}>
+    <div className={`tv-background ${isPublic ? 'public-mode' : 'owner-mode'}`} style={{ fontFamily: '"Outfit", sans-serif' }}>
+      <PullToRefresh onRefresh={fetchGlobalData}>
       <button className="fullscreen-btn" onClick={toggleFullscreen}>
         {isFullscreen ? <Minimize size={24} /> : <Maximize size={24} />}
       </button>
@@ -335,18 +335,6 @@ export default function CommandCenter({ isPublic = false }) {
 
       <div className="tv-viewport high-density-mode">
         {/* SALES TOAST (Bottom Left) */}
-        {activeToast && (
-          <div className="tv-sales-toast">
-            <div className="toast-icon"><ShoppingCart size={20} /></div>
-            <div className="toast-content">
-              <div className="toast-label">NEW PURCHASE</div>
-              <div className="toast-detail">
-                <span className="toast-branch">{activeToast.branchName}</span>
-                <span className="toast-amount">{formatCurrency(activeToast.total)}</span>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* MAIN BRANCH GRID */}
         <div className="tv-dense-grid-header">
@@ -525,7 +513,23 @@ export default function CommandCenter({ isPublic = false }) {
         </div>
       </div>
 
-       <div className="tv-ticker-bar">
+      </PullToRefresh>
+
+      {/* FIXED OVERLAYS (Outside PullToRefresh to avoid transform bugs) */}
+      {activeToast && (
+        <div className="tv-sales-toast">
+          <div className="toast-icon"><ShoppingCart size={20} /></div>
+          <div className="toast-content">
+            <div className="toast-label">NEW PURCHASE</div>
+            <div className="toast-detail">
+              <span className="toast-branch">{activeToast.branchName}</span>
+              <span className="toast-amount">{formatCurrency(activeToast.total)}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="tv-ticker-bar">
         <div className="tv-ticker-content">
           {tickerItems.map((item, i) => (
             <div key={`${item.id}-${i}`} className="tv-ticker-item">
@@ -552,8 +556,6 @@ export default function CommandCenter({ isPublic = false }) {
           ))}
         </div>
       </div>
-
     </div>
-    </PullToRefresh>
   );
 }
