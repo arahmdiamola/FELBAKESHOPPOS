@@ -37,7 +37,10 @@ export default function CommandCenter({ isPublic = false }) {
   // Achievement System
   const prevRanksRef = useRef({});
   const [rankedUpBranches, setRankedUpBranches] = useState({});
-  const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem('fel_dashboard_sound') === 'true');
+  const [soundEnabled, setSoundEnabled] = useState(() => {
+    const saved = localStorage.getItem('fel_dashboard_sound');
+    return saved !== null ? JSON.parse(saved) : true; // Default to TRUE for live monitoring
+  });
   const [activeToast, setActiveToast] = useState(null);
   const lastSaleIdRef = useRef(null);
 
@@ -54,13 +57,11 @@ export default function CommandCenter({ isPublic = false }) {
   };
 
   const toggleSound = () => {
-    const newState = !soundEnabled;
-    setSoundEnabled(newState);
-    localStorage.setItem('fel_dashboard_sound', newState.toString());
-    // Play a test ding when turning on so user knows it works
-    if (newState) {
-       setTimeout(playSoftBell, 100);
-    }
+    setSoundEnabled(prev => {
+      const next = !prev;
+      localStorage.setItem('fel_dashboard_sound', JSON.stringify(next));
+      return next;
+    });
   };
 
   // Slide logic removed for high-density one-screen layout

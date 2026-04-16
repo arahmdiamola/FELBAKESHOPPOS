@@ -56,7 +56,10 @@ async function seed() {
           const subtotal = prod.price * qty;
           const tax = subtotal * 0.12;
           const total = subtotal + tax;
-          const timestamp = `${todayStr}T${Math.floor(Math.random()*12 + 8).toString().padStart(2, '0')}:${Math.floor(Math.random()*60).toString().padStart(2, '0')}:00Z`;
+          const now = new Date();
+          // Distribute transactions across the last 8 hours, ensuring none are in the future
+          const minutesAgo = Math.floor(Math.random() * 480); 
+          const timestamp = new Date(now.getTime() - minutesAgo * 60000).toISOString();
 
           txRows.push([
             txId, branch.id, receiptNum, subtotal, 0, tax, total, 'Cash', total, 0, 'Walk-in', timestamp, 'completed'
