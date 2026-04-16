@@ -116,6 +116,13 @@ export default function SettingsPage() {
     }
   }, [currentUser, activeTab]);
 
+  // CRITICAL: Sync local form state when global settings are fetched from DB
+  useEffect(() => {
+    if (settings) {
+      setForm(p => ({ ...p, ...settings }));
+    }
+  }, [settings]);
+
   const handleSaveBranch = async (branchData) => {
     try {
       if (editingBranch) {
@@ -661,6 +668,10 @@ export default function SettingsPage() {
                     { id: 'module_mission_control', label: 'Mission Control (Executive)', desc: 'Sub-second real-time SSE alerting and total revenue pulse.', premium: true },
                     { id: 'module_analytics', label: 'Analytics Studio (Reports)', desc: 'Historical charts, comparative insights, and data exports.', premium: true },
                     { id: 'module_bakery', label: 'Baking & Raw Materials', desc: 'Inventory sync, batch logs, and materials tracking.', premium: true },
+                    { id: 'module_products', label: 'Products Management', desc: 'Ability to edit full product catalog and categories.', premium: true },
+                    { id: 'module_preorders', label: 'Pre-Orders Management', desc: 'Record and track deposits for future customer orders.', premium: true },
+                    { id: 'module_customers', label: 'Customer CRM', desc: 'Track customer history, VIP status, and balances.', premium: true },
+                    { id: 'module_expenses', label: 'Expense Tracking', desc: 'Digital ledger for recording all shop expenditures.', premium: true },
                     { id: 'module_data_reset', label: 'System Reset Tools', desc: 'Ability to wipe data. Powerful and dangerous.', premium: true },
                   ].map(f => (
                     <label key={f.id} className={`flex items-start gap-4 p-4 border rounded-xl transition-all cursor-pointer hover:shadow-md ${currentFeatures.includes(f.id) ? 'bg-white border-indigo-200 shadow-sm' : 'bg-gray-50 border-transparent opacity-60'}`}>

@@ -13,6 +13,7 @@ const DEFAULT_SETTINGS = {
   storeLogo: '',
   flashSalePercent: 10,
   vipThreshold: 5,
+  license_features: '[]',
 };
 
 export function SettingsProvider({ children }) {

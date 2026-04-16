@@ -221,6 +221,10 @@ export async function initDb() {
         'module_mission_control', 
         'module_analytics', 
         'module_bakery', 
+        'module_products',
+        'module_preorders',
+        'module_customers',
+        'module_expenses',
         'module_data_reset'
       ];
       await db.run("INSERT INTO settings (key, value) VALUES (?, ?)", ['license_features', JSON.stringify(defaultFeatures)]);
