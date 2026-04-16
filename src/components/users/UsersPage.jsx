@@ -229,19 +229,17 @@ export default function UsersPage() {
           <div className="card-header"><h3 className="card-title">Role Permissions</h3></div>
           <div className="table-container" style={{ border: 'none' }}>
             <table className="table">
-              <thead><tr><th>Feature</th><th>Admin</th><th>Manager</th><th>Cashier</th><th>Baker</th></tr></thead>
+              <thead><tr><th>Feature</th><th>Owner</th><th>Admin</th><th>Manager</th><th>Cashier</th></tr></thead>
               <tbody>
-                <tr><td className="primary">POS Register</td><td>✅</td><td>✅</td><td>✅</td><td>❌</td></tr>
-                <tr><td className="primary">Dashboard</td><td>✅</td><td>✅</td><td>✅</td><td>❌</td></tr>
-                <tr><td className="primary">Baking POS</td><td>✅</td><td>✅</td><td>❌</td><td>✅</td></tr>
-                <tr><td className="primary">Products Management</td><td>✅</td><td>✅</td><td>View Only</td><td>❌</td></tr>
-                <tr><td className="primary">Inventory</td><td>✅</td><td>✅</td><td>View Only</td><td>❌</td></tr>
-                <tr><td className="primary">Raw Materials</td><td>✅</td><td>✅</td><td>View Only</td><td>✅</td></tr>
-                <tr><td className="primary">Pre-Orders</td><td>✅</td><td>✅</td><td>✅</td><td>❌</td></tr>
-                <tr><td className="primary">Customers</td><td>✅</td><td>✅</td><td>✅</td><td>❌</td></tr>
-                <tr><td className="primary">Expenses</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td></tr>
-                <tr><td className="primary">User Management</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr>
-                <tr><td className="primary">Settings</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr>
+                <tr><td className="primary">POS Register</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
+                <tr><td className="primary">Dashboard (All Branches)</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr>
+                <tr><td className="primary">Baking & Production</td><td>✅</td><td>✅</td><td>✅</td><td>❌</td></tr>
+                <tr><td className="primary">Inventory Management</td><td>✅</td><td>✅</td><td>✅</td><td>View Only</td></tr>
+                <tr><td className="primary">Raw Materials</td><td>✅</td><td>✅</td><td>✅</td><td>View Only</td></tr>
+                <tr><td className="primary">Pre-Orders</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
+                <tr><td className="primary">Expenses</td><td>✅</td><td>✅</td><td>✅</td><td>❌</td></tr>
+                <tr><td className="primary">User Management</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td></tr>
+                <tr><td className="primary">System Settings</td><td>✅</td><td>✅</td><td>❌</td><td>❌</td></tr>
               </tbody>
             </table>
           </div>
