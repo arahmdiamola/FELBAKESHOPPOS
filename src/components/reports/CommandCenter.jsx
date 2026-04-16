@@ -11,6 +11,7 @@ import {
 } from 'recharts';
 import { formatCurrency } from '../../utils/formatters';
 import { api } from '../../utils/api';
+import PullToRefresh from '../shared/PullToRefresh';
 import { useOrders } from '../../contexts/OrderContext';
 import { useProducts } from '../../contexts/ProductContext';
 import { useSettings } from '../../contexts/SettingsContext';
@@ -278,7 +279,8 @@ export default function CommandCenter({ isPublic = false }) {
   };
 
   return (
-    <div className={`tv-background ${isPublic ? 'public-mode' : 'owner-mode'}`} style={{ fontFamily: '"Outfit", sans-serif' }}>
+    <PullToRefresh onRefresh={fetchGlobalData}>
+      <div className={`tv-background ${isPublic ? 'public-mode' : 'owner-mode'}`} style={{ fontFamily: '"Outfit", sans-serif' }}>
       <button className="fullscreen-btn" onClick={toggleFullscreen}>
         {isFullscreen ? <Minimize size={24} /> : <Maximize size={24} />}
       </button>
@@ -552,5 +554,6 @@ export default function CommandCenter({ isPublic = false }) {
       </div>
 
     </div>
+    </PullToRefresh>
   );
 }
