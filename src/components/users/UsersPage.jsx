@@ -88,9 +88,9 @@ export default function UsersPage() {
           return;
         }
         // Validation: Only force a branch for non-global roles
-        const needsBranch = !['system_admin', 'owner'].includes(form.role);
-        if (currentUser?.role === 'system_admin' && !form.branchId && needsBranch) {
-          addToast('Please assign a branch for this role', 'error');
+        const isGlobalRole = ['system_admin', 'owner'].includes(form.role);
+        if (currentUser?.role === 'system_admin' && !form.branchId && !isGlobalRole) {
+          addToast('SECURITY: Please assign a branch for this staff role', 'error');
           return;
         }
         const id = uuidv4();
@@ -294,7 +294,10 @@ export default function UsersPage() {
             </select>
           </div>
           <div className="input-group">
-            <label>Designated Branch {currentUser?.role !== 'system_admin' ? '(Locked)' : '*'}</label>
+            <label>
+              Designated Branch 
+              {currentUser?.role === 'system_admin' && !['system_admin', 'owner'].includes(form.role) ? ' *' : ' (Local Only)'}
+            </label>
             <select 
               className="select" 
               value={form.branchId} 
